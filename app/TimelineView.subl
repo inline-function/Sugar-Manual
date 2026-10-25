@@ -1,0 +1,19 @@
+// android/TimelineView.subl —— 时间线视图（android doc/安卓标准库.md §基础视图）
+//
+// 可滑动的服药/事件时间线：每个时间点一行（时间 + 标注），内容超出可视区域时滚动。
+// times 为时间点文本（推荐 nowStr()/fmtTime 的 "MM-dd HH:mm" 格式）；labels 为逐项
+// 标注（如 "药名 · 剂量"），与 times 一一对应；labels 为空列表时只显示时间点。
+// orientation 为 "vertical"（默认，纵向滚动）或 "horizontal"（横向滑动）；
+// color 为 "#RRGGBB" 时间线主色（默认由 KT 端主题决定）。
+//
+// KT 端渲染协议（tag = "TimelineView"，times/labels 为 JSON 字符串数组）：
+// 纵向 ScrollView / 横向 HorizontalScrollView 内按行构建（详见标准库文档）。
+
+@view struct TimelineView(
+    times: List[Str] = emptyList(),
+    labels: List[Str] = emptyList(),
+    orientation: Str = "vertical",
+    color: Str = "",
+    modifier: Modifier = Plain(),
+    body: () => Null = fun(): Null { null }
+)

@@ -1,0 +1,208 @@
+// app/drugs.subl —— 药物资料数据模型、持久化（药库）
+//
+// 编码与持久化（沿用 meds 的 storage 模式：storagePut/storageGet 键值串）：
+//   药库整体存于 storage 键 "drugs"，值是 JSON 数组（每个元素是一个药物的完整资料，
+//   含全部嵌套清单）。core.json 只提供 Json 值的解析（jsonParse/jsonGet/jsonAt/
+//   jsonToList/jsonStr…）与序列化（jsonToStr），不提供 Json 构造器，故写入侧
+//   用字符串拼装出 JSON 文本，再经 jsonParse 解析回来（兼作合法性校验：坏文本
+//   返回 None，loadDrugs 直接得到空表）并以 jsonToStr 标准化后入库；读取侧
+//   全部经 core.json 导航，无手工分号编码。
+//   用户文本约束：药名/分级词/反应名等取自受控词表；说明段（自由文本）不得
+//   含半角双引号与反斜杠——以下 jsonEsc 会转义两种字符，越界字符导致的解析
+//   失败在 loadDrugs 一侧表现为丢失（保守降级，见 docs）。
+
+// ---------- 数据模型 ----------
+
+// 五级强度 / 频率权重条目：level 是分级词（药效：极弱…极强；酶抑制：弱效…
+// 极强；不良反应频率：罕见…十分常见；过量为剂量阈值串如 ">1000mg"），name 为条目名。
+struct Rated(level: Str, name: Str)
+
+// 单条药代资料（每个给药途径 × 药型一条；复数给药途径/药型时列表多条）。
+struct PkProfile(
+    route: Str, form: Str, halfLife: Nat, tmax: Str, clearance: Str,
+    curve: Str, bio: Rat, metabolites: List[Rated]
+)
+
+// 药物完整资料（一药一条）。
+struct Drug(
+    name: Str, category: Str, tags: List[Str], description: Str,
+    effects: List[Rated],
+    enzymes: List[Str],
+    inhibitions: List[Rated],
+    pk: List[PkProfile],
+    acuteTher: List[Rated],
+    chronicTher: List[Rated],
+    acuteAdv: List[Rated],
+    chronicAdv: List[Rated],
+    withdraw: List[Rated],
+    overdose: List[Rated]
+)
+
+// ---------- JSON 文本拼装（写入侧，纯函数） ----------
+
+// 双引号字符（JSON 文本唯一的引号来源）。
+fun dq(): Str = "\""
+
+// JSON 字符串转义：先转反斜杠再转双引号（顺序不可反）。
+fun jsonEsc(s: Str): Str = strReplace(strReplace(s, "\\", "\\\\"), dq(), concat("\"", dq()))
+
+// JSON 字符串字面量："…"
+fun jsonLit(s: Str): Str = concat(concat(dq(), jsonEsc(s)), dq())
+
+// 字段 "k":v（v 已是 JSON 片段）。
+fun jsonField(name: Str, value: Str): Str = concat(jsonLit(name), concat(":", value))
+
+// 拼接字符串列表（通用工具）。
+fun joinStrs(sep: Str, xs: List[Str]): Str = xs.fold("") { acc, x => if (acc == "") x else concat(acc, concat(sep, x)) }
+
+// JSON 对象：{"k1":v1,…}（字段表已成型）。
+fun joinFields(xs: List[Str]): Str = concat(concat("{", joinStrs(",", xs)), "}")
+
+// JSON 数组：[e1,…]（元素已是 JSON 片段）。
+fun joinJsonElems(xs: List[Str]): Str = concat(concat("[", joinStrs(",", xs)), "]")
+
+// ---------- 各数据段的 JSON 编码（纯函数） ----------
+
+// Rated 条目集合 -> JSON 数组。
+fun encRatedList(xs: List[Rated]): Str = joinJsonElems(map(xs) { r => encRated(r) })
+
+fun encRated(r: Rated): Str = joinFields(cons(jsonField("level", jsonLit(r.level)), cons(jsonField("name", jsonLit(r.name)), emptyList())))
+
+fun encStrList(xs: List[Str]): Str = joinJsonElems(map(xs) { t => jsonLit(t) })
+
+// 药代资料 -> JSON 对象（Nat 经 toStr 存为数字串，读回用 parseNat；Rat 直接作 JSON 数）。
+fun encPkList(xs: List[PkProfile]): Str = joinJsonElems(map(xs) { p => encPk(p) })
+
+fun encPk(p: PkProfile): Str = joinFields(cons(
+    jsonField("route", jsonLit(p.route)), cons(
+    jsonField("form", jsonLit(p.form)), cons(
+    jsonField("halfLife", jsonLit(toStr(p.halfLife))), cons(
+    jsonField("tmax", jsonLit(p.tmax)), cons(
+    jsonField("clearance", jsonLit(p.clearance)), cons(
+    jsonField("curve", jsonLit(p.curve)), cons(
+    jsonField("bio", toStr(p.bio)), cons(
+    jsonField("metabolites", encRatedList(p.metabolites)), emptyList())))))))))
+
+fun encDrug(d: Drug): Str = joinFields(cons(
+    jsonField("name", jsonLit(d.name)), cons(
+    jsonField("category", jsonLit(d.category)), cons(
+    jsonField("tags", encStrList(d.tags)), cons(
+    jsonField("description", jsonLit(d.description)), cons(
+    jsonField("effects", encRatedList(d.effects)), cons(
+    jsonField("enzymes", encStrList(d.enzymes)), cons(
+    jsonField("inhibitions", encRatedList(d.inhibitions)), cons(
+    jsonField("pk", encPkList(d.pk)), cons(
+    jsonField("acuteTher", encRatedList(d.acuteTher)), cons(
+    jsonField("chronicTher", encRatedList(d.chronicTher)), cons(
+    jsonField("acuteAdv", encRatedList(d.acuteAdv)), cons(
+    jsonField("chronicAdv", encRatedList(d.chronicAdv)), cons(
+    jsonField("withdraw", encRatedList(d.withdraw)), cons(
+    jsonField("overdose", encRatedList(d.overdose)), emptyList())))))))))))))))
+
+// 药库 -> JSON 数组文本（写 storage 前的中间形态）。
+fun encDrugArray(xs: List[Drug]): Str = joinJsonElems(map(xs) { d => encDrug(d) })
+
+// ---------- core.json 导航助手（读取侧，纯函数） ----------
+
+// Json 值取字符串字段（缺字段/非字符串 -> ""）。
+fun jsonStrField(j: Json, k: Str): Str = when (jsonGet(j, k)) {
+    is Some(v) => getOrElse(jsonStr(v), "")
+    None => ""
+}
+
+// Json 标量取字符串。
+fun jsonStrVal(j: Json): Str = getOrElse(jsonStr(j), "")
+
+// Json 数组字段 -> List[Json]（缺字段/非数组 -> 空表）。
+fun jsonListField(j: Json, k: Str): List[Json] = when (jsonGet(j, k)) {
+    is Some(v) => getOrElse(jsonToList(v), emptyList())
+    None => emptyList()
+}
+
+// Nat 字段（数字串经 parseNat；坏值回退 0）。
+fun jsonNatField(j: Json, k: Str): Nat = parseNatOr(jsonStrField(j, k), 0)
+
+// Rat 字段（JSON 数）。
+fun jsonRatField(j: Json, k: Str): Rat = when (jsonGet(j, k)) {
+    is Some(v) => getOrElse(jsonNum(v), 0.0)
+    None => 0.0
+}
+
+fun parseNatOr(s: Str, d: Nat): Nat = when (parseNat(s)) {
+    is Some(v) => v
+    None => d
+}
+
+// ---------- core.json -> 数据模型（读取侧） ----------
+
+fun decRated(j: Json): Rated = Rated(level = jsonStrField(j, "level"), name = jsonStrField(j, "name"))
+fun decRatedList(j: Json, k: Str): List[Rated] = map(jsonListField(j, k)) { o => decRated(o) }
+fun decStrList(j: Json, k: Str): List[Str] = map(jsonListField(j, k)) { o => jsonStrVal(o) }
+
+fun decPk(j: Json): PkProfile = PkProfile(
+    route = jsonStrField(j, "route"),
+    form = jsonStrField(j, "form"),
+    halfLife = jsonNatField(j, "halfLife"),
+    tmax = jsonStrField(j, "tmax"),
+    clearance = jsonStrField(j, "clearance"),
+    curve = jsonStrField(j, "curve"),
+    bio = jsonRatField(j, "bio"),
+    metabolites = decRatedList(j, "metabolites")
+)
+
+fun decPkList(j: Json, k: Str): List[PkProfile] = map(jsonListField(j, k)) { o => decPk(o) }
+
+fun decodeDrug(j: Json): Drug = Drug(
+    name = jsonStrField(j, "name"),
+    category = jsonStrField(j, "category"),
+    tags = decStrList(j, "tags"),
+    description = jsonStrField(j, "description"),
+    effects = decRatedList(j, "effects"),
+    enzymes = decStrList(j, "enzymes"),
+    inhibitions = decRatedList(j, "inhibitions"),
+    pk = decPkList(j, "pk"),
+    acuteTher = decRatedList(j, "acuteTher"),
+    chronicTher = decRatedList(j, "chronicTher"),
+    acuteAdv = decRatedList(j, "acuteAdv"),
+    chronicAdv = decRatedList(j, "chronicAdv"),
+    withdraw = decRatedList(j, "withdraw"),
+    overdose = decRatedList(j, "overdose")
+)
+
+// ---------- 持久化（平台能力：storage 键值） ----------
+
+// 药库 storage 键。
+fun drugsKey(): Str = "drugs"
+
+// 写库：拼 JSON 文本 -> jsonParse 校验 + jsonToStr 标准化 -> storagePut。
+// 文本非法（转义越界等）时不入库（保守降级：返回 false 由调用方处理）。
+@impure
+fun saveDrugs(xs: List[Drug]): Bool {
+    var text: Str = encDrugArray(xs)
+    var ok: Bool = when (jsonParse(text)) {
+        is Some(j) => true
+        None => false
+    }
+    if (ok) {
+        unchecked var v: Str = when (jsonParse(text)) { is Some(j) => jsonToStr(j); None => text }
+        unchecked storagePut(drugsKey(), v)
+    }
+    return ok
+}
+
+// 读库：storageGet -> jsonParse -> jsonToList -> 逐药 decode；任何失败 -> 空表。
+@impure
+fun loadDrugs(): List[Drug] {
+    var s: Str = storageGet(drugsKey())
+    return when (jsonParse(s)) {
+        is Some(j) => when (jsonToList(j)) {
+            is Some(items) => map(items) { o => decodeDrug(o) }
+            None => emptyList()
+        }
+        None => emptyList()
+    }
+}
+
+// 读药名表（轻量接口：UI 的药库名单）。
+@impure
+fun loadDrugNames(): List[Str] = map(loadDrugs()) { d => d.name }

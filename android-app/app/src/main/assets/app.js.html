@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Sublimation</title></head>
+<body>
+  <script>
+    // 桥传输引导：原生 addJavascriptInterface 不可用时（华为 hardened WebView 会剥掉），
+    // 自动改用 prompt("dsh:<kind>:<argsJson>") 通道——由 KT 端 onJsPrompt 拦截执行。
+    if (typeof window.__dshAndroid !== "function") {
+      window.__dshAndroid = function (kind, args) {
+        var a = (args === undefined || args === null) ? "[]" : JSON.stringify(args);
+        try { return prompt("dsh:" + kind + ":" + a); } catch (e) { return "null"; }
+      };
+      window.__dshShim = "prompt";
+    } else {
+      window.__dshShim = "native";
+    }
+    window.onerror = function (msg, src, ln, col) {
+      try { __dshAndroid("log", ["JSERR: " + msg + " @" + ln + ":" + col, 4]); } catch (e) {}
+      return false;
+    };
+    var __origLog = console.log.bind(console);
+    console.log = function () {
+      try { __dshAndroid("log", [Array.prototype.join.call(arguments, " "), 1]); } catch (e) {}
+      __origLog.apply(console, arguments);
+    };
+    __dshAndroid("log", ["PAGE-LOADED shim=" + window.__dshShim, 1]);
+  </script>
+  <script src="app.js"></script>
+  <script>
+    __dshAndroid("log", ["APPJS-LOADED", 1]);
+  </script>
+</body>
+</html>

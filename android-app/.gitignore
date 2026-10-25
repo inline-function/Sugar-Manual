@@ -1,0 +1,9 @@
+# Gradle / AGP 构建产物
+build/
+.gradle/
+local.properties
+/build/
+app/build/
+captures/
+.cxx/
+*.iml

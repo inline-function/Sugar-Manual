@@ -1,0 +1,34 @@
+// app/data/fluvoxamine.subl —— 氟伏沙明完整资料
+// 按 docs/语法糖手册.md「药物资料」逐条录入（用户自定义药物走同一模型）。
+
+// 条目串助手（纯属源码可读性：级距串 -> Rated 条目表）。
+fun ratedFrom(s: Str): Rated {
+    var p: List[Str] = strSplit(s, "|")
+    return Rated(level = nthStr(p, 0), name = nthStr(p, 1))
+}
+fun nthStr(xs: List[Str], n: Nat): Str = getOrElse(elementAt(xs, n), "")
+
+// 以 | 分条目（level|name），以 ; 分隔多条。
+fun ratedList(text: Str): List[Rated] = map(strSplit(text, ";")) { e => ratedFrom(e) }
+// 以 , 分隔多个字符串。
+fun strList(text: Str): List[Str] = strSplit(text, ",")
+
+fun fluvoxamine(): Drug = Drug(
+    name = "氟伏沙明",
+    category = "处方药",
+    tags = strList("选择性血清素再摄取抑制剂,SSRIs,五朵金花,抗抑郁药,抗强迫药,抗焦虑药,助眠药"),
+    description = "氟伏沙明是一种选择性血清素再摄取抑制剂类抗抑郁药，主要用于治疗抑郁症和强迫症。它通过抑制中枢神经突触对血清素的再摄取，提高突触间隙递质浓度，从而发挥抗抑郁、抗焦虑作用。常见不良反应为恶心、呕吐等胃肠道症状，通常服药两周后减轻。",
+    effects = ratedList("强效|血清素转运体抑制;极弱|正肾素转运体抑制;强效|激动 σ1 受体;极弱|α1-肾上腺素能拮抗"),
+    enzymes = strList("CYP2D6,CYP1A2"),
+    inhibitions = ratedList("强效|CYP1A2可逆性抑制;强效|CYP2C19可逆性抑制;弱效|CYP2C9可逆性抑制;弱效|CYP3A4可逆性抑制"),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 15, tmax = "不稳定",
+        clearance = "一级", curve = "对数", bio = 0.5, metabolites = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|镇静"),
+    chronicTher = ratedList("极强|抗强迫;强效|抗抑郁;中效|抗焦虑"),
+    acuteAdv = ratedList("罕见|血清素综合征"),
+    chronicAdv = ratedList("十分常见|恶心;常见|嗜睡;常见|失眠;常见|腹泻;常见|厌食;常见|头晕;常见|出汗;常见|震颤;少见|自杀冲动;罕见|低血钠症"),
+    withdraw = ratedList("常见|头晕;常见|失眠;常见|激越;常见|焦虑;常见|易激惹;常见|情绪不稳;常见|恶心;常见|腹泻;少见|意识模糊"),
+    overdose = ratedList(">1000mg|血清素综合征")
+)

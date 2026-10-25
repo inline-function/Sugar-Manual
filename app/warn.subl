@@ -1,0 +1,133 @@
+// app/warn.subl —— 预警引擎（纯函数）
+//
+// 规格见 docs/语法糖手册.md §预警：
+//   不良反应预警 —— 联用药品中「相同不良反应名称」的频率权重合计。
+//     权重：罕见 1 / 少见 2 / 常见 3 / 十分常见 5；阈值：提示 3 / 警告 5 / 危险 7
+//   代谢相互作用 —— 联用药品「CYP 酶抑制交集」的抑制权重合计。
+//     权重：弱效 1 / 中效 2 / 强效 3 / 极强 5；阈值：提示 1 / 警告 3 / 危险 5
+//
+// 语义约定（对规格的两点落地，注释存档）：
+//   1. 「相同不良反应」按条目计：每药统计其急性 + 慢性两段清单，同名条目合计
+//      （即同一药品急性/慢性重复列出某反应也算重复证据——保守侧）；
+//   2. 「酶抑制交集」按药品数计：某酶被 >= 2 个联用药品关联（抑制或经代谢）
+//      才触发，权重只计抑制剂（经代谢本身不贡献权重——受控词表无对应权重）。
+
+// 预警等级：0 无 / 1 提示 / 2 警告 / 3 危险。
+struct Trigger(name: Str, score: Nat)
+struct Alert(level: Nat, items: List[Trigger])
+
+// 预警等级名（UI 用）。
+fun levelName(level: Nat): Str = when (level) {
+    1 => "提示"
+    2 => "警告"
+    3 => "危险"
+    else => "无"
+}
+
+// ---------- 权重表与阈值（规格固定值） ----------
+
+// 不良反应频率权重：罕见 1 / 少见 2 / 常见 3 / 十分常见 5（词表外 0）。
+fun adrWeight(level: Str): Nat = when (level) {
+    "罕见" => 1
+    "少见" => 2
+    "常见" => 3
+    "十分常见" => 5
+    else => 0
+}
+
+// 酶抑制权重：弱效 1 / 中效 2 / 强效 3 / 极强 5（词表外 0）。
+fun inhibWeight(level: Str): Nat = when (level) {
+    "弱效" => 1
+    "中效" => 2
+    "强效" => 3
+    "极强" => 5
+    else => 0
+}
+
+// 不良反应预警阈值：提示 3 / 警告 5 / 危险 7。
+fun advLevel(score: Nat): Nat = if (score >= 7) 3 else if (score >= 5) 2 else if (score >= 3) 1 else 0
+
+// 代谢相互作用阈值：提示 1 / 警告 3 / 危险 5。
+fun metabLevel(score: Nat): Nat = if (score >= 5) 3 else if (score >= 3) 2 else if (score >= 1) 1 else 0
+
+// ---------- 不良反应预警 ----------
+
+// 条目计分表：名称 -> (权重合计, 条目数)。
+struct Score(name: Str, total: Nat, count: Nat)
+
+// 联用药品不良反应聚合：逐并入各药急性 + 慢性两段。
+fun aggAdr(drugs: List[Drug]): List[Score] =
+    drugs.fold(emptyList()) { acc, d => aggSection(aggSection(acc, d.acuteAdv), d.chronicAdv) }
+
+// 把一段（急性或慢性）条目并入聚合表。
+fun aggSection(acc: List[Score], xs: List[Rated]): List[Score] =
+    xs.fold(acc) { a, e => addScore(a, e.name, adrWeight(e.level)) }
+
+// 为名称加一次权重（表内已有则累加）。
+fun addScore(acc: List[Score], name: Str, w: Nat): List[Score] = when (acc) {
+    Nil => cons(Score(name, w, 1), emptyList())
+    is Cons(s, rest) => if (s.name == name)
+        cons(Score(name, s.total + w, s.count + 1), rest)
+    else cons(s, addScore(rest, name, w))
+    else => acc
+}
+
+// 不良反应预警：触发项 = 条目数 >= 2 的同名反应；等级 = 各触发项等级之最高者。
+fun adrAlert(drugs: List[Drug]): Alert {
+    var ts: List[Trigger] = adrTriggers(drugs)
+    return Alert(maxLevelAdv(ts), ts)
+}
+
+fun adrTriggers(drugs: List[Drug]): List[Trigger] =
+    map(filter(aggAdr(drugs)) { s => s.count >= 2 }) { s => Trigger(s.name, s.total) }
+
+fun maxLevelAdv(ts: List[Trigger]): Nat =
+    ts.fold(0) { acc, t => if (advLevel(t.score) > acc) advLevel(t.score) else acc }
+
+// ---------- 代谢相互作用预警 ----------
+
+// 全部出现的酶名并集（来自各药抑制清单与经代谢酶集）。
+fun allEnzymes(drugs: List[Drug]): List[Str] =
+    distinct(joinEnzymeLists(map(drugs) { d => append(inhibNames(d.inhibitions), d.enzymes) }))
+
+fun inhibNames(xs: List[Rated]): List[Str] = map(xs) { r => r.name }
+
+// 字符串列表的列表拼接。
+fun joinEnzymeLists(xss: List[List[Str]]): List[Str] = xss.fold(emptyList()) { acc, ys => append(acc, ys) }
+
+// 与酶 e 关联（抑制或经代谢）的联用药品数。
+fun relatedCount(drugs: List[Drug], e: Str): Nat =
+    drugs.fold(0) { acc, d => if (relatesTo(d, e)) acc + 1 else acc }
+
+// 药品 d 与酶 e 关联：e 在 d 的抑制清单或经代谢酶集中。
+fun relatesTo(d: Drug, e: Str): Bool =
+    if (contains(d.enzymes, e)) true else containsRated(d.inhibitions, e)
+
+fun containsRated(xs: List[Rated], e: Str): Bool = xs.fold(false) { acc, r => if (r.name == e) true else acc }
+
+// 联用药品对酶 e 的抑制权重合计（仅抑制剂贡献）。
+fun inhibTotal(drugs: List[Drug], e: Str): Nat =
+    drugs.fold(0) { acc, d => acc + inhibWeightOf(d.inhibitions, e) }
+
+fun inhibWeightOf(xs: List[Rated], e: Str): Nat =
+    xs.fold(0) { acc, r => if (r.name == e) acc + inhibWeight(r.level) else acc }
+
+// 代谢相互作用预警：触发项 = 被 >= 2 个药品关联且抑制权重 > 0 的酶；等级 = 各触发项等级之最高者。
+fun metabAlert(drugs: List[Drug]): Alert {
+    var ts: List[Trigger] = metabTriggers(drugs)
+    return Alert(maxLevelMetab(ts), ts)
+}
+
+fun metabTriggers(drugs: List[Drug]): List[Trigger] =
+    map(filter(metabScores(drugs)) { s => if (s.count >= 2) s.total > 0 else false }) { s => Trigger(s.name, s.total) }
+
+fun metabScores(drugs: List[Drug]): List[Score] =
+    map(allEnzymes(drugs)) { e => Score(e, inhibTotal(drugs, e), relatedCount(drugs, e)) }
+
+fun maxLevelMetab(ts: List[Trigger]): Nat =
+    ts.fold(0) { acc, t => if (metabLevel(t.score) > acc) metabLevel(t.score) else acc }
+
+// ---------- 综合输出 ----------
+
+// 两侧预警的总体最高等级（首页预警栏用）。
+fun maxAlertLevel(a: Alert, b: Alert): Nat = if (b.level > a.level) b.level else a.level

@@ -1,0 +1,72 @@
+// app/main.subl —— 语法糖手册主界面（数据/引擎层先行；完整首页 UI 由 UI 任务整合）
+//
+// 本占位界面已覆盖 SfA 链路全段：@view/@composable 处理器参与、stdl 视图、
+// storage 持久化（药库 JSON）、平台桥（log/storage）。UI 任务在此基础上搭建
+// 首页三段式（浓度折线 / 预警栏 / 服用药品列表）与「服用药物」悬浮按钮。
+
+@impure
+fun main(): Null {
+    onCreate {
+        unchecked log("Sugar Manual 数据引擎层已加载", 2)
+    }
+    onStart {
+        layout(content)
+    }
+}
+
+// 示例联用集：用户药库（storage 持久化）+ 预置示例资料。
+@impure
+fun coadmin(): List[Drug] = append(loadDrugs(), cons(fluvoxamine(), cons(paroxetine(), emptyList())))
+
+// 示例剂量：常释 100mg × 2 次，间隔 24h（对应氟伏沙明口服常释 halfLife=15h、F=0.5）。
+fun demoDoses(): List[Dose] = cons(Dose(100.0, 0), cons(Dose(100.0, 24), emptyList()))
+
+@composable
+fun content(): Box {
+    unchecked @mut var drugs: List[Drug] = coadmin()
+    var adr: Alert = adrAlert(drugs)
+    var metab: Alert = metabAlert(drugs)
+    var doses: List[Dose] = demoDoses()
+    var vals: List[Rat] = seriesValues(doses, 15, 0.5, 0, 48, 4)
+    var times: List[Str] = seriesLabels(0, 48, 4)
+    @mut var ok: Bool = false
+    @mut var headline = Text(text = "语法糖手册", size = 22, bold = true)
+    @mut var summary = Text(text = summaryLine(adr, metab), size = 15)
+    @mut var adrRows = triggerRows(adr.items)
+    @mut var metabRows = triggerRows(metab.items)
+    @mut var timeline = TimelineView(times = times, labels = map(vals) { v => toStr(v) })
+    return Box(modifier = Plain()) {
+        Box(modifier = Plain()) { headline }
+        Box(modifier = Plain()) { summary }
+        Box(modifier = Plain()) { adrRows }
+        Box(modifier = Plain()) { metabRows }
+        Box(modifier = Plain()) { timeline }
+        Box(modifier = Plain(), orientation = "horizontal") {
+            Button(onClick = {
+                unchecked ok = saveDrugs(cons(fluvoxamine(), cons(paroxetine(), emptyList())))
+                headline.text = if (ok) "已保存示例药库" else "保存失败"
+            }) {
+                Text(text = "保存示例药库")
+            }
+        }
+    }
+}
+
+// 预警摘要行（「不良反应：危险 / 代谢：警告」）。
+fun summaryLine(adr: Alert, metab: Alert): Str =
+    concat(concat(concat("不良反应：", levelName(adr.level)), concat("  代谢：", levelName(metab.level))), "（演示联用）")
+
+// 触发项清单：每行「名称  权重」。
+@composable
+fun triggerRows(ts: List[Trigger]): Box = Box(modifier = Plain()) {
+    triggerBody(reverse(ts))
+}
+
+@composable
+fun triggerBody(xs: List[Trigger]): Any = when (xs) {
+    Nil => Box(modifier = Plain()) {}
+    is Cons(t, rest) => Box(modifier = Plain(), orientation = "vertical") {
+        Text(text = concat(concat(t.name, "  权重 "), toStr(t.score)), size = 13)
+        triggerBody(rest)
+    }
+}

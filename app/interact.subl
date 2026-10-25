@@ -1,0 +1,23 @@
+// app/data/interact.subl —— 引擎联用演示资料（帕罗西汀，最小演示子集）
+// 用途：预警引擎验收场景的二药联用（氟伏沙明 + 帕罗西汀）。这不是完整资料——
+// 真实录入请按 fluvoxamine().subl 的完整模型逐段填写。
+// 演示设定（符合临床药理事实）：帕罗西汀是 CYP2D6 强抑制剂，氟伏沙明经
+// CYP2D6 代谢 → 二者联用存在 CYP2D6 抑制-底物相互作用；两药同为 SSRI，
+// 共享恶心/嗜睡/失眠等不良反应。
+
+fun paroxetine(): Drug = Drug(
+    name = "帕罗西汀",
+    category = "处方药",
+    tags = strList("SSRIs,抗抑郁药"),
+    description = "演示用最小资料（预警引擎联用示例），非完整药物资料。",
+    effects = ratedList("强效|血清素转运体抑制"),
+    enzymes = strList("CYP2D6"),
+    inhibitions = ratedList("极强|CYP2D6"),
+    pk = emptyList(),
+    acuteTher = emptyList(),
+    chronicTher = ratedList("强效|抗抑郁"),
+    acuteAdv = ratedList("常见|恶心"),
+    chronicAdv = ratedList("少见|嗜睡;常见|失眠"),
+    withdraw = emptyList(),
+    overdose = emptyList()
+)

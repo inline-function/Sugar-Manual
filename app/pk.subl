@@ -1,0 +1,46 @@
+// app/pk.subl —— 药代动力学估算（纯函数）
+//
+// 模型（一级清除，规格 docs/语法糖手册.md §药代动力学）：
+//   C(t) = Σ_i F · D_i · e^(−k·(t − t_i)),    k = ln 2 / T½
+// core 无 ln/exp 内建，故用等价形式：e^(−k·Δt) = 2^(−Δt/T½) = pow(0.5, Δt/T½)
+// （k = ln2/T½ 保证经过 T½ 时间浓度正好减半，与药典半衰期定义一致）。
+//
+// 简化（保守自洽，此处逐条存档）：
+//   ① 忽略吸收相与分布容积：给药后即刻全量分布、即刻开始清除。对达峰时间
+//     「不稳定」（如氟伏沙明）或资料缺失的场景，这是浓度的保守上界近似
+//     （真实峰值更低且更晚出现）；UI 侧展示时已按「估算」措辞标注。
+//   ② 浓度单位为相对浓度（剂量 × 生物利用度），不回推 mg/L。
+//   ③ 剂量曲线「对数」按 Emax 模型建模（doseEffect），半对数坐标下呈标准 S 形。
+
+// 单次给药：剂量与给药后时刻（小时）。
+struct Dose(amount: Rat, time: Nat)
+
+// ln 2 —— 一级清除速率常数的分子（数学常数，非魔数）。
+fun ln2(): Rat = 0.6931471805599453
+
+// 一级清除速率常数 k = ln 2 / T½。
+fun eliminationRate(tHalf: Nat): Rat = ln2() / toRat(tHalf)
+
+// 衰减因子 0.5^(Δt/T½)（等价于 e^(−kΔt)）。
+fun decay(tHalf: Nat, dt: Nat): Rat = pow(0.5, toRat(dt) / toRat(tHalf))
+
+// t 时刻血药浓度估算（多次给药叠加：仅计入 t 之前已给的剂量）。
+fun concentrationAt(doses: List[Dose], tHalf: Nat, bio: Rat, t: Nat): Rat =
+    doses.fold(0.0) { acc, d => if (t >= d.time) acc + d.amount * bio * decay(tHalf, t - d.time) else acc }
+
+// 折线数据序列（首页时间线折线图用）：[from, to] 每 step 小时采样一点（右闭含端点）。
+fun seriesValues(doses: List[Dose], tHalf: Nat, bio: Rat, from: Nat, to: Nat, step: Nat): List[Rat] {
+    var n: Nat = (to - from) / step
+    return map(range(0, n + 1)) { i => concentrationAt(doses, tHalf, bio, from + i * step) }
+}
+
+// 时间轴刻度（与 seriesValues 同采样点）。
+fun seriesLabels(from: Nat, to: Nat, step: Nat): List[Str] {
+    var n: Nat = (to - from) / step
+    return map(range(0, n + 1)) { i => concat(toStr(from + i * step), "h") }
+}
+
+// 对数剂量-效应曲线（Emax 模型）：E(d) = d / (d + ED50)。
+// 半对数坐标下为标准 S 形曲线（即文档「剂量曲线：对数」的药理形态），
+// 返回相对效应 0~1；d <= 0 时为 0。
+fun doseEffect(d: Rat, ed50: Rat): Rat = if (d <= 0.0) 0.0 else d / (d + ed50)

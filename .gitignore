@@ -1,0 +1,25 @@
+# build
+/build
+/out
+
+# 同步进来的工作区依赖（不入库；app/core 为入库快照）
+/core/
+
+# 编译结果与临时产物
+app/out.js
+*.log
+.DS_Store
+
+# android shell 构建产物
+android-app/.gradle/
+android-app/local.properties
+android-app/*/build/
+android-app/build/
+android-app/app/src/main/assets/app.js
+
+# IDE
+.idea/
+*.iml
+
+# 生成产物（桌面 CLI 验收）
+app/out.test.js
