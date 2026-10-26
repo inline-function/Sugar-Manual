@@ -1,0 +1,18 @@
+// android/Chart.subl —— 图表视图（android doc/安卓标准库.md §图表视图）
+//
+// 可滑动的数据序列图表：kind="line"（默认）为带数据点与渐变填充的折线图，
+// kind="bar" 为柱状图。points 为 Y 值序列（List[Rat]，如 t28/pk.subl 的
+// seriesValues 浓度序列）；labels 为逐点 X 轴标注（如 seriesLabels 的 "0h"…），
+// 为空时不画 X 轴文字；color 为 "#RRGGBB" 主色（默认由 KT 端主题决定）。
+//
+// KT 端渲染协议（tag = "Chart"）：ChartView 自绘 Canvas（零第三方依赖），
+// points/labels 为 JSON 数组、kind/color 为字符串，详见标准库文档。
+
+@view struct Chart(
+    kind: Str = "line",
+    points: List[Rat] = emptyList(),
+    labels: List[Str] = emptyList(),
+    color: Str = "",
+    modifier: Modifier = Plain(),
+    body: () => Null = fun(): Null { null }
+)

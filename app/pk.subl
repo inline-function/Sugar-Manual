@@ -26,7 +26,7 @@ fun decay(tHalf: Nat, dt: Nat): Rat = pow(0.5, toRat(dt) / toRat(tHalf))
 
 // t 时刻血药浓度估算（多次给药叠加：仅计入 t 之前已给的剂量）。
 fun concentrationAt(doses: List[Dose], tHalf: Nat, bio: Rat, t: Nat): Rat =
-    doses.fold(0.0) { acc, d => if (t >= d.time) acc + d.amount * bio * decay(tHalf, t - d.time) else acc }
+    doses.fold(0.0) { acc, d => if (t >= d.time) acc + (d.amount * bio * decay(tHalf, t - d.time)) else acc }
 
 // 折线数据序列（首页时间线折线图用）：[from, to] 每 step 小时采样一点（右闭含端点）。
 fun seriesValues(doses: List[Dose], tHalf: Nat, bio: Rat, from: Nat, to: Nat, step: Nat): List[Rat] {

@@ -17,6 +17,9 @@ android-app/*/build/
 android-app/build/
 android-app/app/src/main/assets/app.js
 
+# -A 端到端 APK 构建产物（注解处理器 buildAndroidApk 输出）
+/build-apk/
+
 # IDE
 .idea/
 *.iml

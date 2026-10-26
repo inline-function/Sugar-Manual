@@ -1,0 +1,99 @@
+// app/ledger.subl —— 服药台账（「服用药物」悬浮按钮的记录层）
+//
+// 每条记录 = 药名 + 剂量(mg) + 时间（Unix 毫秒，timeNow()）。序列化沿用
+// drugs.subl 的 core/json 助手（jsonField/jsonLit/joinFields/joinJsonElems +
+// jsonStrField/jsonRatField/jsonNatField），落 storage 键 "ledger"——不另造
+// 分号/管道编码。记录按最新在前存储（cons 头插），UI 药品列表即按最近服药
+// 时间从上到下排列。
+//
+// 药代对接：台账换算成 pk.subl 的 Dose 序列——以窗口起点 t0 为 0 小时，
+// 每条记录的 hourOf = (time - t0) / msPerHour 取整小时；浓度曲线窗口为
+// windowHours()（默认 48h）。空台账回退演示剂量（demoDoses，见 main.subl）。
+
+// ---------- 结构体 ----------
+
+struct DoseRec(drug: Str, amount: Rat, time: Nat)
+
+// ---------- 时间换算与窗口 ----------
+
+fun msPerHour(): Nat = 3600000
+
+// 浓度曲线展示窗口（小时）：0..windowHours，步长 4h。
+fun windowHours(): Nat = 48
+fun stepHours(): Nat = 4
+
+// 窗口起点：now-window（固定 48 小时滑动回看窗——曲线始终展示「最近 48 小时」，
+// 记录按 (time - t0)/msPerHour 映射到 0..48 小时轴）。
+fun minusWindow(nowMs: Nat): Nat = nowMs - (windowHours() * msPerHour())
+
+// ---------- 台账 -> 药代剂量序列 ----------
+
+// 窗口内记录 -> Dose(amount, hourOf)；空台账 -> 演示剂量。
+fun ledgerDoses(recs: List[DoseRec], nowMs: Nat): List[Dose] =
+    dosesInWindow(recs, minusWindow(nowMs), nowMs)
+
+fun dosesInWindow(recs: List[DoseRec], t0: Nat, nowMs: Nat): List[Dose] =
+    if (size(recs) == 0) {
+        demoDoses()
+    } else {
+        map(filter(recs) { r => inWindow(r, t0, nowMs) }) { r => Dose(r.amount, hourOf(r, t0)) }
+    }
+
+fun inWindow(r: DoseRec, t0: Nat, nowMs: Nat): Bool = (r.time >= t0) && (r.time <= nowMs)
+
+fun hourOf(r: DoseRec, t0: Nat): Nat = (r.time - t0) / msPerHour()
+
+// ---------- 台账投影（药品列表用） ----------
+
+// 最近服药药名（台账最新在前 → 保序去重即按最近时间排序；core distinct 会
+// 重排顺序，故手写 first-seen 去重）。
+fun recentDrugs(recs: List[DoseRec]): List[Str] =
+    recs.fold(emptyList()) { acc, r => if (contains(acc, r.drug)) acc else append(acc, cons(r.drug, emptyList())) }
+
+// 最近一条记录的药名（空台账回退示例跟踪药物）。
+fun recentDrug(recs: List[DoseRec]): Str = when (recs) {
+    Nil => "氟伏沙明"
+    is Cons(r, _) => r.drug
+}
+
+// ---------- 编码（模型 -> JSON 文本；复用 drugs.subl 助手） ----------
+
+fun encDose(r: DoseRec): Str = joinFields(cons(
+    jsonField("drug", jsonLit(r.drug)), cons(
+    jsonField("amount", toStr(r.amount)), cons(
+    jsonField("time", jsonLit(toStr(r.time))), emptyList()))))
+
+fun encLedger(xs: List[DoseRec]): Str = joinJsonElems(map(xs) { r => encDose(r) })
+
+// ---------- 解码（JSON -> 模型） ----------
+
+fun decDose(j: Json): DoseRec = DoseRec(
+    drug = jsonStrField(j, "drug"),
+    amount = jsonRatField(j, "amount"),
+    time = jsonNatField(j, "time"))
+
+// ---------- 持久化（core/json 校验 + 规范化 + storage） ----------
+
+fun ledgerKey(): Str = "ledger"
+
+@impure
+fun saveLedger(xs: List[DoseRec]): Bool {
+    var text: Str = encLedger(xs)
+    var ok: Bool = when (jsonParse(text)) {
+        is Some(j) => true
+        None => false
+    }
+    if (ok) {
+        unchecked var v: Str = when (jsonParse(text)) { is Some(j) => jsonToStr(j); None => text }
+        unchecked storagePut(ledgerKey(), v)
+    }
+    return ok
+}
+
+@impure
+fun loadLedger(): List[DoseRec] = when (jsonParse(storageGet(ledgerKey()))) {
+    is Some(j) => map(jsonToListOrEmpty(j)) { o => decDose(o) }
+    None => emptyList()
+}
+
+fun jsonToListOrEmpty(j: Json): List[Json] = getOrElse(jsonToList(j), emptyList())

@@ -22,8 +22,10 @@ import android.widget.LinearLayout
 import android.widget.HorizontalScrollView
 import android.widget.ProgressBar
 import android.widget.ScrollView
+import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.Toast
+import android.content.res.ColorStateList
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.materialswitch.MaterialSwitch
@@ -370,6 +372,7 @@ class DshBridge(private val activity: MainActivity) {
             "Progress" -> buildProgress(node)
             "Chart" -> buildChart(node)
             "TimelineView" -> buildTimelineView(node)
+            "FloatingButton" -> buildFloatingButton(node, children)
             else -> buildText(node)
         }
     }
@@ -400,11 +403,51 @@ class DshBridge(private val activity: MainActivity) {
             if (c != 0) ctx.setBackgroundColor(c)
         }
         setModifier(ctx, node.opt("modifier"))
+        // 悬浮按钮（FloatingButton）子视图从线性流中抽出，父 Box 改用 FrameLayout，
+        // FAB 按底部居右重力叠放（MD FAB 定位）；其余子视图照常竖排。
+        var hasFab = false
         if (children != null) {
             for (i in 0 until children.length()) {
                 val child = children.optJSONObject(i) ?: continue
+                val tag = child.optString("tag", "")
+                if (tag == "FloatingButton") { hasFab = true; continue }
                 ctx.addView(buildView(child.toString()))
             }
+        }
+        if (hasFab) {
+            val frame = FrameLayout(activity)
+            frame.layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT)
+            ctx.layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT)
+            frame.addView(ctx)
+            val density = activity.resources.displayMetrics.density
+            if (children != null) {
+                for (i in 0 until children.length()) {
+                    val child = children.optJSONObject(i) ?: continue
+                    if (child.optString("tag", "") != "FloatingButton") continue
+                    val fab = buildView(child.toString())
+                    val lp = FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        Gravity.BOTTOM or Gravity.END)
+                    lp.setMargins(0, 0, (16 * density).toInt(), (16 * density).toInt())
+                    frame.addView(fab, lp)
+                }
+            }
+            return frame
+        }
+        // scrollable：内容包进 ScrollView（纵向）/HorizontalScrollView（横向）。
+        if (node.optBoolean("scrollable", false)) {
+            val scroller = if (node.optString("orientation", "vertical") == "horizontal")
+                HorizontalScrollView(activity) else ScrollView(activity)
+            ctx.layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT)
+            scroller.addView(ctx)
+            return scroller
         }
         return ctx
     }
@@ -597,6 +640,27 @@ class DshBridge(private val activity: MainActivity) {
         scroller.addView(line)
         setModifier(scroller, node.opt("modifier"))
         return scroller
+    }
+
+    /** 悬浮圆角按钮（@view FloatingButton）：MaterialButton + 圆角 + 主色 tint。 */
+    private fun buildFloatingButton(node: JSONObject, children: JSONArray?): View {
+        val btn = MaterialButton(activity)
+        btn.text = extractText(children) ?: node.optString("label", "")
+        btn.cornerRadius = node.optInt("cornerRadius", 28)
+        val colorHex = node.optString("color", "")
+        if (colorHex.isNotEmpty()) {
+            val c = parseColor(colorHex)
+            if (c != 0) btn.backgroundTintList = ColorStateList.valueOf(c)
+        }
+        val onClickId = node.optString("onClick", "")
+        if (onClickId.isNotEmpty()) {
+            btn.setOnClickListener {
+                activity.web.evaluateJavascript(
+                    "try{ globalThis.__dshFn_" + onClickId + "(); }catch(e){ console.log(e); }", null)
+            }
+        }
+        setModifier(btn, node.opt("modifier"))
+        return btn
     }
 
     private fun buildProgress(node: JSONObject): View {

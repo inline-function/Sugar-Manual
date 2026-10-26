@@ -1,0 +1,19 @@
+// android/FloatingButton.subl —— 悬浮圆角按钮（MD FAB，android doc/安卓标准库.md §悬浮按钮）
+//
+// MD 风格的浮动操作按钮：圆角实心色块，悬浮于父容器右下角（KT 端把含
+// FloatingButton 子视图的 Box 渲染为 FrameLayout，FAB 按底部居右重力放置）。
+// label 为按钮文字（亦可经 body 装文本子视图，与 Button 同）；color 为主色
+// （"#RRGGBB"，默认 MD 紫 #6750A4）；cornerRadius 为圆角半径（sp 级数值，
+// 28 约为正圆角）；onClick 为点击回调。
+//
+// KT 端渲染协议（tag = "FloatingButton"）：MaterialButton + cornerRadius +
+// backgroundTint，onClick 同 Button（回调 JS 端注册的 lambda）。
+
+@view struct FloatingButton(
+    label: Str = "",
+    color: Str = "#6750A4",
+    cornerRadius: Nat = 28,
+    onClick: (Any) => Null = fun(_: Any): Null { null },
+    modifier: Modifier = Plain(),
+    body: () => Null = fun(): Null { null }
+)
