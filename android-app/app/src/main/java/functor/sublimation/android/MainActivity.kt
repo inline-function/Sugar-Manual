@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+
 package functor.sublimation.android
 
 import android.os.Bundle
@@ -7,20 +9,42 @@ import android.webkit.JsResult
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import functor.sublimation.android.gen.Palette
+import functor.sublimation.android.gen.SublApp_content
 import org.json.JSONObject
+
 /**
- * Sublimation 安卓壳：应用仅由一个活动构成。
+ * Sublimation 安卓壳（Compose 版）：**布局 = Kotlin Compose，逻辑 = WebView 里的 subl JS**。
  *
- * 使用 AndroidX 兼容活动（AppCompatActivity）——承载 Material 组件与 Activity Result API。
- * JS 端（编译产物 out.js）跑在 WebView 里，经 [DshBridge]（注入为全局 __dshAndroid）
- * 与 KT 端通信：log/toast/layout/生命周期回调、意图、平台能力、recomposion 视图更新通知。
- * 布局由 JS 端的 @view 结构体树描述——KT 端动态构建原生视图，不使用 Compose。
+ * 定案（用户）：SfA 把 subl 的 `@compose` 部分编译成 Kotlin Compose 函数；Compose 函数内部继续用
+ * WebView 跑 subl 编译出的 JS。严格解耦——Compose 不解释视图 JSON，JS 不构建视图。
+ *
+ * 页面：
+ *   - `BuildConfig.SUBL_COMPOSE_SAMPLE`：挂 **_样例首页_** `gen/GeneratedComposeSample.kt` 的
+ *     `SublApp_content()`（= Sugar-Manual `main.subl` 的编译期产物形态，契约见
+ *     `android doc/Compose代码生成契约.md`）。渲染它的同时拉起旁边一个 0 尺寸 WebView 跑 JS 逻辑。
+ *   - `BuildConfig.SUBL_COMPOSE_GENERATED`：生成器（t57）产物 `gen/GeneratedCompose.kt` 的 `SublRoot()`。
+ *   - 否则：**逻辑控制台**（不渲染任何 subl 视图，只显示推送进 Compose 的状态槽 + 运行 JS 逻辑）。
  */
-class MainActivity : AppCompatActivity() {
+class MainActivity : ComponentActivity() {
     private val tag = "Sublimation"
     internal lateinit var web: WebView
     internal val bridge = DshBridge(this)
@@ -32,22 +56,57 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 文件选取：ActivityResultContracts.GetContent——mime 由 JS 端传入。
         pickLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
             val key = pendingPickKey
             pendingPickKey = null
-            val js = if (key.isNullOrEmpty()) "" else {
+            if (!key.isNullOrEmpty()) {
                 val arg = if (uri == null) "null" else JSONObject.quote(uri.toString())
-                "try{ globalThis.__dshFn_" + key + "(" + arg + "); }catch(e){ console.log(e); }"
+                web.evaluateJavascript(
+                    "try{ globalThis.__dshFn_" + key + "(" + arg + "); }catch(e){ console.log(e); }", null)
             }
-            if (js.isNotEmpty()) web.evaluateJavascript(js, null)
         }
 
-        web = WebView(this)
-        web.settings.javaScriptEnabled = true
-        web.settings.domStorageEnabled = true
-        web.addJavascriptInterface(bridge, "__dshAndroid")
-        web.setWebChromeClient(object : WebChromeClient() {
+        web = buildWebView()
+        // 逻辑 ↔ 布局 的桥：Compose 侧读状态槽、写回调（契约 §4）
+        DshComposeHost.attach(web) { f -> runOnUiThread(f) }
+        web.loadUrl("file:///android_asset/app.js.html")
+
+        val scheme = lightColorScheme(
+            primary = Palette.primary,
+            onPrimary = Palette.onPrimary,
+            primaryContainer = Palette.primaryContainer,
+            onPrimaryContainer = Palette.onPrimaryContainer,
+            surface = Palette.surface,
+            onSurface = Palette.onSurface,
+            surfaceVariant = Palette.surfaceVariant,
+            onSurfaceVariant = Palette.onSurfaceVariant,
+            outline = Palette.outline,
+            outlineVariant = Palette.outlineVariant,
+            error = Palette.error,
+        )
+        setContent {
+            MaterialTheme(colorScheme = scheme) {
+                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                    when {
+                        // 生成器（t57）产出 gen/GeneratedCompose.kt 的 SublRoot()：存在即由它决定页面；
+                        // 否则挂样例（gen/GeneratedComposeSample.kt ＝ main.subl 的编译期产物形态）；
+                        // 都没有就只是逻辑控制台。
+                        BuildConfig.SUBL_COMPOSE_GENERATED || BuildConfig.SUBL_COMPOSE_SAMPLE -> SublApp_content()
+                        else -> LogicConsole()
+                    }
+                }
+            }
+        }
+        bridge.dispatchLifecycle("onCreate")
+    }
+
+    private fun buildWebView(): WebView {
+        val w = WebView(this)
+        w.settings.javaScriptEnabled = true
+        w.settings.domStorageEnabled = true
+        w.addJavascriptInterface(bridge, "__dshAndroid")
+        w.addJavascriptInterface(DshComposeHost, "__dshComposeHost")
+        w.setWebChromeClient(object : WebChromeClient() {
             // prompt("dsh:<kind>:<argsJson>") 传输：所有 WebView 通用的兜底通道
             // （华为 hardened WebView 可能剥掉 addJavascriptInterface）
             override fun onJsPrompt(view: WebView?, url: String?, message: String,
@@ -62,25 +121,31 @@ class MainActivity : AppCompatActivity() {
                 }
                 return super.onJsPrompt(view, url, message, defaultValue, result)
             }
-            override fun onJsAlert(view: WebView?, url: String?, message: String,
-                                   result: JsResult): Boolean {
+            override fun onJsAlert(view: WebView?, url: String?, message: String, result: JsResult): Boolean {
                 result.confirm(); return true
             }
         })
-        web.webViewClient = object : WebViewClient() {
+        w.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView, url: String) {
                 Log.i(tag, "PAGE-FINISHED " + url)
-                view.evaluateJavascript("(typeof __dshAndroid)") { r ->
-                    Log.i(tag, "DSH-TYPEOF=" + r)
-                }
             }
         }
-        setContentView(web)
+        return w
+    }
 
-        web.loadUrl("file:///android_asset/app.js.html")
-
-        // 载入编译器产物（assets/app.js —— 由注解处理器 postCompile 阶段拷入）
-        bridge.dispatchLifecycle("onCreate")
+    /** 逻辑控制台：不渲染 subl 视图，只显示推送进 Compose 的状态槽（验收/调试用）。 */
+    @Composable
+    private fun LogicConsole() {
+        Column(Modifier.fillMaxSize().padding(16.dp)) {
+            Text("Sublimation · 逻辑控制台", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "本工程未生成 @compose 视图（BuildConfig.SUBL_COMPOSE_GENERATED=false）。\n" +
+                    "逻辑在 WebView 中运行；当前 Compose 状态槽：\n" +
+                    (DshComposeHost.slotKeys().ifEmpty { listOf("（尚未推送）") }.joinToString("\n")),
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
     }
 
     override fun onStart() { super.onStart(); bridge.dispatchLifecycle("onStart") }

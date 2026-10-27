@@ -402,7 +402,7 @@ class DshBridge(private val activity: MainActivity) {
             val c = parseColor(bg)
             if (c != 0) ctx.setBackgroundColor(c)
         }
-        setModifier(ctx, node.opt("modifier"))
+        applyModifiers(ctx, node)
         // 悬浮按钮（FloatingButton）子视图从线性流中抽出，父 Box 改用 FrameLayout，
         // FAB 按底部居右重力叠放（MD FAB 定位）；其余子视图照常竖排。
         var hasFab = false
@@ -463,7 +463,7 @@ class DshBridge(private val activity: MainActivity) {
                     "try{ globalThis.__dshFn_" + onClickId + "(); }catch(e){ console.log(e); }", null)
             }
         }
-        setModifier(btn, node.opt("modifier"))
+        applyModifiers(btn, node)
         return btn
     }
 
@@ -484,7 +484,7 @@ class DshBridge(private val activity: MainActivity) {
                 (if (node.optBoolean("italic", false)) 2 else 0)
             tv.setTypeface(tv.typeface, style)
         }
-        setModifier(tv, node.opt("modifier"))
+        applyModifiers(tv, node)
         return tv
     }
 
@@ -510,7 +510,7 @@ class DshBridge(private val activity: MainActivity) {
                 }
             })
         }
-        setModifier(et, node.opt("modifier"))
+        applyModifiers(et, node)
         return et
     }
 
@@ -524,7 +524,7 @@ class DshBridge(private val activity: MainActivity) {
                 jsCallback(onToggleId, if (b) "true" else "false")
             }
         }
-        setModifier(sw, node.opt("modifier"))
+        applyModifiers(sw, node)
         return sw
     }
 
@@ -538,7 +538,7 @@ class DshBridge(private val activity: MainActivity) {
                 jsCallback(onToggleId, if (b) "true" else "false")
             }
         }
-        setModifier(cb, node.opt("modifier"))
+        applyModifiers(cb, node)
         return cb
     }
 
@@ -559,7 +559,7 @@ class DshBridge(private val activity: MainActivity) {
                 jsCallback(onChangeId, value.toString())
             }
         }
-        setModifier(sl, node.opt("modifier"))
+        applyModifiers(sl, node)
         return sl
     }
 
@@ -567,7 +567,7 @@ class DshBridge(private val activity: MainActivity) {
         val iv = ImageView(activity)
         val id = resolveDrawable(node.optString("name", ""))
         if (id != 0) iv.setImageResource(id)
-        setModifier(iv, node.opt("modifier"))
+        applyModifiers(iv, node)
         return iv
     }
 
@@ -583,7 +583,7 @@ class DshBridge(private val activity: MainActivity) {
         val density = (activity.resources.displayMetrics.densityDpi / 160f)
         cv.layoutParams = ChartView.densityScaled(density)
         // 兑现已声明的 modifier 字段（不新增协议字段）：Height(n) / FillMaxSize 等。
-        setModifier(cv, node.opt("modifier"))
+        applyModifiers(cv, node)
         if (colorHex.isNotEmpty()) {
             val c = parseColor(colorHex)
             if (c != 0) cv.setData(pts, labels, kind, c, (c and 0x00FFFFFF) or 0x33000000)
@@ -640,7 +640,7 @@ class DshBridge(private val activity: MainActivity) {
             line.addView(row)
         }
         scroller.addView(line)
-        setModifier(scroller, node.opt("modifier"))
+        applyModifiers(scroller, node)
         return scroller
     }
 
@@ -661,7 +661,7 @@ class DshBridge(private val activity: MainActivity) {
                     "try{ globalThis.__dshFn_" + onClickId + "(); }catch(e){ console.log(e); }", null)
             }
         }
-        setModifier(btn, node.opt("modifier"))
+        applyModifiers(btn, node)
         return btn
     }
 
@@ -673,7 +673,7 @@ class DshBridge(private val activity: MainActivity) {
             pb.max = 100
             pb.progress = node.optInt("value", 0)
         }
-        setModifier(pb, node.opt("modifier"))
+        applyModifiers(pb, node)
         return pb
     }
 
@@ -709,9 +709,25 @@ class DshBridge(private val activity: MainActivity) {
         return out
     }
 
-    /** Modifier 枚举（JS 侧 {tag, 0}）→ 原生视图参数。 */
-    private fun setModifier(view: View, modifier: Any?) {
-        val m = (modifier as? JSONObject) ?: return
+    /** 视图协议 v2：Modifier 有序链。
+     *  node 携带 "modifiers"（有序数组，链式）或 "modifier"（单对象，旧形态兜底），
+     *  按链顺序依次应用——Width/Height→layoutParams、Padding 四方向、FillWidth/FillHeight
+     *  （含 fraction）、Weight（LinearLayout.weight）、Center。旧单字段枚举（{tag,0}）逐条走 applyModifier。 */
+    private fun applyModifiers(view: View, node: JSONObject) {
+        val chain = node.optJSONArray("modifiers")
+        if (chain != null) {
+            for (i in 0 until chain.length()) {
+                val m = chain.optJSONObject(i) ?: continue
+                applyModifier(view, m)
+            }
+            return
+        }
+        val single = node.optJSONObject("modifier") ?: return
+        applyModifier(view, single)
+    }
+
+    /** 单条 Modifier（enum 构造子 {tag, 0..}）→ 原生视图参数（按序调用即链语义）。 */
+    private fun applyModifier(view: View, m: JSONObject) {
         val mtag = m.optString("tag", "Plain")
         if (mtag.isEmpty() || mtag == "Plain") return
         val lp = view.layoutParams ?: ViewGroup.LayoutParams(
@@ -727,9 +743,34 @@ class DshBridge(private val activity: MainActivity) {
             }
             "Width" -> lp.width = m.optInt("0")
             "Height" -> lp.height = m.optInt("0")
+            "Size" -> {
+                lp.width = m.optInt("0")
+                lp.height = m.optInt("1")
+            }
             "Padding" -> {
                 val p = m.optInt("0")
                 view.setPadding(p, p, p, p)
+            }
+            "Padding4" -> view.setPadding(m.optInt("0"), m.optInt("1"), m.optInt("2"), m.optInt("3"))
+            "PaddingH" -> {
+                val h = m.optInt("0")
+                view.setPadding(h, view.paddingTop, h, view.paddingBottom)
+            }
+            "PaddingV" -> {
+                val v = m.optInt("0")
+                view.setPadding(view.paddingLeft, v, view.paddingRight, v)
+            }
+            "FillWidth" -> lp.width = ViewGroup.LayoutParams.MATCH_PARENT
+            "FillHeight" -> {
+                val f = m.optDouble("0", 1.0)
+                lp.height = if (f >= 1.0) ViewGroup.LayoutParams.MATCH_PARENT
+                    else (f * activity.resources.displayMetrics.heightPixels).toInt().coerceAtLeast(1)
+            }
+            "Weight" -> {
+                val w = m.optDouble("0", 1.0).toFloat()
+                view.layoutParams = (lp as? LinearLayout.LayoutParams
+                    ?: LinearLayout.LayoutParams(lp.width, lp.height)).apply { weight = w }
+                return
             }
             "Center" -> if (view is LinearLayout) view.gravity = Gravity.CENTER
         }
