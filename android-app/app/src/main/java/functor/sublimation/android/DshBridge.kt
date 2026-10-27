@@ -582,6 +582,8 @@ class DshBridge(private val activity: MainActivity) {
         val labels = Array(labelArr?.length() ?: 0) { i -> labelArr!!.optString(i) }
         val density = (activity.resources.displayMetrics.densityDpi / 160f)
         cv.layoutParams = ChartView.densityScaled(density)
+        // 兑现已声明的 modifier 字段（不新增协议字段）：Height(n) / FillMaxSize 等。
+        setModifier(cv, node.opt("modifier"))
         if (colorHex.isNotEmpty()) {
             val c = parseColor(colorHex)
             if (c != 0) cv.setData(pts, labels, kind, c, (c and 0x00FFFFFF) or 0x33000000)

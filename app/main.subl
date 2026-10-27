@@ -1,37 +1,93 @@
-// app/main.subl —— 语法糖手册主界面（MD 风格三段式 + 悬浮按钮）
+// app/main.subl —— 语法糖手册主界面（t47 首页布局改版）
 //
-// 布局：顶栏（标题 + 版本副标题 + 文档/设置按钮）/ 上：浓度折线图（Chart）
-// / 中：预警栏（三级差异化着色）/ 下：药品列表（按最近服药时间）/ 右下：
-// 「服用药物」悬浮圆角按钮（FloatingButton）——记录服药后刷新曲线、列表与
-// 预警，并持久化到 storage 键 "ledger"。
+// 布局（用户规格 t47）：
+//   顶栏：   「语法糖手册」+ V1.0（保留现状）
+//   上半区： 估算血药浓度折线图——直接给 Chart 传 modifier = Height(屏高 45%)：
+//            lp 变成 (MATCH_PARENT, 像素高)，宽度撑满、高度精确占据上半区
+//            （DshBridge buildChart 渲染分支兑现已声明的 modifier 字段，
+//             不新增协议字段；登记见 docs/视图渲染协议补充.md）。
+//   中+下：  放进一个 Height(屏高 50%) 的定高 Box 里，内层 scrollable=true 的
+//            Box —— 定高容器让 ScrollView 真正可滚（根 Box 因 FAB 被强制
+//            MATCH/WRAP，本身无法滚动）。预警在上、记录卡在下。
+//   中：    相互作用预警——按等级分三组（危险红 / 警告黄 / 提示绿），每组一行
+//            横向标签流（水平 Box，超宽可横滚）；ADR 与代谢两引擎的触发项
+//            按各自阈值（ADR 3/5/7、代谢 1/3/5）归入对应级别组，空组给占位。
+//   下：    服药记录卡——每条台账记录一张卡：背景 Box Width(屏宽) 填满全宽，
+//            内层 Box Padding(24) 给左右内边距；四字段：药物名称、给药时间、
+//            给药方式、剂量（给药方式按药名从药库首个药代资料取 route，无资料
+//            回退「口服」）。圆角缺口已登记视图渲染协议补充文档。
+//   右下：  「服用药物」FAB——点击打开页内表单面板（Dialog 不在当前渲染协议
+//            内，以页内面板替代）：选择药物 + 填剂量 + 确认/取消；确认写入
+//            台账后 layout(content) 整树差量刷新首页（KT applyRootDiff）。
 //
-// 数据层：drugs.subl（药物资料模型+药库）、warn.subl（预警引擎）、pk.subl
-//（药代动力学）、fluvoxamine.subl / interact.subl（资料数据）、ledger.subl
-//（服药台账）。视图：标准库 @view 结构体（Chart/FloatingButton 为本任务新增）。
+// 状态管理：表单状态（开关/选中药物/剂量草稿）存 storage KV
+// （sm_form / sm_pick / sm_dose），layout 重渲染时 content() 再读回——
+// @mut var 只能声明在函数体内，跨帧状态走持久化。TextField 的 onChange 只
+// 回写草稿、不触发重渲染（避免输入框重建丢焦点，见 TextField.subl 注释）。
+//
+// 数据层：drugs.subl（药库）/ warn.subl（预警引擎）/ pk.subl（药代）/ ledger.subl（台账）。
 
-// ---------- 演示剂量（空台账回退用：常释 100mg × 2 次，间隔 24h） ----------
+// ---------- 演示剂量（空台账回退：常释 100mg × 2 次，间隔 24h） ----------
 
 fun demoDoses(): List[Dose] = cons(Dose(100.0, 0), cons(Dose(100.0, 24), emptyList()))
 
 // ---------- 示例联用集（引擎评估用） ----------
 
-// 用户药库（storage 持久化）+ 预置示例资料。
 @impure
 fun coadmin(): List[Drug] = append(loadDrugs(), cons(fluvoxamine(), cons(paroxetine(), emptyList())))
+
+// ---------- 表单状态（storage KV：layout 重渲染时跨帧保持） ----------
+
+fun formKey(): Str = "sm_form"
+fun pickKey(): Str = "sm_pick"
+fun doseKey(): Str = "sm_dose"
+
+@impure
+fun isFormOpen(): Bool = storageGet(formKey()) == "1"
+
+@impure
+fun curPick(): Nat = getOrElse(parseNat(storageGet(pickKey())), 0)
+
+@impure
+fun curDose(): Str = storageGet(doseKey())
+
+@impure
+fun setFormOpen(o: Bool): Null {
+    unchecked storagePut(formKey(), if (o) "1" else "0")
+    return null
+}
+
+@impure
+fun setPick(i: Nat): Null {
+    unchecked storagePut(pickKey(), toStr(i))
+    return null
+}
+
+@impure
+fun setDose(t: Str): Null {
+    unchecked storagePut(doseKey(), t)
+    return null
+}
+
+@impure
+fun refreshHome(): Null {
+    unchecked layout(content)
+    return null
+}
 
 // ---------- 生命周期 ----------
 
 @impure
 fun main(): Null {
     onCreate {
-        unchecked log("Sugar Manual 已加载", 2)
+        unchecked log("Sugar Manual 已加载（t47 首页改版）", 2)
     }
     onStart {
         layout(content)
     }
 }
 
-// ---------- 顶栏 ----------
+// ---------- 顶栏（保留现状） ----------
 
 fun versionText(): Str = "V1.0"
 
@@ -41,26 +97,144 @@ fun openDoc(): Null {
     null
 }
 
-// ---------- 预警着色与文案 ----------
+@composable
+fun topBar(): Box = Box(modifier = Plain(), orientation = "horizontal", contentAlignment = CenterStart()) {
+    Box(modifier = Plain(), contentAlignment = CenterStart()) {
+        Text(text = "语法糖手册", size = 20, bold = true)
+        Text(text = versionText(), color = "#9E9E9E", size = 12)
+    }
+    Button(onClick = { unchecked openDoc() }) {
+        Text(text = "文档")
+    }
+    Button(onClick = { unchecked openSettings() }) {
+        Text(text = "设置")
+    }
+}
 
-// MD 色板：3=危险红、2=警告橙、1=提示蓝、0=无预警绿。
+// ---------- 预警着色（MD 色板：3 危险红 / 2 警告黄 / 1 提示绿） ----------
+
 fun levelBg(l: Nat): Str = when (l) {
     3 => "#FDECEA"
-    2 => "#FFF3E0"
-    1 => "#E3F2FD"
+    2 => "#FFF8E1"
+    1 => "#E8F5E9"
     else => "#F5F5F5"
 }
 fun levelFg(l: Nat): Str = when (l) {
     3 => "#B3261E"
-    2 => "#E65100"
-    1 => "#1565C0"
+    2 => "#B26A00"
+    1 => "#2E7D32"
     else => "#616161"
 }
 
-fun bannerHead(adr: Alert, metab: Alert): Str =
-    concat(concat(concat("不良反应：", levelName(adr.level)), " · 代谢："), levelName(metab.level))
+// 等级分组标题。
+fun groupTitle(l: Nat): Str = when (l) {
+    3 => "⚠ 危险"
+    2 => "⚠ 警告"
+    1 => "提示"
+    else => ""
+}
 
-// ---------- 跟踪药物的药代参数（无资料回退 T½=24h、F=1） ----------
+// 各引擎触发项按**自身阈值**归级（ADR 阈值 3/5/7；代谢阈值 1/3/5）。
+fun advItemsAt(l: Nat, adr: Alert): List[Trigger] = filter(adr.items) { t => advLevel(t.score) == l }
+fun metabItemsAt(l: Nat, metab: Alert): List[Trigger] = filter(metab.items) { t => metabLevel(t.score) == l }
+
+// ---------- 预警分组视图 ----------
+
+@composable
+fun warnTags(adr: Alert, metab: Alert): Box = Box(modifier = Plain(), contentAlignment = TopStart()) {
+    Text(text = "相互作用预警", size = 15, bold = true)
+    tagRow(3, append(advItemsAt(3, adr), metabItemsAt(3, metab)))
+    tagRow(2, append(advItemsAt(2, adr), metabItemsAt(2, metab)))
+    tagRow(1, append(advItemsAt(1, adr), metabItemsAt(1, metab)))
+}
+
+// 某级别一行：空组给占位，非空组为「标题 + 横向标签流」。
+@composable
+fun tagRow(l: Nat, ts: List[Trigger]): Box = if (size(ts) == 0) {
+    Box(modifier = Plain(), backgroundColor = levelBg(l)) {
+        Text(text = concat(groupTitle(l), "：暂无"), color = levelFg(l), size = 13)
+    }
+} else {
+    Box(modifier = Plain(), orientation = "horizontal", contentAlignment = CenterStart()) {
+        Text(text = concat(groupTitle(l), "："), color = levelFg(l), size = 14, bold = true)
+        Box(modifier = Plain(), orientation = "horizontal", scrollable = true) {
+            tagCells(l, ts)
+        }
+    }
+}
+
+// 标签单元：浅色底块 + 同级深色字（条目名 + 权重分）。
+@composable
+fun tagCells(l: Nat, ts: List[Trigger]): Any = when (ts) {
+    Nil => Box(modifier = Plain()) {}
+    is Cons(t, rest) => Box(modifier = Plain()) {
+        Box(modifier = Padding(8), backgroundColor = levelBg(l)) {
+            Text(text = concat(concat(t.name, " "), toStr(t.score)), color = levelFg(l), size = 13)
+        }
+        Text(text = " ", size = 13)
+        tagCells(l, rest)
+    }
+    else => Box(modifier = Plain()) {}
+}
+
+// ---------- 服药记录卡（台账 → 卡片字段） ----------
+
+struct MedCard(name: Str, time: Str, route: Str, dose: Str)
+
+// 按药名查给药方式：药库首个药代资料的 route；无药代资料回退「口服」。
+fun routeOf(name: Str, drugs: List[Drug]): Str = when (drugs) {
+    Nil => "口服"
+    is Cons(d, rest) => if (d.name == name) firstRoute(d.pk) else routeOf(name, rest)
+}
+fun firstRoute(pk: List[PkProfile]): Str = when (pk) {
+    is Cons(p, _) => p.route
+    Nil => "口服"
+}
+
+@impure
+fun medRowOf(r: DoseRec, drugs: List[Drug]): MedCard {
+    unchecked var t: Str = fmtTime(r.time)
+    return MedCard(name = r.drug, time = t, route = routeOf(r.drug, drugs), dose = concat(toStr(r.amount), " mg"))
+}
+
+@impure
+fun medRowsOf(recs: List[DoseRec], drugs: List[Drug]): List[MedCard] =
+    map(recs) { r => medRowOf(r, drugs) }
+
+@composable
+fun medCards(rows: List[MedCard], sw: Nat): Box = Box(modifier = Plain(), contentAlignment = TopStart()) {
+    Text(text = "服药记录", size = 15, bold = true)
+    cardCells(rows, sw)
+}
+
+// 卡片列表：recs 逐张渲染；sw（屏宽 px）由 content 传入，保证背景全宽。
+@composable
+fun cardCells(rows: List[MedCard], sw: Nat): Any = when (rows) {
+    Nil => Box(modifier = Plain()) {
+        Text(text = "尚无服药记录，点击右下「服用药物」开始", color = "#9E9E9E", size = 13)
+    }
+    is Cons(c, rest) => Box(modifier = Plain()) {
+        medCardBox(c, sw)
+        Text(text = " ", size = 8)
+        cardCells(rest, sw)
+    }
+    else => Box(modifier = Plain()) {}
+}
+
+// 一张卡：全宽背景 + 内层内边距；首行药名/剂量，次行给药时间/给药方式。
+@composable
+fun medCardBox(c: MedCard, sw: Nat): Box = Box(modifier = Width(sw), backgroundColor = "#F5F5F5") {
+    Box(modifier = Padding(24)) {
+        Box(modifier = Plain(), orientation = "horizontal", contentAlignment = CenterStart()) {
+            Text(text = c.name, size = 16, bold = true)
+            Text(text = "  |  ", color = "#BDBDBD", size = 14)
+            Text(text = c.dose, color = "#6750A4", size = 15, bold = true)
+        }
+        Text(text = concat(concat("给药时间 ", c.time), concat("  ·  给药方式 ", c.route)), color = "#616161", size = 13)
+    }
+}
+
+// ---------- 药代参数（无资料回退 T½=24h、F=1） ----------
 
 fun trackHalfLife(): Nat = when (fluvoxamine().pk) {
     is Cons(p, _) => p.halfLife
@@ -74,10 +248,115 @@ fun trackBio(): Rat = when (fluvoxamine().pk) {
 fun chartPoints(doses: List[Dose]): List[Rat] =
     seriesValues(doses, trackHalfLife(), trackBio(), 0, windowHours(), stepHours())
 
+// ---------- FAB 开关与表单提交 ----------
+
+fun fabLabel(open: Bool): Str = if (open) "✕ 关闭" else "＋ 服用药物"
+
+@impure
+fun toggleForm(): Null {
+    unchecked var open: Bool = isFormOpen()
+    if (open) {
+        unchecked setFormOpen(false)
+    } else {
+        unchecked setFormOpen(true)
+        unchecked setPick(0)
+        unchecked setDose("100")
+    }
+    unchecked refreshHome()
+    return null
+}
+
+@impure
+fun pickDrug(n: Nat): Null {
+    unchecked setPick(n)
+    unchecked refreshHome()
+    return null
+}
+
+@impure
+fun cancelForm(): Null {
+    unchecked setFormOpen(false)
+    unchecked setPick(0)
+    unchecked setDose("100")
+    unchecked refreshHome()
+    return null
+}
+
+// 确认：剂量解析（无效提示并不关闭面板）+ 台账头插 + 持久化 + 刷新首页。
+@impure
+fun commitDose(): Null {
+    unchecked var dt: Str = strTrim(curDose())
+    var amt: Rat = ratOr(dt, 0.0)
+    if (amt <= 0.0) {
+        unchecked toast("请填写有效剂量（数字 mg，如 100）", false)
+    } else {
+        unchecked var recs: List[DoseRec] = loadLedger()
+        unchecked var nowMs: Nat = timeNow()
+        unchecked var drugs: List[Drug] = coadmin()
+        unchecked var idx: Nat = curPick()
+        var drug: Str = drugAt(drugs, idx)
+        var nr: List[DoseRec] = cons(DoseRec(drug, amt, nowMs), recs)
+        unchecked saveLedger(nr)
+        unchecked setFormOpen(false)
+        unchecked setPick(0)
+        unchecked setDose("100")
+        unchecked toast("已记录服药，浓度曲线与记录已刷新", false)
+        unchecked refreshHome()
+    }
+    return null
+}
+
+fun drugAt(drugs: List[Drug], n: Nat): Str = when (elementAt(drugs, n)) {
+    is Some(d) => d.name
+    None => "氟伏沙明"
+}
+
+// ---------- FAB 表单（页内面板） ----------
+
+@composable
+fun formPanel(drugs: List[Drug], idx: Nat, dt: Str): Box = Box(modifier = Plain(), backgroundColor = "#F3EDF7") {
+    Box(modifier = Padding(24)) {
+        Text(text = "记录服用药物", size = 18, bold = true)
+        Text(text = "选择本次服用的药物", color = "#616161", size = 14)
+        drugBtns(drugs, 0, idx)
+        Text(text = "服用剂量（mg）", color = "#616161", size = 14)
+        TextField(placeholder = "如 100", text = dt, keyboard = "number",
+            onChange = { t => unchecked setDose(t) })
+        Box(modifier = Plain(), orientation = "horizontal") {
+            Button(onClick = { unchecked commitDose() }) {
+                Text(text = "确认记录")
+            }
+            Button(onClick = { unchecked cancelForm() }) {
+                Text(text = "取消")
+            }
+        }
+    }
+}
+
+// 药物选择按钮列表：选中项带 ✓ 前缀与加粗。
+fun pickMark(n: Nat, idx: Nat): Str = if (n == idx) "✓ " else "· "
+@composable
+fun drugBtns(drugs: List[Drug], n: Nat, idx: Nat): Any = when (drugs) {
+    Nil => Box(modifier = Plain()) {}
+    is Cons(d, rest) => Box(modifier = Plain()) {
+        Button(onClick = { unchecked pickDrug(n) }) {
+            Text(text = concat(pickMark(n, idx), d.name), size = 15, bold = (n == idx))
+        }
+        drugBtns(rest, n + 1, idx)
+    }
+    else => Box(modifier = Plain()) {}
+}
+
 // ---------- 主界面 ----------
 
 @composable
 fun content(): Box {
+    unchecked var open: Bool = isFormOpen()
+    unchecked var idx: Nat = curPick()
+    unchecked var dt: Str = curDose()
+    unchecked var sw: Nat = screenWidth()
+    unchecked var scrubH: Nat = (screenHeight() * 45) / 100
+    unchecked var restH: Nat = (screenHeight() * 50) / 100
     unchecked @mut var recs: List[DoseRec] = loadLedger()
     unchecked @mut var nowMs: Nat = timeNow()
     @mut var doses: List[Dose] = ledgerDoses(recs, nowMs)
@@ -86,99 +365,23 @@ fun content(): Box {
     var metab: Alert = metabAlert(drugs)
     @mut var vals: List[Rat] = chartPoints(doses)
     @mut var labels: List[Str] = seriesLabels(0, windowHours(), stepHours())
-    @mut var chart = Chart(kind = "line", points = vals, labels = labels, color = "#6750A4")
-    @mut var banner = bannerBody(adr, metab)
-    unchecked @mut var rows: List[Str] = medRowsText(recs)
-    @mut var medList = medRowsBody(rows)
+    @mut var chart = Chart(kind = "line", points = vals, labels = labels, color = "#6750A4", modifier = Height(scrubH))
+    @mut var warn = warnTags(adr, metab)
+    unchecked var rows: List[MedCard] = medRowsOf(recs, drugs)
+    @mut var cards = medCards(rows, sw)
+    @mut var form = formPanel(drugs, idx, dt)
+    var lower: Box = if (open) form else cards
     return Box(modifier = Plain()) {
-        // 顶栏：标题 + 版本副标题 + 文档/设置
-        Box(modifier = Plain(), orientation = "horizontal") {
-            Box(modifier = Plain()) {
-                Text(text = "语法糖手册", size = 20, bold = true)
-                Text(text = versionText(), color = "#9E9E9E", size = 12)
-            }
-            Button(onClick = { unchecked openDoc() }) {
-                Text(text = "文档")
-            }
-            Button(onClick = { unchecked openSettings() }) {
-                Text(text = "设置")
+        topBar()
+        chart
+        Box(modifier = Height(restH)) {
+            Box(modifier = Plain(), scrollable = true) {
+                warn
+                lower
             }
         }
-        // 上：估算血药浓度折线
-        Box(modifier = Plain()) { chart }
-        // 中：预警栏
-        Box(modifier = Plain()) { banner }
-        // 下：药品列表（按最近服药时间从上到下）
-        Box(modifier = Plain()) { medList }
-        // 右下：悬浮圆角按钮
-        FloatingButton(onClick = {
-            unchecked nowMs = timeNow()
-            unchecked recs = cons(DoseRec(recentDrug(recs), 100.0, nowMs), recs)
-            unchecked saveLedger(recs)
-            doses = ledgerDoses(recs, nowMs)
-            vals = chartPoints(doses)
-            chart = Chart(kind = "line", points = vals, labels = labels, color = "#6750A4")
-            unchecked rows = medRowsText(recs)
-            medList = medRowsBody(rows)
-            unchecked toast("已记录服药，浓度曲线已刷新", false)
-        }) {
-            Text(text = "＋ 服用药物")
+        FloatingButton(onClick = { unchecked toggleForm() }) {
+            Text(text = fabLabel(open))
         }
-    }
-}
-
-// ---------- 预警栏 ----------
-
-@composable
-fun bannerBody(adr: Alert, metab: Alert): Box = when (maxAlertLevel(adr, metab)) {
-    0 => Box(modifier = Plain(), backgroundColor = "#E8F5E9") {
-        Text(text = "暂无联用预警", color = "#2E7D32", size = 14)
-    }
-    else => Box(modifier = Plain(), backgroundColor = levelBg(maxAlertLevel(adr, metab))) {
-        Text(text = concat("⚠ ", bannerHead(adr, metab)), color = levelFg(maxAlertLevel(adr, metab)), size = 15, bold = true)
-        triggerRows(append(adr.items, metab.items))
-    }
-}
-
-// ---------- 药品列表 ----------
-
-// 台账 -> 行文本（药名 剂量mg · 时间）。@impure 因 fmtTime（平台内建）。
-@impure
-fun medRowsText(recs: List[DoseRec]): List[Str] = map(recs) { r => medRowText(r) }
-
-@impure
-fun medRowText(r: DoseRec): Str {
-    unchecked var t: Str = fmtTime(r.time)
-    return concat(concat(concat(concat(r.drug, "  "), toStr(r.amount)), "mg · "), t)
-}
-
-@composable
-fun medRowsBody(rows: List[Str]): Any = when (rows) {
-    Nil => Box(modifier = Plain()) {
-        Text(text = "尚无服药记录，点击右下「服用药物」开始", color = "#9E9E9E", size = 13)
-    }
-    is Cons(m, rest) => Box(modifier = Plain()) {
-        Text(text = m, size = 15)
-        medRowsBody(rest)
-    }
-}
-
-// ---------- 兼容：预警摘要行（t28 引擎层验收用） ----------
-
-fun summaryLine(adr: Alert, metab: Alert): Str =
-    concat(concat(concat("不良反应：", levelName(adr.level)), concat("  代谢：", levelName(metab.level))), "（演示联用）")
-
-// 预警触发项清单：每行「名称  权重」。
-@composable
-fun triggerRows(ts: List[Trigger]): Box = Box(modifier = Plain()) {
-    triggerBody(reverse(ts))
-}
-
-@composable
-fun triggerBody(xs: List[Trigger]): Any = when (xs) {
-    Nil => Box(modifier = Plain()) {}
-    is Cons(t, rest) => Box(modifier = Plain()) {
-        Text(text = concat(concat(t.name, "  权重 "), toStr(t.score)), size = 13)
-        triggerBody(rest)
     }
 }
