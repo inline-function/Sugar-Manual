@@ -112,6 +112,25 @@ java -cp "<主仓库 5 模块 jar>;<kotlin-stdlib.jar>" sugared.functor.MainKt c
 
 断言从 68 条增至 **82 条**（新增：Chart modifier 填充断言、三组预警结构/文案/着色、FAB 表单开/关、选药高亮、草稿回写、确认提交台账核对 + 卡片四字段 + 全宽/内边距、曲线首末点按剂量×生物利用度重算、非法剂量 toast 不关面板、取消复位、`routeOf`/`firstRoute`/`drugAt`/`pickMark`/`fabLabel` 纯函数层）。
 
+
+## t52 照 Compose 参考实现逐屏翻译（2026-10-27）
+
+背景：用户用原生 Kotlin Compose 写了同款糖手册（`F:\KotlinProject\Sugar Manual`，布局正常），
+结论是 SfA 视图层表达力不足。本次把 HomeScreen / DoseLogList / InteractionAlerts /
+DoseEntrySheet 逐屏翻译成 `app/main.subl`（数据/引擎层沿用 pk/warn/ledger/drugs，未重写），
+并产出**渲染层能力差距清单**：`docs/渲染层能力差距清单.md`（判定 SfA 问题的定案证据 + 协议扩展需求清单）。
+
+翻译落点（详见差距清单附 A）：
+- 预警区按参考改为**混排标签流**（仅颜色分级、无组标题、名称不带权重、代谢相互作用不展示，与参考一致）；
+- 记录卡加**药名左侧 4dp 颜色竖条**（药理类别色，SSRI=#FFC107）；顶栏改 primaryContainer 薄荷绿 + 三按钮；
+- 表单对齐参考的四级校验（未选药/非数字/≤0/超 10000mg）与默认未选药语义；
+- 翻译中实证的**结构性缺口**（§1/§6 最关键）：① Modifier 无链式组合——一个视图只能带一个修饰符，
+  `Width(4).Height(20)` 的竖条编译失败，只能嵌套近似；② **列表项回调共用全局槽位**——递归生成的同款按钮
+  只剩最后一行的闭包，动态列表无法分辨点击来源行，只能源码展开固定 4 行。
+
+验收：编译 exit=0（main.subl 无错误）；`node app/out.test.js` **PASSES=96 FAILS=0**
+（布局 JSON 快照：顶栏/图表/混排标签/卡片竖条/表单/四级校验/提交/取消/纯函数层）；-A APK 装机对比参考实现。
+
 ## 已知语言/编译器限制（验收中踩到，供队长文档参考）
 
 1. **尾随 lambda 体内不能写 `var` 声明**（含 `unchecked var`）：解析期在 lambda 内出现声明语句时，会在**后面**某个调用点报误导性 `期望表达式，实际'{'`。规避：把可变状态声明在函数体（`@mut var`），lambda 内只做 `unchecked x = …` 赋值。
