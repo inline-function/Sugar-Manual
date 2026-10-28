@@ -123,16 +123,22 @@ fun main(): Null {
 // ---------- 顶栏（≈ M3 TopAppBar：primaryContainer 底 64dp + 标题行 + actions 右推） ----------
 
 @composable
-fun topBar(): Box = Box(modifier = fillWidth().height(64).background("primaryContainer"), orientation = "horizontal", arrangement = "SpaceBetween", contentAlignment = CenterStart()) {
-    Box(modifier = paddingH(16).paddingV(8), orientation = "horizontal", contentAlignment = CenterStart()) {
-        Text(text = "语法糖手册", size = 22, bold = true, color = "onPrimaryContainer")
+fun topBar(): Box = Box(modifier = fillWidth().height(48).background("primary"), orientation = "horizontal", arrangement = "SpaceBetween", contentAlignment = CenterStart()) {
+    Box(modifier = paddingH(16), orientation = "horizontal", contentAlignment = CenterStart()) {
+        Text(text = "语法糖手册", size = 22, bold = true, color = "onPrimary")
         Box(modifier = width(6)) {}
-        Text(text = "V1.0", size = 11, color = "onPrimaryContainer")
+        Text(text = "V1.0", size = 11, color = "onPrimary")
     }
     Box(modifier = paddingH(12), orientation = "horizontal") {
-        TextButton(label = "文档", onClick = { unchecked openDocDialog() })
-        TextButton(label = "药物", onClick = { unchecked noNavigation() })
-        TextButton(label = "设置", onClick = { unchecked openSettingsDialog() })
+        TextButton(onClick = { unchecked openDocDialog() }) {
+            Icon(name = "info", size = 22, tint = "onPrimary")
+        }
+        TextButton(onClick = { unchecked noNavigation() }) {
+            Icon(name = "menu", size = 22, tint = "onPrimary")
+        }
+        TextButton(onClick = { unchecked openSettingsDialog() }) {
+            Icon(name = "settings", size = 22, tint = "onPrimary")
+        }
     }
 }
 
@@ -238,10 +244,10 @@ fun doseEmpty(): Any = Box(modifier = fillWidth().paddingH(24).paddingV(12), con
     Text(text = "暂无服药记录", color = "onSurfaceVariant", size = 14)
 }
 
-// 一张记录卡（≈ DoseCard：Card 圆角 12 + elevation 1 + surfaceVariant 底）。
+// 一张记录卡（≈ DoseCard：Card 圆角 12 + elevation 0 + surfaceVariant 底，无阴影）。
 // 行内：4×20dp 药色竖条（width(4).height(20) 链）+ Spacer(10) + 药名 weight(1) + 右侧剂量。
 @composable
-fun doseCard(c: MedCard): Any = Card(modifier = fillWidth().paddingV(6), cornerRadius = 12, elevation = 1, backgroundColor = "surfaceVariant") {
+fun doseCard(c: MedCard): Any = Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = "surfaceVariant") {
     Box(modifier = fillWidth().paddingHV(16, 12)) {
         Box(modifier = fillWidth(), orientation = "horizontal", contentAlignment = CenterStart()) {
             Box(modifier = width(4).height(20).background(drugColor(c.name))) {}

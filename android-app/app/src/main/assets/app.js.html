@@ -3,17 +3,24 @@
 <head><meta charset="utf-8"><title>Sublimation</title></head>
 <body>
   <script>
-    // 桥传输引导：原生 addJavascriptInterface 不可用时（华为 hardened WebView 会剥掉），
-    // 自动改用 prompt("dsh:<kind>:<argsJson>") 通道——由 KT 端 onJsPrompt 拦截执行。
-    if (typeof window.__dshAndroid !== "function") {
-      window.__dshAndroid = function (kind, args) {
-        var a = (args === undefined || args === null) ? "[]" : JSON.stringify(args);
-        try { return prompt("dsh:" + kind + ":" + a); } catch (e) { return "null"; }
-      };
-      window.__dshShim = "prompt";
-    } else {
-      window.__dshShim = "native";
-    }
+    // 桥传输引导：原生注入的 Java 桥对象 typeof 为 "object"（非 function），
+    // 旧判断 "typeof !== function" 会把好好的原生桥判成缺失、用 prompt 假分身顶掉——
+    // 注：本设备上 prompt 与原生接口的【命令执行】都可靠（返回值一律被剥成 "null"，不可依赖回值），
+    // KT→JS 侧改用主线程同步 evaluateJavascript 直执（见 DshBridge.evalJs），不再依赖回值通道。
+    var __nativeBr = null;
+    try { if (window.__dshAndroid && typeof window.__dshAndroid.dispatch === "function") __nativeBr = window.__dshAndroid; } catch (e) {}
+    window.__dshShim = __nativeBr ? "native" : "prompt";
+    window.__dshAndroid = function (kind, args) {
+      var a = (args === undefined || args === null) ? "[]" : JSON.stringify(args);
+      // 原生接口优先：无 10KB prompt 截断（layout 树能整包送达）；仅在缺失时退 prompt。
+      // 协议回值统一为 "null" 字符串（本设备两端回值都被剥成 undefined，不可依赖回值）。
+      if (__nativeBr) { try { __nativeBr.dispatch(kind, a); return "null"; } catch (e) {} }
+      try { prompt("dsh:" + kind + ":" + a); return "null"; } catch (e) {}
+      return "null";
+    };
+    // 兼容 globalThis !== window 的硬化 WebView：把桥同时挂到 globalThis（编译产物按 globalThis 探测）
+    try { globalThis.__dshAndroid = window.__dshAndroid; } catch (e) {}
+    try { __dshAndroid("log", ["SHIM-BIND typeof globalThis.__dshAndroid=" + (typeof globalThis.__dshAndroid), 1]); } catch (e) {}
     window.onerror = function (msg, src, ln, col) {
       try { __dshAndroid("log", ["JSERR: " + msg + " @" + ln + ":" + col, 4]); } catch (e) {}
       return false;
@@ -25,9 +32,11 @@
     };
     __dshAndroid("log", ["PAGE-LOADED shim=" + window.__dshShim, 1]);
   </script>
-  <script src="app.js"></script>
+  <script src="app.js"
+          onload="__dshAndroid('log', ['APPJS-EVALUATED', 1])"
+          onerror="__dshAndroid('log', ['APPJS-LOAD-FAILED', 4])"></script>
   <script>
-    __dshAndroid("log", ["APPJS-LOADED", 1]);
+    __dshAndroid("log", ["APPJS-LOADED typeof __dshLifecycle_onCreate=" + (typeof __dshLifecycle_onCreate), 1]);
   </script>
 </body>
 </html>

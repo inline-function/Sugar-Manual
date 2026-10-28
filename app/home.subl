@@ -1,0 +1,77 @@
+// home.subl —— 首页 @compose 视图（契约 §2：编译期展开为 gen/ 下真 Kotlin Compose）
+//
+// 与 main.subl 的 content() 同构：顶栏 / 浓度图（45%）/ 预警标签流 / 记录卡 / FAB。
+// 契约 §4 的状态槽（JS pushState → DshComposeHost.stateOf）尚未落地：这里把「台账为空时
+// 的演示数据」（main.subl 的 demoDoses 回退）按编译期常量内联——与契约「可折叠常量内联字面量」
+// 一致，手机看到的是与首次安装一致的演示首页；交互（FAB→表单、记录增删）在状态槽落地后接通。
+
+@compose
+struct Home {
+    Box(modifier = fillMaxSize()) {
+        TopAppBar(title = "语法糖手册", subtitle = "V1.0", modifier = height(48)) {
+            TextButton() {
+                Icon(name = "info", size = 22, tint = "onPrimary")
+            }
+            TextButton() {
+                Icon(name = "menu", size = 22, tint = "onPrimary")
+            }
+            TextButton() {
+                Icon(name = "settings", size = 22, tint = "onPrimary")
+            }
+        }
+        Chart(
+            kind = "line",
+            labels = listOf("0", "12", "24", "36", "48"),
+            points = listOf(50.0, 41.6, 34.5, 28.7, 23.9, 19.8, 66.5, 55.3, 46.0, 38.2, 31.7, 26.4, 22.0),
+            series = listOf(Series(label = "氟伏沙明", color = "#FFC107", points = listOf(50.0, 41.6, 34.5, 28.7, 23.9, 19.8, 66.5, 55.3, 46.0, 38.2, 31.7, 26.4, 22.0))),
+            color = "primary",
+            legend = true,
+            badge = "估算",
+            modifier = fillWidth().fractionHeight(0.45)
+        )
+        Box(modifier = fillWidth().weight(1.0), scrollable = true) {
+            Box(modifier = fillWidth().paddingHV(24, 8)) {
+                Box(modifier = fillWidth(), orientation = "vertical", spacing = 8) {
+                    Text(text = "联用预警", size = 16, bold = true, color = "onSurface")
+                    Box(modifier = fillWidth(), wrap = true, spacing = 8) {
+                        Box(modifier = clip(12).background("#33D32F2F").paddingHV(12, 5)) {
+                            Text(text = "恶心", color = "#C62828", size = 14, bold = true)
+                        }
+                        Box(modifier = clip(12).background("#33F9A825").paddingHV(12, 5)) {
+                            Text(text = "失眠", color = "#E65100", size = 14, bold = true)
+                        }
+                        Box(modifier = clip(12).background("#33F9A825").paddingHV(12, 5)) {
+                            Text(text = "嗜睡", color = "#E65100", size = 14, bold = true)
+                        }
+                        Box(modifier = clip(12).background("#3355595F").paddingHV(12, 5)) {
+                            Text(text = "头晕", color = "#44464F", size = 14, bold = true)
+                        }
+                    }
+                }
+            }
+            Box(modifier = fillWidth().padding4(24, 16, 24, 8)) {
+                Text(text = "服药记录", size = 16, bold = true, color = "onSurface")
+            }
+            Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = "surfaceVariant") {
+                Box(modifier = fillWidth().paddingHV(16, 12)) {
+                    Box(modifier = fillWidth(), orientation = "horizontal", contentAlignment = CenterStart()) {
+                        Box(modifier = width(4).height(20).background("#FFC107")) {}
+                        Box(modifier = width(10)) {}
+                        Text(text = "氟伏沙明", modifier = weight(1.0), size = 16, bold = true, color = "onSurface")
+                        Text(text = "100 mg", size = 16, bold = true, color = "primary")
+                    }
+                    Box(modifier = height(4)) {}
+                    Text(text = "给药时间 今日 08:00 · 口服", color = "onSurfaceVariant", size = 12)
+                }
+            }
+            Box(modifier = fillWidth().paddingH(24).paddingV(12), contentAlignment = Center()) {
+                Text(text = "演示数据：空台账时按示范剂量展示，记录服药后由逻辑层驱动", color = "onSurfaceVariant", size = 12)
+            }
+            Box(modifier = height(96)) {}
+        }
+        BottomSheet(visible = false) {
+            Text(text = "＋服用药物", size = 22, bold = true)
+        }
+        FloatingButton(icon = "add", text = "＋服用药物", color = "primary", onClick = { unchecked toggleForm() })
+    }
+}

@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import functor.sublimation.android.gen.Palette
 import functor.sublimation.android.gen.SublApp_content
+import functor.sublimation.android.gen.SublRoot
 import org.json.JSONObject
 
 /**
@@ -66,6 +67,9 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        // 严格解耦：compose 通路开时视图树归 Compose 侧，JS 只跑逻辑（layout 仅记账）。
+        bridge.composeMode = BuildConfig.SUBL_COMPOSE_GENERATED || BuildConfig.SUBL_COMPOSE_SAMPLE
+
         web = buildWebView()
         // 逻辑 ↔ 布局 的桥：Compose 侧读状态槽、写回调（契约 §4）
         DshComposeHost.attach(web) { f -> runOnUiThread(f) }
@@ -88,10 +92,10 @@ class MainActivity : ComponentActivity() {
             MaterialTheme(colorScheme = scheme) {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     when {
-                        // 生成器（t57）产出 gen/GeneratedCompose.kt 的 SublRoot()：存在即由它决定页面；
-                        // 否则挂样例（gen/GeneratedComposeSample.kt ＝ main.subl 的编译期产物形态）；
-                        // 都没有就只是逻辑控制台。
-                        BuildConfig.SUBL_COMPOSE_GENERATED || BuildConfig.SUBL_COMPOSE_SAMPLE -> SublApp_content()
+                        // @compose 编译期产物 gen/GeneratedCompose.kt 的 SublRoot()（发射器聚合的分派入口）；
+                        // 生成支未就位时退回样例首页（gen/GeneratedComposeSample.kt）；都没有就只是逻辑控制台。
+                        BuildConfig.SUBL_COMPOSE_GENERATED -> SublRoot()
+                        BuildConfig.SUBL_COMPOSE_SAMPLE -> SublApp_content()
                         else -> LogicConsole()
                     }
                 }

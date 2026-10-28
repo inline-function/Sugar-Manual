@@ -1,0 +1,14 @@
+// TopAppBar.subl —— M3 顶栏视图（@compose 通路直发 androidx.compose.material3.TopAppBar）
+//
+// 字段（与 SfA 契约 §5 + 原生参考 HomeScreen 一致）：
+//   title          标题（titleLarge 粗体，色取主题容器上色）
+//   subtitle       标题右侧的版本徽标（labelSmall，onSurfaceVariant）
+//   color          容器色（主题色名；缺省 primaryContainer）
+//   body（→children）actions 槽：TextButton 序列
+@view
+struct TopAppBar(
+    title: Str = "",
+    subtitle: Str = "",
+    color: Str = "primary",
+    body: () => Null = fun(): Null { null }
+)

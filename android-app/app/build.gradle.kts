@@ -7,12 +7,13 @@ plugins {
 import java.io.File
 
 // ===== 生成物开关（SfA @compose → Kotlin Compose；契约 android doc/Compose代码生成契约.md）=====
-// generated        ：生成器（t57）产物 gen/GeneratedCompose.kt 是否存在（SublRoot()）
-// generatedSample  ：是否把 gen/GeneratedComposeSample.kt 的样例首页挂为启动页（本任务验证用）
+// generated        ：编译期 @compose 通路产物是否就位——发射器把 <Name>.kt 与聚合
+//                     GeneratedCompose.kt（含 SublRoot() 分派）写进契约位置 <ns>/gen/
+// generatedSample  ：是否把 gen/GeneratedComposeSample.kt 的样例首页挂为启动页（可与 generated 独立）
 fun findOutDir(): String {
     val prop = (project.findProperty("subl.out") as String?)
     if (prop != null) return prop
-    return "${rootProject.projectDir}/../../out"
+    return "${projectDir}/src/main/java/functor/sublimation/android/gen"
 }
 fun hasGenerated(): Boolean = File(findOutDir(), "GeneratedCompose.kt").isFile
 fun isSample(): Boolean =
@@ -30,7 +31,7 @@ android {
         versionCode = 1
         versionName = "1.0"
         buildConfigField("boolean", "SUBL_COMPOSE_GENERATED", hasGenerated().toString())
-        buildConfigField("boolean", "SUBL_COMPOSE_SAMPLE", (hasGenerated() && isSample()).toString())
+        buildConfigField("boolean", "SUBL_COMPOSE_SAMPLE", isSample().toString())
     }
 
     buildTypes {

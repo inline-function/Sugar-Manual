@@ -68,6 +68,9 @@ class DshBridge(private val activity: MainActivity) {
         0xFF00695C.toInt(), 0xFFFFC107.toInt(), 0xFF7C4DFF.toInt(),
         0xFFD32F2F.toInt(), 0xFF1976D2.toInt(), 0xFF388E3C.toInt(),
     )
+    // 定案（严格解耦）：@compose 通路开时 Compose 持屏——JS 的 layout/androidRecompose 只更新视图树缓存，
+    // 不重建/替换原生视图（否则 setContentView 会把 Compose 首页顶掉）；由 MainActivity 按 BuildConfig 置位。
+    var composeMode: Boolean = false
     // lazy：DshBridge 在 Activity 字段初始化期构造（此时 base context 尚未 attach），故延后取
     private val prefs by lazy { activity.getSharedPreferences("dsh-storage", 0) }
 
@@ -109,12 +112,18 @@ class DshBridge(private val activity: MainActivity) {
                 val root = JSONObject(viewJson)
                 val old = rootJson
                 rootJson = root
+                if (composeMode) {
+                    Log.d(tag, "layout: compose 通路开，视图树仅记账")
+                    return "null"
+                }
+                Log.d(tag, "layout: setRootView -> native tree (composeMode=" + composeMode + ")")
                 activity.runOnUiThread {
                     if (old == null) setRootView(buildView(root.toString()))
                     else applyRootDiff(old, root)
                 }
             }
             "androidRecompose" -> {
+                if (composeMode) return "null"
                 val viewJson = args.getOrNull(2)?.toString() ?: return "null"
                 val rkind = args.getOrNull(0)?.toString() ?: return "null"
                 val ord = (args.getOrNull(1) as? Number)?.toInt() ?: 1
@@ -252,9 +261,23 @@ class DshBridge(private val activity: MainActivity) {
 
     private fun ui(f: () -> Unit) { activity.runOnUiThread(f) }
     private fun toastFail(msg: String) { Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show() }
+    // KT → JS：hardened WebView 上 web.post{} 的任务挂起不派发（暂停态/某些设备上 evaluateJavascript 永远不执行），
+    // 且 prompt 与原生接口的返回值都被剥成 "null"。唯一可靠通道是从调用现场
+    // （WebView 回调、点击监听均为 UI 线程）直接同步 evaluateJavascript——实测 EV-IFACE-ALIVE/LOADURL-ALIVE 全部落到页面世界。
+    private fun evalJs(expr: String) {
+        // 原生接口调用跑在 JavaBridge 线程；WebView 方法必须在 UI 线程。
+        // 暂停态下 post 会积压不派发，所以在 UI 线程上直执（实测可靠），其余线程才转回 UI。
+        try {
+            if (android.os.Looper.myLooper() == activity.web.context.mainLooper) {
+                activity.web.evaluateJavascript(expr, null)
+            } else {
+                activity.runOnUiThread { activity.web.evaluateJavascript(expr, null) }
+            }
+        } catch (t: Throwable) { Log.w(tag, "evalJs failed: " + t.message) }
+    }
+
     private fun jsCallback(key: String, argJs: String) {
-        activity.web.evaluateJavascript(
-            "try{ globalThis.__dshFn_" + key + "(" + argJs + "); }catch(e){ console.log(e); }", null)
+        evalJs("try{ globalThis.__dshFn_" + key + "(" + argJs + "); }catch(e){ console.log(e); }")
     }
 
     fun dispatchLifecycle(event: String) {
@@ -263,10 +286,7 @@ class DshBridge(private val activity: MainActivity) {
     }
 
     private fun dispatchLater(event: String) {
-        activity.web.post {
-            activity.web.evaluateJavascript(
-                "try{ __dshLifecycle_" + event + "(); }catch(e){ console.log(e); }", null)
-        }
+        evalJs("try{ __dshLifecycle_" + event + "(); }catch(e){ console.log(e); }")
     }
     // ---------------- 增量重组（diff） ----------------
 
