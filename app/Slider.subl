@@ -8,6 +8,6 @@
     to: Rat = 1.0,
     enabled: Bool = true,
     onChange: (Rat) => Null = fun(v: Rat): Null { null },
-    modifier: Modifier = Plain(),
+    modifier: List[MKind] = emptyList(),
     body: () => Null = fun(): Null { null }
 )

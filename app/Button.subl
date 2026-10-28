@@ -1,10 +1,15 @@
 // android/Button.subl —— 按钮视图（android doc/安卓标准库.md §布局）
 //
-// @view 视图结构体（叶子视图）：body 可装文本子视图（如 Text）。
-// onClick 是点击事件回调——KT 端注入监听器，触发时回调 JS 端注册的 lambda。
+// 协议 v2：Button 是**容器**——body 里的子视图全部渲染在按钮内部（纵向居中），
+// 不再"只取首个 Text 作文案"（旧协议 KT 端 extractText 的限制已解除）。
+// label 是便捷字段：给了 label 且 body 为空时直接显示 label。
+// style 决定形态："filled"（默认，实心）/ "text"（无边框无填充，≈ TextButton）/ "outlined"。
+// onClick 是点击事件回调——KT 端注入监听器，触发时回调 JS 端注册的 lambda（协议 v2 的实例键）。
 
 @view struct Button(
-    modifier: Modifier = Plain(),
+    modifier: List[MKind] = emptyList(),
+    label: Str = "",
+    style: Str = "filled",
     enabled: Bool = true,
     onClick: (Any) => Null = fun(_: Any): Null { null },
     body: () => Null = fun(): Null { null }

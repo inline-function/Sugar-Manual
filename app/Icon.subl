@@ -1,0 +1,15 @@
+// android/Icon.subl —— 图标视图（协议 v2 新增）
+//
+// name 为内置矢量图标名（与 Compose material-icons-core 同名的子集）：
+//   "add" / "close" / "settings" / "search" / "arrowBack" / "check" / "menu" / "moreVert" /
+//   "favorite" / "delete" / "info" / "warning" / "share" / "edit" / "arrowForward"
+// 亦可写 "android:ic_menu_info_details" 使用系统 drawable。
+// size 为边长（dp，默认 24）；tint 为着色（"#RRGGBB" / "#AARRGGBB" / 主题色名，空 = 不染色）。
+// KT 端：ImageView + 内置矢量表；Compose 生成物：Icon(Icons.Filled.X)。
+
+@view struct Icon(
+    name: Str = "add",
+    size: Nat = 24,
+    tint: Str = "",
+    modifier: List[MKind] = emptyList()
+)

@@ -1,0 +1,12 @@
+// android/TextButton.subl —— 文字按钮（协议 v2 新增）
+//
+// 无边框、无填充、只有文字与点击涟漪（≈ Compose 的 TextButton）。body 可装任意子视图；
+// label 是便捷字段。用于顶栏 actions / 对话框按钮等"轻量"操作。
+
+@view struct TextButton(
+    modifier: List[MKind] = emptyList(),
+    label: Str = "",
+    enabled: Bool = true,
+    onClick: (Any) => Null = fun(_: Any): Null { null },
+    body: () => Null = fun(): Null { null }
+)

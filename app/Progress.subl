@@ -5,6 +5,6 @@
 @view struct Progress(
     value: Nat = 0,
     indeterminate: Bool = false,
-    modifier: Modifier = Plain(),
+    modifier: List[MKind] = emptyList(),
     body: () => Null = fun(): Null { null }
 )

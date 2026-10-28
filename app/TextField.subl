@@ -9,6 +9,6 @@
     text: Str = "",
     keyboard: Str = "text",
     onChange: (Str) => Null = fun(t: Str): Null { null },
-    modifier: Modifier = Plain(),
+    modifier: List[MKind] = emptyList(),
     body: () => Null = fun(): Null { null }
 )

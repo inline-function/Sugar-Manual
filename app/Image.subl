@@ -4,6 +4,6 @@
 
 @view struct Image(
     name: Str = "",
-    modifier: Modifier = Plain(),
+    modifier: List[MKind] = emptyList(),
     body: () => Null = fun(): Null { null }
 )

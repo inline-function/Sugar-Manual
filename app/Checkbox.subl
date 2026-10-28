@@ -4,6 +4,6 @@
     checked: Bool = false,
     text: Str = "",
     onToggle: (Bool) => Null = fun(b: Bool): Null { null },
-    modifier: Modifier = Plain(),
+    modifier: List[MKind] = emptyList(),
     body: () => Null = fun(): Null { null }
 )

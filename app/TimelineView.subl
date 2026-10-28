@@ -14,6 +14,6 @@
     labels: List[Str] = emptyList(),
     orientation: Str = "vertical",
     color: Str = "",
-    modifier: Modifier = Plain(),
+    modifier: List[MKind] = emptyList(),
     body: () => Null = fun(): Null { null }
 )

@@ -1,13 +1,123 @@
-// android/Modifier.subl —— 修饰符（android doc/安卓标准库.md §布局）
+// android/Modifier.subl —— 修饰符链（视图协议 v2，Sugar-Manual docs/视图协议v2.md §1）
 //
-// Modifier 是视图结构体的通用属性载体：尺寸、间距、对齐等布局意图。
-// 类型安全（enum 构造子）：非法修饰符字符串在编译期就无法构造——
-// KT 端按 tag 名解析（FillMaxSize/WrapContent/Padding/Width/Height/Center）。
+// **一个视图可以同时带任意多个修饰符**——Modifier 是"元素的有序链"，不是单个枚举值。
+// 链 = List[MKind]：语言侧直接用 List 表达，序列化为 JSON 的 **modifiers 有序数组**
+// （编译器 __dshViewTree 把 List 形态的 modifier 字段键名规范成 "modifiers"，
+//  元素按链顺序；旧的单对象形态 {"tag":"Plain"} 原样保留，走 KT 端兜底分支）。
+//
+// 链的写法（语言只有 enum/struct 与函数，没有方法定义 → 用同名重载表达 Compose 的 Modifier.x().y()）：
+//   Box(modifier = width(4).height(20))          // 竖条：宽 4 × 高 20（旧协议做不到）
+//   Box(modifier = fillWidth().paddingHV(24, 8)) // 满宽 + 水平 24 / 垂直 8 内边距
+//   Text(modifier = fillWidth().weight(1.0))     // 线性容器内弹性分配（Row/Column weight）
+//   modifier = emptyList()                        // 空链（视图字段默认值）
+//
+// 链的顺序 = 书写顺序 = JSON "modifiers" 数组顺序 = KT 端应用顺序（后者覆盖前者，与 Compose 一致）。
+//
+// 命名约束（实测编译器行为，见 android doc/Compose代码生成契约.md §7 R1/R6）：
+//   - 元素构造子首字母大写（Width），链函数小写（width）——同名不同大小写才不撞；
+//   - 对齐不进链（容器 contentAlignment 字段）——MKind 不含 Center，避免与 Alignment.Center 撞名；
+//   - 空链写 emptyList()/Nil()，不写 Plain()（Plain 是 MKind 构造子，写函数同名会二义）。
 
-enum Modifier { Plain(), FillMaxSize(), WrapContent(), Padding(Nat), Width(Nat), Height(Nat) }
+enum MKind {
+    Plain(),
+    FillMaxSize(),
+    WrapContent(),
+    Padding(Nat),
+    Width(Nat),
+    Height(Nat),
+    FillWidth(),
+    FractionWidth(Rat),
+    FillHeight(),
+    FractionHeight(Rat),
+    Padding4(Nat, Nat, Nat, Nat),
+    PaddingH(Nat),
+    PaddingV(Nat),
+    Weight(Rat),
+    Background(Str),
+    Clip(Nat),
+    Alpha(Rat),
+    Flash()
+}
 
-fun fillMaxSize(): Modifier = FillMaxSize()
-fun wrapContent(): Modifier = WrapContent()
-fun padding(n: Nat): Modifier = Padding(n)
-fun width(n: Nat): Modifier = Width(n)
-fun height(n: Nat): Modifier = Height(n)
+// ---------- 链的基础操作 ----------
+
+// 单元素链。
+fun one(x: MKind): List[MKind] = Cons(x, Nil())
+
+// 链拼接：a 的元素在前、b 的在后（Compose 的 Modifier.plus 同义）。
+fun chain(a: List[MKind], b: List[MKind]): List[MKind] = when (a) {
+    Nil => b
+    is Cons(h, t) => Cons(h, chain(t, b))
+    else => b
+}
+
+// ---------- 尺寸 ----------
+
+// 起链：宽 n（dp）。
+fun width(n: Nat): List[MKind] = one(Width(n))
+// 挂链：width(4).height(20)
+fun width(m: List[MKind], n: Nat): List[MKind] = chain(m, one(Width(n)))
+
+fun height(n: Nat): List[MKind] = one(Height(n))
+fun height(m: List[MKind], n: Nat): List[MKind] = chain(m, one(Height(n)))
+
+fun fillMaxSize(): List[MKind] = one(FillMaxSize())
+fun fillMaxSize(m: List[MKind]): List[MKind] = chain(m, one(FillMaxSize()))
+
+fun wrapContent(): List[MKind] = one(WrapContent())
+fun wrapContent(m: List[MKind]): List[MKind] = chain(m, one(WrapContent()))
+
+// 满宽 / 满高。
+fun fillWidth(): List[MKind] = one(FillWidth())
+fun fillWidth(m: List[MKind]): List[MKind] = chain(m, one(FillWidth()))
+
+fun fillHeight(): List[MKind] = one(FillHeight())
+fun fillHeight(m: List[MKind]): List[MKind] = chain(m, one(FillHeight()))
+
+// 按父容器比例填满（0..1）：fillMaxWidth(0.5f) / fillMaxHeight(0.45f) 的等价物。
+fun fractionWidth(f: Rat): List[MKind] = one(FractionWidth(f))
+fun fractionWidth(m: List[MKind], f: Rat): List[MKind] = chain(m, one(FractionWidth(f)))
+
+fun fractionHeight(f: Rat): List[MKind] = one(FractionHeight(f))
+fun fractionHeight(m: List[MKind], f: Rat): List[MKind] = chain(m, one(FractionHeight(f)))
+
+// 线性容器内弹性分配（Row/Column 的 weight）。
+fun weight(w: Rat): List[MKind] = one(Weight(w))
+fun weight(m: List[MKind], w: Rat): List[MKind] = chain(m, one(Weight(w)))
+
+// ---------- 内边距 ----------
+
+fun padding(n: Nat): List[MKind] = one(Padding(n))
+fun padding(m: List[MKind], n: Nat): List[MKind] = chain(m, one(Padding(n)))
+
+// 四边分别：padding4(左, 上, 右, 下)。
+fun padding4(l: Nat, t: Nat, r: Nat, b: Nat): List[MKind] = one(Padding4(l, t, r, b))
+fun padding4(m: List[MKind], l: Nat, t: Nat, r: Nat, b: Nat): List[MKind] = chain(m, one(Padding4(l, t, r, b)))
+
+// 方向化：paddingHV(horizontal, vertical)——Compose 的 padding(horizontal = h, vertical = v)。
+fun paddingHV(h: Nat, v: Nat): List[MKind] = chain(one(PaddingH(h)), one(PaddingV(v)))
+fun paddingHV(m: List[MKind], h: Nat, v: Nat): List[MKind] = chain(m, chain(one(PaddingH(h)), one(PaddingV(v))))
+
+fun paddingH(h: Nat): List[MKind] = one(PaddingH(h))
+fun paddingH(m: List[MKind], h: Nat): List[MKind] = chain(m, one(PaddingH(h)))
+
+fun paddingV(v: Nat): List[MKind] = one(PaddingV(v))
+fun paddingV(m: List[MKind], v: Nat): List[MKind] = chain(m, one(PaddingV(v)))
+
+// ---------- 外观与动画 ----------
+
+// 背景色："#RRGGBB" / "#AARRGGBB" / 主题色名（见 Theme.subl）。
+fun background(c: Str): List[MKind] = one(Background(c))
+fun background(m: List[MKind], c: Str): List[MKind] = chain(m, one(Background(c)))
+
+// 圆角裁剪（dp）。
+fun clip(n: Nat): List[MKind] = one(Clip(n))
+fun clip(m: List[MKind], n: Nat): List[MKind] = chain(m, one(Clip(n)))
+
+// 透明度（0..1）。
+fun alpha(a: Rat): List[MKind] = one(Alpha(a))
+fun alpha(m: List[MKind], a: Rat): List[MKind] = chain(m, one(Alpha(a)))
+
+// 动画最小集：无限透明度闪烁（1.0 ↔ 0.25，650ms 反向循环）。KT 端 AlphaAnimation，@compose 生成物 Modifier.flash()。
+fun flash(): List[MKind] = one(Flash())
+fun flash(m: List[MKind]): List[MKind] = chain(m, one(Flash()))

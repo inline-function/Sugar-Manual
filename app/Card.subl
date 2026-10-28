@@ -1,0 +1,17 @@
+// android/Card.subl —— 卡片容器（android doc/安卓标准库.md §基础视图；协议 v2 新增）
+//
+// MD 卡片：圆角 + 阴影 + 背景色，可装任意子视图（≈ Compose 的 Card）。
+//   cornerRadius   圆角半径（dp，默认 12）
+//   elevation      阴影高度（dp，默认 1）
+//   backgroundColor 背景色（"#RRGGBB" / "#AARRGGBB" / 主题色名；空 = surfaceVariant）
+//   onClick        整卡可点（≈ Card(onClick)）
+// KT 端：CardView（圆角 + cardElevation + 内层 LinearLayout）；Compose 生成物：Card(shape, elevation)。
+
+@view struct Card(
+    modifier: List[MKind] = emptyList(),
+    cornerRadius: Nat = 12,
+    elevation: Nat = 1,
+    backgroundColor: Str = "",
+    onClick: (Any) => Null = fun(_: Any): Null { null },
+    body: () => Null = fun(): Null { null }
+)

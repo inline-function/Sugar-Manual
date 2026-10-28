@@ -25,8 +25,19 @@ import android.widget.ScrollView
 import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.Toast
+import android.view.animation.AlphaAnimation
+import android.view.animation.Animation
+import android.app.Dialog
 import android.content.res.ColorStateList
+import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.Drawable
+import android.util.TypedValue
+import android.view.animation.AccelerateDecelerateInterpolator
+import androidx.appcompat.app.AlertDialog
+import androidx.cardview.widget.CardView
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.materialswitch.MaterialSwitch
 import com.google.android.material.slider.Slider
@@ -50,6 +61,13 @@ class DshBridge(private val activity: MainActivity) {
     private val tag = "Sublimation"
     private val lifecycleCallbacks = mutableSetOf<String>()
     private val firedEvents = mutableSetOf<String>()
+    // 协议 v2 §4：弹出层（AlertDialog/BottomSheet）按 tag+__ord 注册，visible 数据字段驱显隐。
+    private val dialogs = mutableMapOf<String, Dialog>()
+    /** 图表多序列默认配色（与 gen/Palette.kt 同源）。 */
+    private val SERIES_COLORS = intArrayOf(
+        0xFF00695C.toInt(), 0xFFFFC107.toInt(), 0xFF7C4DFF.toInt(),
+        0xFFD32F2F.toInt(), 0xFF1976D2.toInt(), 0xFF388E3C.toInt(),
+    )
     // lazy：DshBridge 在 Activity 字段初始化期构造（此时 base context 尚未 attach），故延后取
     private val prefs by lazy { activity.getSharedPreferences("dsh-storage", 0) }
 
@@ -373,20 +391,36 @@ class DshBridge(private val activity: MainActivity) {
             "Chart" -> buildChart(node)
             "TimelineView" -> buildTimelineView(node)
             "FloatingButton" -> buildFloatingButton(node, children)
+            "Card" -> buildCard(node, children)
+            "TextButton" -> buildTextButton(node, children)
+            "Icon" -> buildIcon(node)
+            "AlertDialog" -> buildAlertDialog(node, children)
+            "BottomSheet" -> buildBottomSheet(node, children)
             else -> buildText(node)
         }
     }
 
     private fun buildBox(node: JSONObject, children: JSONArray?): View {
-        val ctx = LinearLayout(activity).apply {
-            orientation = if (node.optString("orientation", "vertical") == "horizontal")
-                LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
-            layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT)
+        val vertical = node.optString("orientation", "vertical") != "horizontal"
+        // 协议 v2 §3：wrap=true → FlowLayout 流式换行（≈ Compose FlowRow）；否则线性容器。
+        val ctx: ViewGroup = if (node.optBoolean("wrap", false)) {
+            FlowLayout(activity).apply {
+                horizontalSpacing = dp(node.optInt("spacing", 0))
+                verticalSpacing = dp(node.optInt("spacing", 0))
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT)
+            }
+        } else {
+            LinearLayout(activity).apply {
+                orientation = if (vertical) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT)
+            }
         }
         val align = node.optJSONObject("contentAlignment")?.optString("tag", "Center") ?: "Center"
-        val gravity = when (align) {
+        var gravity = when (align) {
             "Center" -> Gravity.CENTER
             "TopStart" -> Gravity.TOP or Gravity.START
             "BottomEnd" -> Gravity.BOTTOM or Gravity.END
@@ -396,22 +430,54 @@ class DshBridge(private val activity: MainActivity) {
             "Bottom" -> Gravity.BOTTOM
             else -> Gravity.CENTER
         }
-        ctx.gravity = gravity
+        val spacing = node.optInt("spacing", 0)
+        val arrangement = node.optString("arrangement", "Start")
+        // 主轴分布（arrangement）覆盖 contentAlignment 的主轴分量：
+        // Start（默认）/ Center / End 走 gravity；SpaceBetween/SpaceAround/SpaceEvenly 走权重分配条。
+        val horizontal = node.optString("orientation", "vertical") == "horizontal"
+        val distributed = arrangement == "SpaceBetween" || arrangement == "SpaceAround" || arrangement == "SpaceEvenly"
+        gravity = removeMainAxis(gravity, horizontal) or when (arrangement) {
+            "Center" -> if (horizontal) Gravity.CENTER_HORIZONTAL else Gravity.CENTER_VERTICAL
+            "End" -> if (horizontal) Gravity.END else Gravity.BOTTOM
+            else -> if (horizontal) Gravity.START else Gravity.TOP
+        }
+        if (ctx is LinearLayout) ctx.gravity = gravity
         val bg = node.optString("backgroundColor", "")
         if (bg.isNotEmpty()) {
             val c = parseColor(bg)
             if (c != 0) ctx.setBackgroundColor(c)
         }
+        // 容器可点（协议 v2 §3：Box.onClick ≈ Compose Surface(onClick)）
+        bindOnClick(ctx, node.optString("onClick", ""))
         applyModifiers(ctx, node)
         // 悬浮按钮（FloatingButton）子视图从线性流中抽出，父 Box 改用 FrameLayout，
         // FAB 按底部居右重力叠放（MD FAB 定位）；其余子视图照常竖排。
         var hasFab = false
         if (children != null) {
+            var added = 0
             for (i in 0 until children.length()) {
                 val child = children.optJSONObject(i) ?: continue
                 val tag = child.optString("tag", "")
                 if (tag == "FloatingButton") { hasFab = true; continue }
-                ctx.addView(buildView(child.toString()))
+                // 分配条（SpaceBetween/SpaceAround/SpaceEvenly 的主轴间隙，按权重分配剩余空间）：
+                // SpaceBetween 只在内部（weight 1）；SpaceAround 内 2 / 首尾 1；SpaceEvenly 全 2。
+                if (ctx is LinearLayout && distributed && added > 0) {
+                    ctx.addView(spacer(if (arrangement == "SpaceBetween") 1f else 2f, horizontal))
+                }
+                val v = buildView(child.toString())
+                if (added > 0 && spacing > 0 && ctx is LinearLayout) {
+                    val lp0 = v.layoutParams
+                    val lp = if (lp0 is LinearLayout.LayoutParams) lp0
+                        else LinearLayout.LayoutParams(lp0?.width ?: ViewGroup.LayoutParams.WRAP_CONTENT,
+                            lp0?.height ?: ViewGroup.LayoutParams.WRAP_CONTENT)
+                    if (vertical) lp.topMargin = dp(spacing) else lp.leftMargin = dp(spacing)
+                    ctx.addView(v, lp)
+                } else ctx.addView(v)
+                added++
+            }
+            if (ctx is LinearLayout && distributed && added > 0 && arrangement != "SpaceBetween") {
+                ctx.addView(spacer(if (arrangement == "SpaceEvenly") 2f else 1f, horizontal), 0)
+                ctx.addView(spacer(if (arrangement == "SpaceEvenly") 2f else 1f, horizontal))
             }
         }
         if (hasFab) {
@@ -441,7 +507,7 @@ class DshBridge(private val activity: MainActivity) {
         }
         // scrollable：内容包进 ScrollView（纵向）/HorizontalScrollView（横向）。
         if (node.optBoolean("scrollable", false)) {
-            val scroller = if (node.optString("orientation", "vertical") == "horizontal")
+            val scroller = if (horizontal)
                 HorizontalScrollView(activity) else ScrollView(activity)
             ctx.layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -452,19 +518,107 @@ class DshBridge(private val activity: MainActivity) {
         return ctx
     }
 
-    private fun buildButton(node: JSONObject, children: JSONArray?): View {
-        val btn = MaterialButton(activity)
-        btn.text = extractText(children) ?: node.optString("label", "")
-        btn.isEnabled = node.optBoolean("enabled", true)
-        val onClickId = node.optString("onClick", "")
-        if (onClickId.isNotEmpty()) {
-            btn.setOnClickListener {
-                activity.web.evaluateJavascript(
-                    "try{ globalThis.__dshFn_" + onClickId + "(); }catch(e){ console.log(e); }", null)
+    /** 主轴 gravity 位清零（保留十字轴分量）。 */
+    private fun removeMainAxis(gravity: Int, horizontal: Boolean): Int =
+        if (horizontal) gravity and (Gravity.VERTICAL_GRAVITY_MASK).inv()
+        else gravity and (Gravity.HORIZONTAL_GRAVITY_MASK).inv()
+
+    /** 权重分配条（SpaceBetween/SpaceAround/SpaceEvenly 的主轴间隙）。 */
+    private fun spacer(weight: Float, horizontal: Boolean): View =
+        View(activity).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                if (horizontal) 0 else ViewGroup.LayoutParams.WRAP_CONTENT,
+                if (horizontal) ViewGroup.LayoutParams.WRAP_CONTENT else 0,
+                weight)
+        }
+
+    /** 点击绑定：key 非空 → 点击回调 JS 侧 __dshFn_<key>（协议 v2 实例键）。 */
+    private fun bindOnClick(view: View, key: String) {
+        if (key.isEmpty()) return
+        view.isClickable = true
+        view.isFocusable = true
+        view.setOnClickListener { jsCallback(key, "") }
+    }
+
+    /** dp → px。 */
+    private fun dp(n: Int): Int = (n * activity.resources.displayMetrics.density).toInt()
+
+    /** 主题色 primary（按钮等容器底色兜底）。 */
+    private fun resolveColorPrimary(): Int {
+        val tv = TypedValue()
+        return if (activity.theme.resolveAttribute(android.R.attr.colorPrimary, tv, true)) tv.data
+            else 0xFF6750A4.toInt()
+    }
+
+    /** 涟漪（可点击容器的前景）。 */
+    private fun rippleDrawable(): Drawable? {
+        val tv = TypedValue()
+        return if (activity.theme.resolveAttribute(android.R.attr.selectableItemBackground, tv, true))
+            activity.getDrawable(tv.resourceId) else null
+    }
+
+    /**
+     * 按钮视图（协议 v2 §3）：**容器**——body 的全部子视图装进按钮内部（纵向居中），
+     * 不再"只取首个 Text 作文案"。
+     * - body 为空 / 全是 Text → MaterialButton（文案 = 各 Text 换行拼接 / label）；
+     * - body 含其它视图 → MaterialCardView 容器（filled/text/outlined 三种形态），
+     *   子视图全部渲染进去。
+     * style："filled"（默认）/ "text"（≈ TextButton）/ "outlined"。
+     */
+    private fun buildButton(node: JSONObject, children: JSONArray?, styleOverride: String? = null): View {
+        val style = styleOverride ?: node.optString("style", "filled")
+        val label = node.optString("label", "")
+        val texts = extractAllText(children)
+        if (texts != null || !hasNonTextChild(children)) {
+            // 纯文案按钮：MaterialButton（含 style 变体）
+            val ctx = when (style) {
+                "text" -> android.view.ContextThemeWrapper(activity,
+                    com.google.android.material.R.style.Widget_Material3_Button_TextButton)
+                "outlined" -> android.view.ContextThemeWrapper(activity,
+                    com.google.android.material.R.style.Widget_Material3_Button_OutlinedButton)
+                else -> activity
+            }
+            val btn = MaterialButton(ctx)
+            btn.text = texts ?: label
+            btn.isEnabled = node.optBoolean("enabled", true)
+            bindOnClick(btn, node.optString("onClick", ""))
+            applyModifiers(btn, node)
+            return btn
+        }
+        // 容器按钮：MaterialCardView 装全部子视图
+        val card = MaterialCardView(activity)
+        card.radius = 20f * activity.resources.displayMetrics.density
+        card.cardElevation = 0f
+        card.isClickable = true
+        card.minimumHeight = dp(36)
+        when (style) {
+            "text" -> card.setCardBackgroundColor(Color.TRANSPARENT)
+            "outlined" -> {
+                card.setCardBackgroundColor(Color.TRANSPARENT)
+                card.strokeColor = parseColor("outline")
+                card.strokeWidth = dp(1)
+            }
+            else -> card.setCardBackgroundColor(resolveColorPrimary())
+        }
+        card.foreground = rippleDrawable()
+        bindOnClick(card, node.optString("onClick", ""))
+        val inner = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dp(12), dp(6), dp(12), dp(6))
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
+        if (children != null) {
+            for (i in 0 until children.length()) {
+                val child = children.optJSONObject(i) ?: continue
+                inner.addView(buildView(child.toString()))
             }
         }
-        applyModifiers(btn, node)
-        return btn
+        card.addView(inner)
+        applyModifiers(card, node)
+        return card
     }
 
     private fun buildText(node: JSONObject): View {
@@ -484,8 +638,21 @@ class DshBridge(private val activity: MainActivity) {
                 (if (node.optBoolean("italic", false)) 2 else 0)
             tv.setTypeface(tv.typeface, style)
         }
+        // 协议 v2 §6 动画最小集：flash=true → 无限透明度闪烁（1.0 ↔ 0.25，650ms 反向）
+        if (node.optBoolean("flash", false)) flashAnimation(tv)
         applyModifiers(tv, node)
         return tv
+    }
+
+    /** 无限透明度闪烁（≈ Compose 的 Modifier.flash()，协议 v2 动画最小集）。 */
+    private fun flashAnimation(view: View) {
+        val a = AlphaAnimation(1f, 0.25f).apply {
+            duration = 650
+            repeatMode = Animation.REVERSE
+            repeatCount = Animation.INFINITE
+            interpolator = AccelerateDecelerateInterpolator()
+        }
+        view.startAnimation(a)
     }
 
     private fun buildTextField(node: JSONObject): View {
@@ -571,24 +738,44 @@ class DshBridge(private val activity: MainActivity) {
         return iv
     }
 
-    /** 图表视图（@view Chart）：折线/柱状自绘 */
+    /**
+     * 图表视图（@view Chart）：折线/柱状自绘。
+     * 协议 v2 §6：多序列——series 里每条序列各自颜色 + 图例名 + 采样点，
+     * points 是总浓度主线（垂直渐变填充），legend/badge 控制图例与徽标。
+     */
     private fun buildChart(node: JSONObject): View {
         val cv = ChartView(activity)
         val kind = node.optString("kind", "line")
         val colorHex = node.optString("color", "")
-        val series = node.optJSONArray("points")
-        val pts = FloatArray(series?.length() ?: 0) { i -> series!!.optDouble(i).toFloat() }
+        val mainArr = node.optJSONArray("points")
+        val pts = FloatArray(mainArr?.length() ?: 0) { i -> mainArr!!.optDouble(i).toFloat() }
         val labelArr = node.optJSONArray("labels")
         val labels = Array(labelArr?.length() ?: 0) { i -> labelArr!!.optString(i) }
         val density = (activity.resources.displayMetrics.densityDpi / 160f)
         cv.layoutParams = ChartView.densityScaled(density)
         // 兑现已声明的 modifier 字段（不新增协议字段）：Height(n) / FillMaxSize 等。
         applyModifiers(cv, node)
-        if (colorHex.isNotEmpty()) {
-            val c = parseColor(colorHex)
-            if (c != 0) cv.setData(pts, labels, kind, c, (c and 0x00FFFFFF) or 0x33000000)
-            else cv.setData(pts, labels, kind, 0xFF7C4DFF.toInt(), 0x337C4DFF)
-        } else cv.setData(pts, labels, kind, 0xFF7C4DFF.toInt(), 0x337C4DFF)
+        val seriesArr = node.optJSONArray("series")
+        if (seriesArr != null && seriesArr.length() > 0) {
+            val list = ArrayList<ChartView.Series>()
+            for (i in 0 until seriesArr.length()) {
+                val s = seriesArr.optJSONObject(i) ?: continue
+                val pArr = s.optJSONArray("points")
+                val sPts = FloatArray(pArr?.length() ?: 0) { j -> pArr!!.optDouble(j).toFloat() }
+                val col = parseColor(s.optString("color", ""))
+                    .let { if (it != 0) it else SERIES_COLORS[i % SERIES_COLORS.size] }
+                list += ChartView.Series(s.optString("label", ""), col, sPts)
+            }
+            val mainColor = parseColor(colorHex).let { if (it != 0) it else 0xFF00695C.toInt() }
+            cv.setMultiSeries(pts, list, labels, kind, mainColor,
+                node.optBoolean("legend", true), node.optString("badge", ""))
+        } else {
+            if (colorHex.isNotEmpty()) {
+                val c = parseColor(colorHex)
+                if (c != 0) cv.setData(pts, labels, kind, c, (c and 0x00FFFFFF) or 0x33000000)
+                else cv.setData(pts, labels, kind, 0xFF7C4DFF.toInt(), 0x337C4DFF)
+            } else cv.setData(pts, labels, kind, 0xFF7C4DFF.toInt(), 0x337C4DFF)
+        }
         return cv
     }
 
@@ -644,23 +831,27 @@ class DshBridge(private val activity: MainActivity) {
         return scroller
     }
 
-    /** 悬浮圆角按钮（@view FloatingButton）：MaterialButton + 圆角 + 主色 tint。 */
+    /**
+     * 悬浮圆角按钮（@view FloatingButton）：MaterialButton + 圆角 + 主色 tint。
+     * 协议 v2：icon 为内置图标名（Icon.subl 同表；空串 = 无图标），text 为文字；
+     * icon + text = ExtendedFAB（MaterialButton 自动图标 + 文字布局）。
+     */
     private fun buildFloatingButton(node: JSONObject, children: JSONArray?): View {
         val btn = MaterialButton(activity)
-        btn.text = extractText(children) ?: node.optString("label", "")
+        btn.text = node.optString("text", if (node.optString("label", "").isNotEmpty())
+            node.optString("label", "") else extractText(children) ?: "")
         btn.cornerRadius = node.optInt("cornerRadius", 28)
         val colorHex = node.optString("color", "")
         if (colorHex.isNotEmpty()) {
             val c = parseColor(colorHex)
             if (c != 0) btn.backgroundTintList = ColorStateList.valueOf(c)
         }
-        val onClickId = node.optString("onClick", "")
-        if (onClickId.isNotEmpty()) {
-            btn.setOnClickListener {
-                activity.web.evaluateJavascript(
-                    "try{ globalThis.__dshFn_" + onClickId + "(); }catch(e){ console.log(e); }", null)
-            }
+        val iconName = node.optString("icon", "")
+        if (iconName.isNotEmpty()) {
+            val resId = resolveIcon(iconName)
+            if (resId != 0) btn.setIconResource(resId)
         }
+        bindOnClick(btn, node.optString("onClick", ""))
         applyModifiers(btn, node)
         return btn
     }
@@ -686,10 +877,68 @@ class DshBridge(private val activity: MainActivity) {
         }
     }
 
-    private fun parseColor(hex: String): Int {
-        return try { Color.parseColor(hex) } catch (t: Throwable) {
-            Log.w(tag, "无效颜色: " + hex); 0
+    /**
+     * 颜色解析（协议 v2 §5）：主题色名（primary/onPrimary/…，见 Theme.subl / gen/Palette.kt）
+     * | "#AARRGGBB" | "#RRGGBB"（Color.parseColor 原生支持 alpha 通道）。
+     */
+    private fun parseColor(spec: String): Int {
+        if (spec.isEmpty()) return 0
+        themeColor(spec)?.let { return it }
+        val s = if (spec.startsWith("#")) spec else "#" + spec
+        return try { Color.parseColor(s) } catch (t: Throwable) {
+            Log.w(tag, "无效颜色: " + spec); 0
         }
+    }
+
+    /** 主题色表（与 @compose 生成物 gen/Palette.kt 一致；换主题双侧同改）。 */
+    private fun themeColor(name: String): Int? = when (name) {
+        "primary" -> 0xFF00695C.toInt()
+        "onPrimary" -> 0xFFFFFFFF.toInt()
+        "primaryContainer" -> 0xFFB2DFDB.toInt()
+        "onPrimaryContainer" -> 0xFF00211E.toInt()
+        "secondary" -> 0xFF4D6357.toInt()
+        "onSecondary" -> 0xFFFFFFFF.toInt()
+        "secondaryContainer" -> 0xFFCFE8D9.toInt()
+        "onSecondaryContainer" -> 0xFF0A1F16.toInt()
+        "surface" -> 0xFFFFFBFE.toInt()
+        "onSurface" -> 0xFF1D1B20.toInt()
+        "surfaceVariant" -> 0xFFE7E0EC.toInt()
+        "onSurfaceVariant" -> 0xFF49454E.toInt()
+        "outline" -> 0xFF79747E.toInt()
+        "outlineVariant" -> 0xFFCAC4D0.toInt()
+        "error" -> 0xFFB3261E.toInt()
+        "onError" -> 0xFFFFFFFF.toInt()
+        "errorContainer" -> 0x33D32F2F.toInt()
+        "warning" -> 0xFFE65100.toInt()
+        "warningContainer" -> 0x33F9A825.toInt()
+        "info" -> 0xFF2E7D32.toInt()
+        "infoContainer" -> 0x334CAF50.toInt()
+        else -> null
+    }
+
+    /** body 全是 Text 时返回拼接文案（换行分隔），否则 null（调用方改走容器渲染）。 */
+    private fun extractAllText(children: JSONArray?): String? {
+        if (children == null) return null
+        val sb = StringBuilder()
+        var any = false
+        for (i in 0 until children.length()) {
+            val c = children.optJSONObject(i) ?: continue
+            if (c.optString("tag") != "Text") return null
+            if (any) sb.append("\n")
+            sb.append(c.optString("text", ""))
+            any = true
+        }
+        return if (any) sb.toString() else null
+    }
+
+    /** body 里存在非 Text 子视图 → 容器化渲染。 */
+    private fun hasNonTextChild(children: JSONArray?): Boolean {
+        if (children == null) return false
+        for (i in 0 until children.length()) {
+            val c = children.optJSONObject(i) ?: continue
+            if (c.optString("tag") != "Text") return true
+        }
+        return false
     }
 
     private fun extractText(children: JSONArray?): String? {
@@ -741,27 +990,38 @@ class DshBridge(private val activity: MainActivity) {
                 lp.width = ViewGroup.LayoutParams.WRAP_CONTENT
                 lp.height = ViewGroup.LayoutParams.WRAP_CONTENT
             }
-            "Width" -> lp.width = m.optInt("0")
-            "Height" -> lp.height = m.optInt("0")
+            "Width" -> lp.width = dp(m.optInt("0"))
+            "Height" -> lp.height = dp(m.optInt("0"))
             "Size" -> {
-                lp.width = m.optInt("0")
-                lp.height = m.optInt("1")
+                lp.width = dp(m.optInt("0"))
+                lp.height = dp(m.optInt("1"))
             }
             "Padding" -> {
-                val p = m.optInt("0")
+                val p = dp(m.optInt("0"))
                 view.setPadding(p, p, p, p)
             }
-            "Padding4" -> view.setPadding(m.optInt("0"), m.optInt("1"), m.optInt("2"), m.optInt("3"))
+            "Padding4" -> view.setPadding(dp(m.optInt("0")), dp(m.optInt("1")),
+                dp(m.optInt("2")), dp(m.optInt("3")))
             "PaddingH" -> {
-                val h = m.optInt("0")
+                val h = dp(m.optInt("0"))
                 view.setPadding(h, view.paddingTop, h, view.paddingBottom)
             }
             "PaddingV" -> {
-                val v = m.optInt("0")
+                val v = dp(m.optInt("0"))
                 view.setPadding(view.paddingLeft, v, view.paddingRight, v)
             }
             "FillWidth" -> lp.width = ViewGroup.LayoutParams.MATCH_PARENT
             "FillHeight" -> {
+                val f = m.optDouble("0", 1.0)
+                lp.height = if (f >= 1.0) ViewGroup.LayoutParams.MATCH_PARENT
+                    else (f * activity.resources.displayMetrics.heightPixels).toInt().coerceAtLeast(1)
+            }
+            "FractionWidth" -> {
+                val f = m.optDouble("0", 1.0)
+                lp.width = if (f >= 1.0) ViewGroup.LayoutParams.MATCH_PARENT
+                    else (f * activity.resources.displayMetrics.widthPixels).toInt().coerceAtLeast(1)
+            }
+            "FractionHeight" -> {
                 val f = m.optDouble("0", 1.0)
                 lp.height = if (f >= 1.0) ViewGroup.LayoutParams.MATCH_PARENT
                     else (f * activity.resources.displayMetrics.heightPixels).toInt().coerceAtLeast(1)
@@ -773,7 +1033,192 @@ class DshBridge(private val activity: MainActivity) {
                 return
             }
             "Center" -> if (view is LinearLayout) view.gravity = Gravity.CENTER
+            // 协议 v2 §5/§6 外观与动画
+            "Background" -> {
+                val c = parseColor(m.optString("0", ""))
+                if (c != 0) view.setBackgroundColor(c)
+            }
+            "Clip" -> {
+                val r = dp(m.optInt("0"))
+                view.background = GradientDrawable().apply { cornerRadius = r.toFloat() }
+            }
+            "Alpha" -> view.alpha = m.optDouble("0", 1.0).toFloat()
+            "Flash" -> flashAnimation(view)
         }
         view.layoutParams = lp
     }
+
+    // ========== 协议 v2 §4 新组件 ==========
+
+    private fun buildCard(node: JSONObject, children: JSONArray?): View {
+        val card = CardView(activity)
+        card.radius = dp(node.optInt("cornerRadius", 12)).toFloat()
+        card.cardElevation = dp(node.optInt("elevation", 1)).toFloat()
+        card.setCardBackgroundColor(parseColor(node.optString("backgroundColor", "")).let {
+            if (it != 0) it else 0xFFE7E0EC.toInt()
+        })
+        bindOnClick(card, node.optString("onClick", ""))
+        val inner = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
+        if (children != null) {
+            for (i in 0 until children.length()) {
+                val child = children.optJSONObject(i) ?: continue
+                inner.addView(buildView(child.toString()))
+            }
+        }
+        card.addView(inner)
+        applyModifiers(card, node)
+        return card
+    }
+
+    /** TextButton：Button 的 "text" 形态（无边框无填充，≈ Compose TextButton）。 */
+    private fun buildTextButton(node: JSONObject, children: JSONArray?): View =
+        buildButton(node, children, "text")
+
+    /** Icon（@view Icon）：内置矢量图标名 → 系统 drawable 兜底。 */
+    private fun buildIcon(node: JSONObject): View {
+        val iv = ImageView(activity)
+        val resId = resolveIcon(node.optString("name", "add"))
+        if (resId != 0) iv.setImageResource(resId) else iv.setImageResource(android.R.drawable.ic_menu_info_details)
+        val size = node.optInt("size", 24)
+        iv.layoutParams = ViewGroup.LayoutParams(dp(size), dp(size))
+        iv.scaleType = ImageView.ScaleType.FIT_CENTER
+        val tint = node.optString("tint", "")
+        if (tint.isNotEmpty()) {
+            val c = parseColor(tint)
+            if (c != 0) iv.setColorFilter(c)
+        }
+        applyModifiers(iv, node)
+        return iv
+    }
+
+    /**
+     * AlertDialog（@view AlertDialog）：visible 是**数据字段**——按数据显隐，
+     * 不靠视图树增删（协议 v2 §4）。遮罩 + 点外部取消 = onDismiss。
+     */
+    private fun buildAlertDialog(node: JSONObject, children: JSONArray?): View {
+        val key = dialogKey(node)
+        if (node.optBoolean("visible", false)) {
+            if (dialogs[key] == null) {
+                val builder = AlertDialog.Builder(activity)
+                val title = node.optString("title", "")
+                if (title.isNotEmpty()) builder.setTitle(title)
+                val body = ArrayList<View>()
+                if (children != null) {
+                    for (i in 0 until children.length()) {
+                        val c = children.optJSONObject(i) ?: continue
+                        body += buildView(c.toString())
+                    }
+                }
+                if (body.isNotEmpty()) {
+                    val inner = LinearLayout(activity).apply {
+                        orientation = LinearLayout.VERTICAL
+                        setPadding(dp(24), dp(8), dp(24), dp(8))
+                    }
+                    body.forEach { inner.addView(it) }
+                    builder.setView(inner)
+                }
+                val confirm = node.optString("confirmText", "")
+                val dismiss = node.optString("dismissText", "")
+                if (confirm.isNotEmpty()) builder.setPositiveButton(confirm) { _, _ ->
+                    jsCallback(node.optString("onConfirm", ""), ""); dismissDialog(key)
+                }
+                if (dismiss.isNotEmpty()) builder.setNegativeButton(dismiss) { _, _ ->
+                    jsCallback(node.optString("onDismiss", ""), ""); dismissDialog(key)
+                }
+                builder.setCancelable(true)
+                builder.setOnCancelListener {
+                    jsCallback(node.optString("onDismiss", ""), ""); dismissDialog(key)
+                }
+                activity.runOnUiThread {
+                    val d = builder.create()
+                    dialogs[key] = d
+                    d.show()
+                }
+            }
+        } else dismissDialog(key)
+        return stubView()
+    }
+
+    /** BottomSheet（@view BottomSheet）：底部抽屉（Material BottomSheetDialog），下滑/点遮罩关闭。 */
+    private fun buildBottomSheet(node: JSONObject, children: JSONArray?): View {
+        val key = dialogKey(node)
+        if (node.optBoolean("visible", false)) {
+            if (dialogs[key] == null) {
+                val inner = LinearLayout(activity).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(dp(24), dp(16), dp(24), dp(16))
+                    layoutParams = ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT)
+                }
+                if (children != null) {
+                    for (i in 0 until children.length()) {
+                        val c = children.optJSONObject(i) ?: continue
+                        inner.addView(buildView(c.toString()))
+                    }
+                }
+                val sheet = BottomSheetDialog(activity)
+                sheet.setContentView(inner)
+                sheet.setCancelable(true)
+                sheet.setOnCancelListener {
+                    jsCallback(node.optString("onDismiss", ""), ""); dismissDialog(key)
+                }
+                sheet.setOnDismissListener { dismissDialogFromCallback(key) }
+                activity.runOnUiThread {
+                    dialogs[key] = sheet
+                    sheet.show()
+                }
+            }
+        } else dismissDialog(key)
+        return stubView()
+    }
+
+    private fun dialogKey(node: JSONObject): String =
+        node.optString("tag", "") + "_" + node.optInt("__ord", 0)
+
+    private fun dismissDialog(key: String) { dialogs.remove(key)?.dismiss() }
+    private fun dismissDialogFromCallback(key: String) { dialogs.remove(key) }
+
+    /** 弹出层占位视图（0 尺寸，保持视图树形状不变，真实 UI 在 Dialog 里）。 */
+    private fun stubView(): View = View(activity).apply {
+        layoutParams = ViewGroup.LayoutParams(0, 0)
+    }
+
+    /**
+     * 内置矢量图标名（与 Icon.subl 表一致）→ 系统 drawable；未命中再按原名查应用/系统资源。
+     * "android:ic_menu_info_details" 直接取系统 drawable。
+     */
+    private fun resolveIcon(name: String): Int {
+        if (name.isEmpty()) return 0
+        if (name.startsWith("android:")) {
+            return activity.resources.getIdentifier(name.substring(8), "drawable", "android")
+        }
+        val mapped = when (name) {
+            "add" -> "ic_menu_add"
+            "close" -> "ic_menu_close_clear_cancel"
+            "settings" -> "ic_menu_preferences"
+            "search" -> "ic_menu_search"
+            "arrowBack" -> "ic_media_previous"
+            "arrowForward" -> "ic_media_next"
+            "menu" -> "ic_menu_sort_by_size"
+            "moreVert" -> "ic_menu_more"
+            "favorite" -> "btn_star_big_on"
+            "delete" -> "ic_delete"
+            "info" -> "ic_menu_info_details"
+            "warning" -> "ic_dialog_alert"
+            "share" -> "ic_menu_share"
+            "edit" -> "ic_menu_edit"
+            "check" -> "ic_menu_done"
+            else -> name
+        }
+        val sysId = activity.resources.getIdentifier(mapped, "drawable", "android")
+        return if (sysId != 0) sysId else
+            activity.resources.getIdentifier(name, "drawable", activity.packageName)
+    }
+
 }

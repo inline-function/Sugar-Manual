@@ -1,18 +1,22 @@
-// android/Chart.subl —— 图表视图（android doc/安卓标准库.md §图表视图）
+// android/Chart.subl —— 图表视图（android doc/安卓标准库.md §图表视图；协议 v2 多序列）
 //
-// 可滑动的数据序列图表：kind="line"（默认）为带数据点与渐变填充的折线图，
-// kind="bar" 为柱状图。points 为 Y 值序列（List[Rat]，如 t28/pk.subl 的
-// seriesValues 浓度序列）；labels 为逐点 X 轴标注（如 seriesLabels 的 "0h"…），
-// 为空时不画 X 轴文字；color 为 "#RRGGBB" 主色（默认由 KT 端主题决定）。
+// 协议 v2：**多序列**——series 里每个序列各自颜色 + 图例名 + 采样点（逐药分量线），
+// points 是总浓度主线（带垂直渐变填充）；labels 为 X 轴刻度（如 "0"/"12"/"24"/"36"/"48"）。
+// legend = true 时左上画图例（色点 + 名），badge 显示右端徽标（如「估算」）。
 //
-// KT 端渲染协议（tag = "Chart"）：ChartView 自绘 Canvas（零第三方依赖），
-// points/labels 为 JSON 数组、kind/color 为字符串，详见标准库文档。
+// KT 端：ChartView 自绘 Canvas（零第三方依赖）；@compose 生成物：Subl_ConcentrationChart（同构 Canvas）。
+
+// 一条序列：图例名 + 颜色（"#RRGGBB" / "#AARRGGBB" / 主题色名）+ Y 值点列。
+struct Series(label: Str, color: Str, points: List[Rat])
 
 @view struct Chart(
     kind: Str = "line",
+    series: List[Series] = emptyList(),
     points: List[Rat] = emptyList(),
     labels: List[Str] = emptyList(),
     color: Str = "",
-    modifier: Modifier = Plain(),
+    legend: Bool = true,
+    badge: Str = "估算",
+    modifier: List[MKind] = emptyList(),
     body: () => Null = fun(): Null { null }
 )

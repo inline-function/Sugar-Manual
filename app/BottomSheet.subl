@@ -1,0 +1,13 @@
+// android/BottomSheet.subl —— 底部抽屉（协议 v2 新增）
+//
+// ≈ Compose 的 ModalBottomSheet：从底部升起、带遮罩、下滑/点遮罩关闭。
+//   visible    数据字段（同上，显隐不靠节点增删）
+//   onDismiss  关闭回调
+//   body       抽屉内容
+// KT 端：BottomSheetDialog；Compose 生成物：if (visible) ModalBottomSheet(onDismissRequest, sheetState)。
+
+@view struct BottomSheet(
+    visible: Bool = false,
+    onDismiss: (Any) => Null = fun(_: Any): Null { null },
+    body: () => Null = fun(): Null { null }
+)

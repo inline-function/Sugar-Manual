@@ -1,0 +1,18 @@
+// android/AlertDialog.subl —— 模态对话框（协议 v2 新增）
+//
+// visible 是**数据字段**：弹出层按数据显隐，不靠视图树增删（layout 整树差量时不会被重建，关闭动画可跑完）。
+//   title       标题
+//   confirmText / dismissText  两个按钮的文案（空串 = 不显示该按钮）
+//   onConfirm / onDismiss      回调（实例键）
+//   body        正文内容（可装任意子视图）
+// KT 端：AlertDialog.Builder（遮罩 + 点外部取消 = onDismiss）；Compose 生成物：if (visible) AlertDialog(...)。
+
+@view struct AlertDialog(
+    visible: Bool = false,
+    title: Str = "",
+    confirmText: Str = "确定",
+    dismissText: Str = "取消",
+    onConfirm: (Any) => Null = fun(_: Any): Null { null },
+    onDismiss: (Any) => Null = fun(_: Any): Null { null },
+    body: () => Null = fun(): Null { null }
+)

@@ -1,53 +1,43 @@
-// app/main.subl —— 语法糖手册主界面（t52：照 Kotlin Compose 参考实现逐屏翻译）
+// app/main.subl —— 语法糖手册主界面（t59：照 Kotlin Compose 参考实现，@view v2 协议重写）
 //
 // 参考实现（F:\KotlinProject\Sugar Manual，原生 Compose/M3 工程）：
-//   ui/HomeScreen.kt        Scaffold + TopAppBar + 折线图区 + LazyColumn + ExtendedFAB
-//   ui/InteractionAlerts.kt 预警标签流（FlowRow 混排、仅靠颜色分级的圆角标签）
-//   ui/DoseLogList.kt       记录卡（Card 圆角 + 药名左侧 4dp 颜色竖条 + 四字段）
-//   ui/DoseEntrySheet.kt    ModalBottomSheet 表单（药物列表 + OutlinedTextField + 校验）
-//   ui/ConcentrationChart.kt Canvas 图（图例 + 逐药分量线 + 总浓度线 + 渐变填充）
+//   ui/HomeScreen.kt         Scaffold + TopAppBar + 折线图 + LazyColumn + ExtendedFAB + 弹层
+//   ui/InteractionAlerts.kt  预警标签流 FlowRow（混排、半透明色、闪烁）
+//   ui/DoseLogList.kt        服药记录卡（Card 圆角 + 4dp 色条 + weight 行）
+//   ui/DoseEntrySheet.kt     ModalBottomSheet 表单（Surface 选药行 + OutlinedTextField + 校验）
+//   ui/ConcentrationChart.kt 多序列折线（逐药分量线 + 总线渐变 + 图例 + 徽标）
 //
-// 翻译原则：**保持布局树结构一致**；数据/引擎层沿用 ledger.subl / warn.subl /
-// pk.subl / drugs.subl（不重写）。Compose 有而当前视图协议/DshBridge 表达不了
-// 的布局特性 → docs/渲染层能力差距清单.md 逐条登记 + 就近近似写法。
-//
-// 与 t47 的差异（本次向参考实现对齐）：
-//   - 预警区由「三分组」改为参考的**混排标签流**（仅颜色分级、无组标题、
-//     标签只显示名称不显示权重；代谢相互作用不在此展示，与参考一致）；
-//   - 记录卡加「药名左侧 4dp 颜色竖条」（药理类别色，参考 DrugPalettes）；
-//   - 顶栏改为参考的 primaryContainer 薄荷绿底 + 三按钮（文档/药物/设置）；
-//   - 表单照参考补「未选药 / 非数字 / <=0 / 超上限」四级校验文案与 10000mg 上限，
-//     默认未选药（参考 selectedDrug = null）。
+// 视图协议 v2（docs/视图协议v2.md）相对 t52 旧协议的兑付：
+//   - Modifier 链 = List[MKind]：width(4).height(20) 一条链多修饰符 → 记录卡 4×20dp 色条精确落地
+//     （旧协议「一个视图一个修饰符」，色条高度只能靠文本行高近似）
+//   - 颜色：#AARRGGBB 直写参考的半透明值（0x33D32F2F 等，不再和白底预混成实色）+ 主题色名
+//   - 回调实例键 __dshCb：动态列表（选药行/记录卡）每行独立槽位，点哪行是哪行
+//   - 新组件：Card（圆角+阴影）/ TextButton（顶栏 actions）/ Icon（FAB）/ AlertDialog（设置/文档）
+//     / BottomSheet（表单，替代旧协议的页内部块）；Box(wrap→FlowLayout, spacing, arrangement, onClick)
+//   - Chart 多序列：series = List[Series]（逐药分量线）+ points 总线；图例/徽标
+// 仍有的差距见 docs/与原生版布局对照结论.md。
 
-// ---------- 色板（参考 Theme.kt 薄荷绿主题 + M3 light 基线） ----------
+// ---------- 预警标签三级色（参考 InteractionAlerts.kt：0x33 半透明底 + 同色字） ----------
+// 过量反应来源的标签：0x40 底 + #D32F2F 字 + flash 动画（与参考的 flashColors 一致）。
 
-fun primaryColor(): Str = "#00695C"
-fun primaryContainerColor(): Str = "#B2DFDB"
-fun onPrimaryContainerColor(): Str = "#00211E"
-fun surfaceVariantColor(): Str = "#E7E0EC"
-fun onSurfaceColor(): Str = "#1D1B20"
-fun onSurfaceVariantColor(): Str = "#49454E"
-
-// 预警标签三级色：参考 InteractionAlerts.kt 的半透明底（0x33 前缀）+ 同色字。
-// 当前颜色协议只有 #RRGGBB 实色（无 alpha 通道）——把 0x33XX 与白底预混：
-//   0x33D32F2F->#F6D5D5 / 0x33F9A825->#FEEED3 / 0x334CAF50->#DBEFDC（差距清单 §8）
-fun tagBg(l: Nat): Str = when (l) {
-    3 => "#F6D5D5"
-    2 => "#FEEED3"
-    1 => "#DBEFDC"
+fun tagBg(level: Nat, overdose: Bool): Str = if (overdose) "#40D32F2F" else when (level) {
+    3 => "#33D32F2F"
+    2 => "#33F9A825"
+    1 => "#334CAF50"
     else => "#FFFFFF"
 }
-fun tagFg(l: Nat): Str = when (l) {
+fun tagFg(level: Nat, overdose: Bool): Str = if (overdose) "#D32F2F" else when (level) {
     3 => "#C62828"
     2 => "#E65100"
     1 => "#2E7D32"
     else => "#49454E"
 }
 
-// 药物颜色（参考 DrugPalettes：SSRI 均为血清素能剂金色 #FFC107，缺失回退 #00695C）。
+// ---------- 药物颜色（参考 DrugPalettes：SSRI 血清素能剂金色 #FFC107，缺失回退 #00695C） ----------
+
 fun drugColor(name: Str): Str = if (name == "氟伏沙明") "#FFC107" else if (name == "帕罗西汀") "#FFC107" else if (name == "舍曲林") "#FFC107" else if (name == "氟西汀") "#FFC107" else "#00695C"
 
-// ---------- 演示剂量（空台账回退） ----------
+// ---------- 演示剂量（空台账回退：home 首启不空图） ----------
 
 fun demoDoses(): List[Dose] = cons(Dose(100.0, 0), cons(Dose(100.0, 24), emptyList()))
 
@@ -56,16 +46,22 @@ fun demoDoses(): List[Dose] = cons(Dose(100.0, 0), cons(Dose(100.0, 24), emptyLi
 @impure
 fun coadmin(): List[Drug] = append(loadDrugs(), cons(fluvoxamine(), cons(paroxetine(), emptyList())))
 
-// ---------- 表单状态（storage KV：layout 重渲染时跨帧保持） ----------
+// ---------- 表单/弹层状态（storage KV：layout 重渲染时跨帧保持） ----------
 
 fun formKey(): Str = "sm_form"
 fun pickKey(): Str = "sm_pick"
 fun doseKey(): Str = "sm_dose"
+fun settingsKey(): Str = "sm_set"
+fun docKey(): Str = "sm_doc"
 
 @impure
 fun isFormOpen(): Bool = storageGet(formKey()) == "1"
+@impure
+fun isSettingsOpen(): Bool = storageGet(settingsKey()) == "1"
+@impure
+fun isDocOpen(): Bool = storageGet(docKey()) == "1"
 
-// 选中下标（未选时存储空串：参考 selectedDrug = null 的「未选」语义）。
+// 选中下标（未选时存空串：参考 selectedDrug = null 的「未选」语义）。
 @impure
 fun curPick(): Nat = getOrElse(parseNat(storageGet(pickKey())), 0)
 @impure
@@ -73,7 +69,6 @@ fun isPickSet(): Bool = when (parseNat(storageGet(pickKey()))) {
     is Some(_) => true
     None => false
 }
-
 @impure
 fun curDose(): Str = storageGet(doseKey())
 
@@ -98,6 +93,16 @@ fun setDose(t: Str): Null {
     return null
 }
 @impure
+fun setSettingsOpen(o: Bool): Null {
+    unchecked storagePut(settingsKey(), if (o) "1" else "0")
+    return null
+}
+@impure
+fun setDocOpen(o: Bool): Null {
+    unchecked storagePut(docKey(), if (o) "1" else "0")
+    return null
+}
+@impure
 fun refreshHome(): Null {
     unchecked layout(content)
     return null
@@ -108,44 +113,35 @@ fun refreshHome(): Null {
 @impure
 fun main(): Null {
     onCreate {
-        unchecked log("Sugar Manual 已加载（t52 照 Compose 参考翻译）", 2)
+        unchecked log("Sugar Manual 已加载（t59：v2 协议照 Compose 参考重写）", 2)
     }
     onStart {
         layout(content)
     }
 }
 
-// ---------- 顶栏（≈ TopAppBar：primaryContainer 底 + 标题行 + actions） ----------
+// ---------- 顶栏（≈ M3 TopAppBar：primaryContainer 底 64dp + 标题行 + actions 右推） ----------
 
-@impure
-fun openDoc(): Null {
-    unchecked openUrl("https://github.com/inline-function/Sugar-Manual")
-    null
+@composable
+fun topBar(): Box = Box(modifier = fillWidth().height(64).background("primaryContainer"), orientation = "horizontal", arrangement = "SpaceBetween", contentAlignment = CenterStart()) {
+    Box(modifier = paddingH(16).paddingV(8), orientation = "horizontal", contentAlignment = CenterStart()) {
+        Text(text = "语法糖手册", size = 22, bold = true, color = "onPrimaryContainer")
+        Box(modifier = width(6)) {}
+        Text(text = "V1.0", size = 11, color = "onPrimaryContainer")
+    }
+    Box(modifier = paddingH(12), orientation = "horizontal") {
+        TextButton(label = "文档", onClick = { unchecked openDocDialog() })
+        TextButton(label = "药物", onClick = { unchecked noNavigation() })
+        TextButton(label = "设置", onClick = { unchecked openSettingsDialog() })
+    }
 }
 
-// 参考顶栏 actions 有「药物」（onOpenDrugs → 药物领域页）。当前协议无多页导航，
+// 参考顶栏 actions 的「药物」（onOpenDrugs → 药物领域页）：当前协议无多页导航，
 // 以 toast 说明（差距清单 §5）。
 @impure
 fun noNavigation(): Null {
     unchecked toast("药物页：当前视图协议无多页导航", false)
     null
-}
-
-@composable
-fun topBar(): Box = Box(modifier = Plain(), orientation = "horizontal", backgroundColor = primaryContainerColor()) {
-    Box(modifier = Plain(), contentAlignment = CenterStart()) {
-        Text(text = "语法糖手册", size = 20, bold = true, color = onPrimaryContainerColor())
-        Text(text = "  V1.0", color = onPrimaryContainerColor(), size = 12)
-    }
-    Button(onClick = { unchecked openDoc() }) {
-        Text(text = "文档")
-    }
-    Button(onClick = { unchecked noNavigation() }) {
-        Text(text = "药物")
-    }
-    Button(onClick = { unchecked openSettings() }) {
-        Text(text = "设置")
-    }
 }
 
 // ---------- 预警标签流（≈ InteractionAlerts：FlowRow 混排，仅颜色分级） ----------
@@ -154,31 +150,36 @@ fun topBar(): Box = Box(modifier = Plain(), orientation = "horizontal", backgrou
 fun alertItems(adr: Alert): List[Trigger] = append(itemsAt(3, adr.items), append(itemsAt(2, adr.items), itemsAt(1, adr.items)))
 fun itemsAt(l: Nat, ts: List[Trigger]): List[Trigger] = filter(ts) { t => advLevel(t.score) == l }
 
+// 过量反应来源（参考 AlertEngine.overdose → flash=true + 危险级红）：条目名落在联用药品的
+// overdose 清单里即闪烁。台账联用集（氟伏沙明有过量清单）驱动。
+fun isOverdoseName(name: Str, drugs: List[Drug]): Bool =
+    drugs.fold(false) { acc, d => if (containsRated(d.overdose, name)) true else acc }
+
 @composable
-fun alertStream(adr: Alert): Box = if (size(adr.items) == 0) {
-    Box(modifier = Padding(24)) {
-        Text(text = "暂无预警", color = onSurfaceVariantColor(), size = 14)
+fun alertStream(adr: Alert, drugs: List[Drug]): Any = if (size(adr.items) == 0) {
+    Box(modifier = fillWidth().paddingHV(24, 8)) {
+        Text(text = "暂无预警", color = "onSurfaceVariant", size = 14)
     }
 } else {
-    Box(modifier = Padding(24)) {
-        Box(modifier = Plain(), orientation = "horizontal", scrollable = true) {
-            tagCells(alertItems(adr))
-        }
+    Box(modifier = fillWidth().paddingHV(24, 8)) {
+        // FlowRow：wrap=true → 流式换行；spacing=8 横竖间距（参考的 spacedBy(8.dp)）。
+        // children= 平铺：标签是流容器的直接子级（递归列表经 children 平铺，非嵌套链）。
+        Box(modifier = fillWidth(), wrap = true, spacing = 8, children = tagList(alertItems(adr), drugs))
     }
 }
 
-// 标签单元（≈ AlertTag：圆角底块 + 同色加粗字）。圆角无法表达 → 矩形近似。
+// 标签单元（≈ AlertTag：圆角 12 + 半透明底 + 同色加粗字 + 闪烁）。
+// 圆角 = clip(12)（链元素）；半透明 #33AARRGGBB 直写（旧协议需预混实色）。
 @composable
-fun tagCells(ts: List[Trigger]): Any = when (ts) {
-    Nil => Box(modifier = Plain()) {}
-    is Cons(t, rest) => Box(modifier = Plain(), orientation = "horizontal") {
-        Box(modifier = Padding(12), backgroundColor = tagBg(advLevel(t.score))) {
-            Text(text = t.name, color = tagFg(advLevel(t.score)), size = 13, bold = true)
-        }
-        Text(text = " ", size = 13)
-        tagCells(rest)
-    }
-    else => Box(modifier = Plain()) {}
+fun tagList(ts: List[Trigger], drugs: List[Drug]): List[Any] = when (ts) {
+    Nil => emptyList()
+    is Cons(t, rest) => cons(tagCell(t, drugs), tagList(rest, drugs))
+    else => emptyList()
+}
+
+@composable
+fun tagCell(t: Trigger, drugs: List[Drug]): Any = Box(modifier = clip(12).background(tagBg(advLevel(t.score), isOverdoseName(t.name, drugs))).paddingHV(12, 5)) {
+    Text(text = t.name, color = tagFg(advLevel(t.score), isOverdoseName(t.name, drugs)), size = 14, bold = true, flash = isOverdoseName(t.name, drugs))
 }
 
 // ---------- 服药记录（≈ DoseLogList：Card + 颜色竖条 + 四字段） ----------
@@ -193,14 +194,18 @@ fun firstRoute(pk: List[PkProfile]): Str = when (pk) {
     is Cons(p, _) => p.route
     Nil => "口服"
 }
-fun detailHalf(pk: List[PkProfile]): Str = when (pk) {
-    is Cons(p, _) => toStr(p.halfLife)
-    Nil => "24"
+
+// 药代数值（图表与副标题共用）。
+fun halfNat(pk: List[PkProfile]): Nat = when (pk) {
+    is Cons(p, _) => p.halfLife
+    Nil => 24
 }
-fun detailBio(pk: List[PkProfile]): Str = when (pk) {
-    is Cons(p, _) => toStr(p.bio * 100.0)
-    Nil => "100"
+fun bioRat(pk: List[PkProfile]): Rat = when (pk) {
+    is Cons(p, _) => p.bio
+    Nil => 1.0
 }
+fun detailHalf(pk: List[PkProfile]): Str = toStr(halfNat(pk))
+fun detailBio(pk: List[PkProfile]): Str = toStr(bioRat(pk) * 100.0)
 
 // 参考药物行副标题：管理分类 · T½ Xh · F=Y% · 给药途径。
 fun drugDetail(d: Drug): Str = concat(concat(concat(concat(concat(concat(d.category, " · T½ "), detailHalf(d.pk)), "h · F="), detailBio(d.pk)), "% · "), firstRoute(d.pk))
@@ -215,68 +220,112 @@ fun medRowOf(r: DoseRec, drugs: List[Drug]): MedCard {
 fun medRowsOf(recs: List[DoseRec], drugs: List[Drug]): List[MedCard] =
     map(recs) { r => medRowOf(r, drugs) }
 
-// 记录区（≈ LazyColumn item：标题 + 卡片序列 + 末尾 96dp 底部留白）。
-fun cardWidth(sw: Nat): Nat = sw - 48
-
+// 记录列表（≈ LazyColumn items：标题 + 卡片序列 + 末尾 96dp 底部留白）。
 @composable
-fun doseList(rows: List[MedCard], sw: Nat): Box = Box(modifier = Plain(), contentAlignment = TopStart()) {
-    Box(modifier = Padding(24)) {
-        Text(text = "服药记录", size = 16, bold = true, color = onSurfaceColor())
-    }
-    cardCells(rows, sw)
-    Box(modifier = Height(96)) {}
+fun recordTitle(): Any = Box(modifier = fillWidth().padding4(24, 16, 24, 8)) {
+    Text(text = "服药记录", size = 16, bold = true, color = "onSurface")
 }
 
 @composable
-fun cardCells(rows: List[MedCard], sw: Nat): Any = when (rows) {
-    Nil => Box(modifier = Padding(24), contentAlignment = Center()) {
-        Text(text = "暂无服药记录", color = onSurfaceVariantColor(), size = 14)
-    }
-    is Cons(c, rest) => Box(modifier = Plain()) {
-        Box(modifier = Padding(24)) {
-            doseCard(c, cardWidth(sw), drugColor(c.name))
+fun recordList(rows: List[MedCard]): List[Any] = when (rows) {
+    Nil => cons(doseEmpty(), emptyList())
+    is Cons(c, rest) => cons(doseCard(c), recordList(rest))
+    else => emptyList()
+}
+
+@composable
+fun doseEmpty(): Any = Box(modifier = fillWidth().paddingH(24).paddingV(12), contentAlignment = Center()) {
+    Text(text = "暂无服药记录", color = "onSurfaceVariant", size = 14)
+}
+
+// 一张记录卡（≈ DoseCard：Card 圆角 12 + elevation 1 + surfaceVariant 底）。
+// 行内：4×20dp 药色竖条（width(4).height(20) 链）+ Spacer(10) + 药名 weight(1) + 右侧剂量。
+@composable
+fun doseCard(c: MedCard): Any = Card(modifier = fillWidth().paddingV(6), cornerRadius = 12, elevation = 1, backgroundColor = "surfaceVariant") {
+    Box(modifier = fillWidth().paddingHV(16, 12)) {
+        Box(modifier = fillWidth(), orientation = "horizontal", contentAlignment = CenterStart()) {
+            Box(modifier = width(4).height(20).background(drugColor(c.name))) {}
+            Box(modifier = width(10)) {}
+            Text(text = c.name, modifier = weight(1.0), size = 16, bold = true, color = "onSurface")
+            Text(text = c.dose, size = 16, bold = true, color = "primary")
         }
-        cardCells(rest, sw)
-    }
-    else => Box(modifier = Plain()) {}
-}
-
-// 一张记录卡（≈ DoseCard：Card 圆角 elevation → 矩形实色近似；竖条可做）。
-@composable
-fun doseCard(c: MedCard, w: Nat, bar: Str): Box = Box(modifier = Width(w), backgroundColor = surfaceVariantColor()) {
-    Box(modifier = Padding(16)) {
-        Box(modifier = Plain(), orientation = "horizontal", contentAlignment = CenterStart()) {
-            // 竖条：Compose 是 .width(4dp).height(20dp) 修饰符链——Modifier 单字段
-            // 无法同时定宽定高（差距清单 §2）：以 Width(4) 定宽、内含 Text 撑出
-            // 文本行高的近似（高度随字号，非精确 20dp）。
-            Box(modifier = Width(4), backgroundColor = bar) {
-                Text(text = " ", size = 14)
-            }
-            Box(modifier = Width(10)) {}
-            Text(text = c.name, size = 16, bold = true, color = onSurfaceColor())
-            Text(text = "   ", size = 14)
-            Text(text = c.dose, size = 16, bold = true, color = primaryColor())
-        }
-        Box(modifier = Height(4)) {}
-        Text(text = concat(concat("给药时间 ", c.time), concat(" · ", c.route)), color = onSurfaceVariantColor(), size = 12)
+        Box(modifier = height(4)) {}
+        Text(text = concat(concat("给药时间 ", c.time), concat(" · ", c.route)), color = "onSurfaceVariant", size = 12)
     }
 }
 
-// ---------- 药代参数（图表沿用） ----------
+// ---------- 图表数据（≈ ConcentrationChart + PkEngine：t=0 为当前时刻，0..48h 预测） ----------
 
-fun trackHalfLife(): Nat = when (fluvoxamine().pk) {
-    is Cons(p, _) => p.halfLife
+// 像素 → dp（桥返回 px 与 densityDpi）。
+fun toDp(px: Nat, dpi: Nat): Nat = (px * 160) / dpi
+
+// 距当前时刻的小时数（给药时间 - now；已给过的剂量为负，仍计入残量——与参考只排除未来剂量一致）。
+fun hourAhead(r: DoseRec, nowMs: Nat): Nat = (r.time - nowMs) / msPerHour()
+
+// 某药的台账剂量序列。
+fun dosesOfName(n: Str, recs: List[DoseRec], nowMs: Nat): List[Dose] = when (recs) {
+    Nil => emptyList()
+    is Cons(r, rest) => if (r.drug == n) cons(Dose(r.amount, hourAhead(r, nowMs)), dosesOfName(n, rest, nowMs)) else dosesOfName(n, rest, nowMs)
+    else => emptyList()
+}
+
+fun halfOfName(n: Str, drugs: List[Drug]): Nat = when (drugs) {
     Nil => 24
+    is Cons(d, rest) => if (d.name == n) halfNat(d.pk) else halfOfName(n, rest)
+    else => 24
 }
-fun trackBio(): Rat = when (fluvoxamine().pk) {
-    is Cons(p, _) => p.bio
+fun bioOfName(n: Str, drugs: List[Drug]): Rat = when (drugs) {
     Nil => 1.0
+    is Cons(d, rest) => if (d.name == n) bioRat(d.pk) else bioOfName(n, rest)
+    else => 1.0
 }
 
-fun chartPoints(doses: List[Dose]): List[Rat] =
-    seriesValues(doses, trackHalfLife(), trackBio(), 0, windowHours(), stepHours())
+// 某药的分量序列（该药的 T½/F）。
+fun seriesOfDrug(n: Str, recs: List[DoseRec], drugs: List[Drug], nowMs: Nat): List[Rat] =
+    seriesValues(dosesOfName(n, recs, nowMs), halfOfName(n, drugs), bioOfName(n, drugs), 0, windowHours(), stepHours())
 
-// ---------- FAB 与表单（≈ ExtendedFAB + ModalBottomSheet → 页内面板近似） ----------
+fun seriesOfNames(names: List[Str], recs: List[DoseRec], drugs: List[Drug], nowMs: Nat): List[Series] = when (names) {
+    Nil => emptyList()
+    is Cons(n, rest) => cons(Series(label = n, color = drugColor(n), points = seriesOfDrug(n, recs, drugs, nowMs)), seriesOfNames(rest, recs, drugs, nowMs))
+    else => emptyList()
+}
+
+// 图表全部序列（逐药分量线）。空台账 → 氟伏沙明演示序列（home 首启不空图）。
+fun chartSeriesList(recs: List[DoseRec], drugs: List[Drug], nowMs: Nat): List[Series] =
+    if (size(recentDrugs(recs)) == 0) {
+        cons(Series(label = "氟伏沙明", color = "#FFC107", points = seriesValues(demoDoses(), halfNat(fluvoxamine().pk), bioRat(fluvoxamine().pk), 0, windowHours(), stepHours())), emptyList())
+    } else {
+        seriesOfNames(recentDrugs(recs), recs, drugs, nowMs)
+    }
+
+// 总浓度主线 = 逐药分量逐点求和（参考 PkEngine.concentrationAt 的跨药叠加：
+// C(t) = Σ_i F_i · D_i · 0.5^((t−t_i)/T½_i)，每药各自 T½/F）。
+fun sumSeries(xs: List[Rat], ys: List[Rat]): List[Rat] = when (xs) {
+    Nil => ys
+    is Cons(a, rest) => when (ys) {
+        Nil => xs
+        is Cons(b, ysRest) => cons(a + b, sumSeries(rest, ysRest))
+        else => xs
+    }
+    else => ys
+}
+fun sumAllSeries(xss: List[List[Rat]]): List[Rat] = when (xss) {
+    Nil => emptyList()
+    is Cons(h, rest) => sumSeries(h, sumAllSeries(rest))
+    else => emptyList()
+}
+fun pointsOf(xss: List[Series]): List[List[Rat]] = when (xss) {
+    Nil => emptyList()
+    is Cons(s, rest) => cons(s.points, pointsOf(rest))
+    else => emptyList()
+}
+fun totalPoints(seriesXs: List[Series]): List[Rat] = sumAllSeries(pointsOf(seriesXs))
+
+// X 轴刻度：与参考一致每 12h 一个（0/12/24/36/48），其余采样点留空。
+fun chartLabels(): List[Str] = map(range(0, (windowHours() / stepHours()) + 1)) { i => tickLabel(i) }
+fun tickLabel(i: Nat): Str = if (i % 3 == 0) toStr(i * stepHours()) else ""
+
+// ---------- FAB 与表单（≈ ExtendedFAB + ModalBottomSheet） ----------
 
 @impure
 fun toggleForm(): Null {
@@ -293,8 +342,8 @@ fun toggleForm(): Null {
 }
 
 @impure
-fun pickDrug(n: Nat): Null {
-    unchecked setPickAt(n)
+fun pickDrugAt(k: Nat): Null {
+    unchecked setPickAt(k)
     unchecked refreshHome()
     return null
 }
@@ -319,25 +368,29 @@ fun commitDose(): Null {
         if (dt == "") {
             unchecked toast("剂量必须为数字", false)
         } else {
-            var amt: Rat = ratOr(dt, 0.0)
-            if (amt <= 0.0) {
-                unchecked toast("剂量必须大于 0", false)
+            if (isNumber(dt) == false) {
+                unchecked toast("剂量必须为数字", false)
             } else {
-                if (amt > 10000.0) {
-                    unchecked toast("单次剂量不得超过 10000 mg", false)
+                var amt: Rat = ratOr(dt, 0.0)
+                if (amt <= 0.0) {
+                    unchecked toast("剂量必须大于 0", false)
                 } else {
-                    unchecked var recs: List[DoseRec] = loadLedger()
-                    unchecked var nowMs: Nat = timeNow()
-                    unchecked var drugs: List[Drug] = coadmin()
-                    unchecked var idx: Nat = curPick()
-                    var drug: Str = drugAt(drugs, idx)
-                    var nr: List[DoseRec] = cons(DoseRec(drug, amt, nowMs), recs)
-                    unchecked saveLedger(nr)
-                    unchecked setFormOpen(false)
-                    unchecked setPickUnset()
-                    unchecked setDose("")
-                    unchecked toast("已记录服药，浓度曲线与记录已刷新", false)
-                    unchecked refreshHome()
+                    if (amt > 10000.0) {
+                        unchecked toast("单次剂量不得超过 10000 mg", false)
+                    } else {
+                        unchecked var recs: List[DoseRec] = loadLedger()
+                        unchecked var nowMs: Nat = timeNow()
+                        unchecked var drugs: List[Drug] = coadmin()
+                        unchecked var idx: Nat = curPick()
+                        var drug: Str = drugAt(drugs, idx)
+                        var nr: List[DoseRec] = cons(DoseRec(drug, amt, nowMs), recs)
+                        unchecked saveLedger(nr)
+                        unchecked setFormOpen(false)
+                        unchecked setPickUnset()
+                        unchecked setDose("")
+                        unchecked toast("已记录服药，浓度曲线与记录已刷新", false)
+                        unchecked refreshHome()
+                    }
                 }
             }
         }
@@ -345,127 +398,156 @@ fun commitDose(): Null {
     return null
 }
 
+// 字符串是否为合法数值（校验用：ratOr 的回退会掩盖非数字输入）。
+fun isNumber(s: Str): Bool = when (parseRat(s)) {
+    is Some(_) => true
+    None => false
+}
+
 fun drugAt(drugs: List[Drug], n: Nat): Str = when (elementAt(drugs, n)) {
     is Some(d) => d.name
     None => "氟伏沙明"
 }
 
-// 表单面板（≈ ModalBottomSheet：底部抽屉无法表达 → 页内区块近似；差距清单 §4）。
+// 表单面板（≈ ModalBottomSheet：BottomSheet 视图，visible 数据字段驱显隐）。
 @composable
-fun formPanel(drugs: List[Drug], idx: Nat, sel: Bool, dt: Str): Box = Box(modifier = Plain(), backgroundColor = "#FEF7FF") {
-    Box(modifier = Padding(24)) {
+fun formPanel(open: Bool, drugs: List[Drug], idx: Nat, sel: Bool, dt: Str): BottomSheet = BottomSheet(visible = open, onDismiss = { unchecked cancelForm() }) {
+    Box(modifier = fillWidth().padding4(24, 0, 24, 24)) {
         Text(text = "＋服用药物", size = 22, bold = true)
-        Box(modifier = Height(4)) {}
-        Text(text = "选择药物并填写剂量（mg）", color = onSurfaceVariantColor(), size = 12)
-        Box(modifier = Height(12)) {}
-        Text(text = "药物", color = onSurfaceVariantColor(), size = 14)
-        Box(modifier = Height(6)) {}
-        Box(modifier = Height(168), scrollable = true) {
-            drugRows(drugs, idx, sel)
-        }
-        Box(modifier = Height(12)) {}
+        Box(modifier = height(4)) {}
+        Text(text = "选择药物并填写剂量（mg）", color = "onSurfaceVariant", size = 12)
+        Box(modifier = height(12)) {}
+        Text(text = "药物", color = "onSurfaceVariant", size = 14)
+        Box(modifier = height(6)) {}
+        // 参考的药物列表高 168dp、条间距 6dp：height(168) + spacing，行平铺经 children。
+        Box(modifier = fillWidth().height(168), scrollable = true, spacing = 6, children = drugRowsFrom(drugs, 0, idx, sel))
+        Box(modifier = height(12)) {}
         TextField(placeholder = "剂量 (mg)", text = dt, keyboard = "number",
             onChange = { t => unchecked setDose(t) })
-        Box(modifier = Height(16)) {}
-        Box(modifier = Plain(), orientation = "horizontal") {
-            Button(onClick = { unchecked cancelForm() }) {
-                Text(text = "取消")
-            }
-            Button(onClick = { unchecked commitDose() }) {
-                Text(text = "确认")
-            }
+        Box(modifier = height(16)) {}
+        Box(modifier = fillWidth(), orientation = "horizontal", arrangement = "End", contentAlignment = CenterStart()) {
+            TextButton(label = "取消", onClick = { unchecked cancelForm() })
+            Box(modifier = width(8)) {}
+            Button(label = "确认", onClick = { unchecked commitDose() })
         }
     }
 }
 
-// 药物选择行（≈ Surface(onClick) 整行可点击的圆角条）。当前协议的两处限制：
-//   1) Box 无 onClick、Button 是叶子（body 仅取首个直接 Text 作文案、无背景/
-//      形状字段）→ 近似为单个 Button，文案「药名 \n 副标题」，选中态 ✓+加粗；
-//   2) 回调注册按源码构造点编号，递归生成的同行共享同一槽位（最后构造的
-//      闭包覆盖前面）→ 展开为 4 个独立函数，一药一个构造点（差距清单 §6/§7）。
+// 药物选择行（≈ Surface(onClick)：整行可点的圆角 12 条，选中 primaryContainer 底 + ✓）。
+// 递归生成 → 每行 onClick 经 __dshCb 独立实例键（旧协议串点击 bug 的回归点）。
+@composable
+fun drugRowsFrom(drugs: List[Drug], k: Nat, idx: Nat, sel: Bool): List[Any] = when (drugs) {
+    Nil => emptyList()
+    is Cons(d, rest) => cons(drugRow(d, k, idx, sel), drugRowsFrom(rest, k + 1, idx, sel))
+    else => emptyList()
+}
+
+@composable
+fun drugRow(d: Drug, k: Nat, idx: Nat, sel: Bool): Any = Box(modifier = fillWidth().clip(12).background(rowBg(k, idx, sel)).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked pickDrugAt(k) }) {
+    Box(modifier = weight(1.0)) {
+        Text(text = d.name, size = 16, bold = rowBold(k, idx, sel), color = rowNameColor(k, idx, sel))
+        Text(text = drugDetail(d), size = 12, color = "onSurfaceVariant")
+    }
+    // ✓ 恒占位（未选透明 #00000000，等同参考的 if (isSelected) Text("✓") 布局位）。
+    Text(text = "✓", size = 16, bold = true, color = rowCheckColor(k, idx, sel))
+}
+
+fun rowBg(k: Nat, idx: Nat, sel: Bool): Str = if ((sel == true) && (k == idx)) "primaryContainer" else "surfaceVariant"
+fun rowNameColor(k: Nat, idx: Nat, sel: Bool): Str = if ((sel == true) && (k == idx)) "onPrimaryContainer" else "onSurface"
+fun rowCheckColor(k: Nat, idx: Nat, sel: Bool): Str = if ((sel == true) && (k == idx)) "primary" else "#00000000"
 fun rowBold(k: Nat, idx: Nat, sel: Bool): Bool = (sel == true) && (k == idx)
-fun rowText(d: Drug, k: Nat, idx: Nat, sel: Bool): Str = concat(if (rowBold(k, idx, sel)) concat("✓ ", d.name) else d.name, concat("\n", drugDetail(d)))
+
+// ---------- 设置/文档弹层（≈ SettingsDialog / DrugDocsDialog：AlertDialog） ----------
+
+@impure
+fun openDocDialog(): Null {
+    unchecked setDocOpen(true)
+    unchecked refreshHome()
+    return null
+}
+@impure
+fun closeDoc(): Null {
+    unchecked setDocOpen(false)
+    unchecked refreshHome()
+    return null
+}
+@impure
+fun openSettingsDialog(): Null {
+    unchecked setSettingsOpen(true)
+    unchecked refreshHome()
+    return null
+}
+@impure
+fun closeSettings(): Null {
+    unchecked setSettingsOpen(false)
+    unchecked refreshHome()
+    return null
+}
+@impure
+fun clearAll(): Null {
+    unchecked saveLedger(emptyList())
+    unchecked setSettingsOpen(false)
+    unchecked refreshHome()
+    return null
+}
 
 @composable
-fun drugRows(drugs: List[Drug], idx: Nat, sel: Bool): Any = Box(modifier = Plain()) {
-    drugRow0(drugs, idx, sel)
-    drugRow1(drugs, idx, sel)
-    drugRow2(drugs, idx, sel)
-    drugRow3(drugs, idx, sel)
+fun settingsDialog(open: Bool): AlertDialog = AlertDialog(visible = open, title = "设置", confirmText = "清空记录", dismissText = "关闭", onConfirm = { unchecked clearAll() }, onDismiss = { unchecked closeSettings() }) {
+    Text(text = "语法糖手册 V1.0\nSfA（Sublimation for Android）视图协议 v2 渲染\n数据持久化：storage 键 ledger", size = 12, color = "onSurfaceVariant")
 }
 
 @composable
-fun drugRow0(drugs: List[Drug], idx: Nat, sel: Bool): Any = when (elementAt(drugs, 0)) {
-    is Some(d) => Box(modifier = Plain()) {
-        Button(onClick = { unchecked pickDrug(0) }) {
-            Text(text = rowText(d, 0, idx, sel), size = 14, bold = rowBold(0, idx, sel))
-        }
-    }
-    None => Box(modifier = Plain()) {}
-}
-@composable
-fun drugRow1(drugs: List[Drug], idx: Nat, sel: Bool): Any = when (elementAt(drugs, 1)) {
-    is Some(d) => Box(modifier = Plain()) {
-        Button(onClick = { unchecked pickDrug(1) }) {
-            Text(text = rowText(d, 1, idx, sel), size = 14, bold = rowBold(1, idx, sel))
-        }
-    }
-    None => Box(modifier = Plain()) {}
-}
-@composable
-fun drugRow2(drugs: List[Drug], idx: Nat, sel: Bool): Any = when (elementAt(drugs, 2)) {
-    is Some(d) => Box(modifier = Plain()) {
-        Button(onClick = { unchecked pickDrug(2) }) {
-            Text(text = rowText(d, 2, idx, sel), size = 14, bold = rowBold(2, idx, sel))
-        }
-    }
-    None => Box(modifier = Plain()) {}
-}
-@composable
-fun drugRow3(drugs: List[Drug], idx: Nat, sel: Bool): Any = when (elementAt(drugs, 3)) {
-    is Some(d) => Box(modifier = Plain()) {
-        Button(onClick = { unchecked pickDrug(3) }) {
-            Text(text = rowText(d, 3, idx, sel), size = 14, bold = rowBold(3, idx, sel))
-        }
-    }
-    None => Box(modifier = Plain()) {}
+fun docDialog(open: Bool): AlertDialog = AlertDialog(visible = open, title = "文档", confirmText = "", dismissText = "关闭", onDismiss = { unchecked closeDoc() }) {
+    Text(text = "糖手册：记录服药 → 估算血药浓度 → 联用预警。\n\n氟伏沙明（CYP2D6 底物）+ 帕罗西汀（CYP2D6 极强抑制）联用构成 CYP2D6 抑制-底物相互作用（不在首页预警），并共享恶心/失眠/嗜睡等不良反应。\n\n源码：github.com/inline-function/Sugar-Manual", size = 12, color = "onSurfaceVariant")
 }
 
 // ---------- 主界面（≈ Scaffold content） ----------
 
+// 首屏分区：内容区 = 屏高 - 顶栏 64dp；图占 45%，下半区精确补齐 55%（参考
+// fillMaxHeight(0.45f) + LazyColumn(weight(1f)) 的_partition，旧协议 45+50 留 5% 空隙）。
+fun contentHeightDp(sh: Nat, dpi: Nat): Nat = toDp(sh, dpi) - 64
+fun chartHeightDp(sh: Nat, dpi: Nat): Nat = (contentHeightDp(sh, dpi) * 45) / 100
+fun lowerHeightDp(sh: Nat, dpi: Nat): Nat = contentHeightDp(sh, dpi) - chartHeightDp(sh, dpi)
+
+@composable
+fun lowerBox(adr: Alert, rows: List[MedCard], drugs: List[Drug], sh: Nat, dpi: Nat): Box = Box(modifier = fillWidth().height(lowerHeightDp(sh, dpi)), scrollable = true) {
+    alertStream(adr, drugs)
+    recordTitle()
+    // 记录卡平铺为直接子级（children=），空台账给「暂无服药记录」占位。
+    Box(modifier = fillWidth(), children = recordList(rows))
+    // 参考的 contentPadding(bottom = 96.dp)。
+    Box(modifier = height(96)) {}
+}
+
 @composable
 fun content(): Box {
     unchecked var open: Bool = isFormOpen()
+    unchecked var setOp: Bool = isSettingsOpen()
+    unchecked var docOp: Bool = isDocOpen()
     unchecked var idx: Nat = curPick()
     unchecked var sel: Bool = isPickSet()
     unchecked var dt: Str = curDose()
-    unchecked var sw: Nat = screenWidth()
-    unchecked var scrubH: Nat = (screenHeight() * 45) / 100
-    unchecked var restH: Nat = (screenHeight() * 50) / 100
     unchecked @mut var recs: List[DoseRec] = loadLedger()
     unchecked @mut var nowMs: Nat = timeNow()
-    @mut var doses: List[Dose] = ledgerDoses(recs, nowMs)
     unchecked var drugs: List[Drug] = coadmin()
     var adr: Alert = adrAlert(drugs)
-    @mut var vals: List[Rat] = chartPoints(doses)
-    @mut var labels: List[Str] = seriesLabels(0, windowHours(), stepHours())
-    @mut var chart = Chart(kind = "line", points = vals, labels = labels, color = primaryColor(), modifier = Height(scrubH))
-    @mut var alerts = alertStream(adr)
+    unchecked var sh: Nat = screenHeight()
+    unchecked var dpi: Nat = screenDensity()
+    var seriesXs: List[Series] = chartSeriesList(recs, drugs, nowMs)
+    var total: List[Rat] = totalPoints(seriesXs)
+    @mut var chart = Chart(kind = "line", points = total, series = seriesXs, labels = chartLabels(), color = "primary", legend = true, badge = "估算", modifier = fillWidth().height(chartHeightDp(sh, dpi)))
     unchecked var rows: List[MedCard] = medRowsOf(recs, drugs)
-    @mut var cards = doseList(rows, sw)
-    @mut var form = formPanel(drugs, idx, sel, dt)
-    var lower: Box = if (open) form else cards
-    return Box(modifier = Plain()) {
+    @mut var lower = lowerBox(adr, rows, drugs, sh, dpi)
+    @mut var sheet = formPanel(open, drugs, idx, sel, dt)
+    @mut var setDlg = settingsDialog(setOp)
+    @mut var docDlg = docDialog(docOp)
+    return Box(modifier = fillMaxSize()) {
         topBar()
         chart
-        Box(modifier = Height(restH)) {
-            Box(modifier = Plain(), scrollable = true) {
-                alerts
-                lower
-            }
-        }
-        FloatingButton(onClick = { unchecked toggleForm() }) {
-            Text(text = "＋服用药物")
-        }
+        lower
+        FloatingButton(icon = "add", text = "＋服用药物", color = "primary", onClick = { unchecked toggleForm() })
+        sheet
+        setDlg
+        docDlg
     }
 }

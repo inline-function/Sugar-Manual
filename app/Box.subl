@@ -2,15 +2,25 @@
 //
 // @view 视图结构体：body 参数承载子视图——编译后擦除 body、子视图成为 children 成员。
 // recomposion 属性由 @view 处理器注入：视图被修改时带上修改后的副本回调 KT 端。
-// orientation 为 "vertical"（默认）或 "horizontal"；backgroundColor 为 "#RRGGBB"；
-// scrollable 为 true 时 KT 端把内容包进 ScrollView（纵向）/HorizontalScrollView
-// （横向），内容超高可滚动（如整页三段式布局）。
+//
+// 协议 v2（docs/视图协议v2.md §3）：
+//   orientation   "vertical"（默认）/ "horizontal"
+//   spacing       子视图间距（dp）——Compose 的 Arrangement.spacedBy
+//   arrangement   主轴分布："Start"（默认）/ "Center" / "End" / "SpaceBetween" / "SpaceAround" / "SpaceEvenly"
+//   wrap          true 时流式换行（≈ Compose FlowRow）：KT 端 FlexboxLayout/自实现 FlowLayout，Compose 端 FlowRow
+//   scrollable    内容超出可视区域时滚动（纵向 ScrollView / 横向 HorizontalScrollView）
+//   onClick       容器可点（整块响应，≈ Compose 的 Surface(onClick)）
+//   backgroundColor " #RRGGBB" / "#AARRGGBB" / 主题色名
 
 @view struct Box(
-    modifier: Modifier = Plain(),
+    modifier: List[MKind] = emptyList(),
     contentAlignment: Alignment = Center(),
     orientation: Str = "vertical",
     backgroundColor: Str = "",
     scrollable: Bool = false,
+    spacing: Nat = 0,
+    arrangement: Str = "Start",
+    wrap: Bool = false,
+    onClick: (Any) => Null = fun(_: Any): Null { null },
     body: () => Null = fun(): Null { null }
 )

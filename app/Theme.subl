@@ -1,0 +1,34 @@
+// android/Theme.subl —— 主题色表（协议 v2 新增）
+//
+// 视图的 color / backgroundColor / tint / background(色名) 字段可以写**主题色名**（下面这些函数返回的名字），
+// 而不是硬编码十六进制——换主题只改一处：
+//   - KT 运行时壳：DshBridge 的主题表（DshTheme）
+//   - @compose 生成物：gen/Palette.kt
+// 名字同时是 Material 3 的语义槽位名（primary / onPrimary / primaryContainer / …）。
+//
+// 亮色主题基线 = 医疗薄荷绿（与 Kotlin Compose 参考实现 Theme.kt 一致）。
+
+fun primary(): Str = "primary"
+fun onPrimary(): Str = "onPrimary"
+fun primaryContainer(): Str = "primaryContainer"
+fun onPrimaryContainer(): Str = "onPrimaryContainer"
+
+fun secondary(): Str = "secondary"
+fun onSecondary(): Str = "onSecondary"
+fun secondaryContainer(): Str = "secondaryContainer"
+fun onSecondaryContainer(): Str = "onSecondaryContainer"
+
+fun surface(): Str = "surface"
+fun onSurface(): Str = "onSurface"
+fun surfaceVariant(): Str = "surfaceVariant"
+fun onSurfaceVariant(): Str = "onSurfaceVariant"
+fun outline(): Str = "outline"
+fun outlineVariant(): Str = "outlineVariant"
+
+fun error(): Str = "error"
+fun onError(): Str = "onError"
+fun errorContainer(): Str = "errorContainer"
+fun warning(): Str = "warning"
+fun warningContainer(): Str = "warningContainer"
+fun info(): Str = "info"
+fun infoContainer(): Str = "infoContainer"
