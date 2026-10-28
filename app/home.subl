@@ -10,7 +10,7 @@
 @compose
 struct Home {
     Box(modifier = fillMaxSize()) {
-        TopAppBar(title = "语法糖手册", subtitle = "V1.0", modifier = height(48)) {
+        TopAppBar(title = "语法糖手册", subtitle = "V1.0") {
             TextButton(onClick = { unchecked openDocDialog() }) {
                 Icon(name = "info", size = 22, tint = "onPrimary")
             }
@@ -59,11 +59,11 @@ struct Home {
                     Box(modifier = fillWidth(), orientation = "horizontal") {
                         Box(modifier = width(4).height(20).background("#FFC107")) {}
                         Box(modifier = width(10)) {}
-                        Text(text = "氟伏沙明", modifier = weight(1.0), size = 16, bold = true, color = "onSurface")
-                        Text(text = "100 mg", size = 16, bold = true, color = "primary")
+                        Text(text = doseDrug(), modifier = weight(1.0), size = 16, bold = true, color = "onSurface")
+                        Text(text = doseAmount(), size = 16, bold = true, color = "primary")
                     }
                     Box(modifier = height(4)) {}
-                    Text(text = "给药时间 今日 08:00 · 口服", color = "onSurfaceVariant", size = 12)
+                    Text(text = doseTime(), color = "onSurfaceVariant", size = 12)
                 }
             }
             Box(modifier = fillWidth().paddingH(24).paddingV(12), contentAlignment = Center()) {

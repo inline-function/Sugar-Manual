@@ -1,0 +1,4 @@
+<resources>
+    <!-- 与 gen/Palette.kt 的 primary 同源（0xFF00695C）：状态栏与顶栏同色，消除割裂 -->
+    <color name="subl_primary">#00695C</color>
+</resources>

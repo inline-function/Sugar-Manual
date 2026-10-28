@@ -1,5 +1,9 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <style name="Theme.Sublimation" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="android:windowFullscreen">false</item>
+        <!-- 状态栏与顶栏 primary 同色：Compose 侧恒为 lightColorScheme（顶栏=primary 深绿），
+             夜间模式顶栏同为 primary，故状态栏也同色；图标恒为白色（primary 深色上可见） -->
+        <item name="android:statusBarColor">@color/subl_primary</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 </resources>

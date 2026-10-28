@@ -118,9 +118,14 @@ object DshComposeHost {
     private val doseErrState = mutableStateOf("")
     private val settingsOpen = mutableStateOf(false)
     private val docOpen = mutableStateOf(false)
+    // 记录卡（dose_drug/doseAmount/doseTime）：空台账→演示值，commitDose 后由 ledger 头条驱动
+    private val doseDrugState = mutableStateOf("氟伏沙明")
+    private val doseAmountState = mutableStateOf("100 mg")
+    private val doseTimeState = mutableStateOf("给药时间 今日 08:00 · 口服")
+    private var doseCardInit = false
     @Volatile private var appCtx: android.content.Context? = null
 
-    fun attachEnv(ctx: android.content.Context) { appCtx = ctx }
+    fun attachEnv(ctx: android.content.Context) { appCtx = ctx; refreshDoseCard() }
 
     /** 布尔态读：isFormOpen/isSettingsOpen/isDocOpen/isSel(k)。 */
     fun boolArg(name: String, vararg args: Any?): Boolean = when (name) {
@@ -135,6 +140,9 @@ object DshComposeHost {
     fun strArg(name: String): String = when (name) {
         "curDose" -> doseTextState.value
         "doseErr" -> doseErrState.value
+        "doseDrug" -> doseDrugState.value
+        "doseAmount" -> doseAmountState.value
+        "doseTime" -> doseTimeState.value
         else -> { Log.w(tag, "strArg 未知路由: " + name); "" }
     }
 
@@ -166,7 +174,12 @@ object DshComposeHost {
             "closeSettings" -> settingsOpen.value = false
             "openDocDialog" -> docOpen.value = true
             "closeDoc" -> docOpen.value = false
-            "clearAll" -> { putLedger("[]"); settingsOpen.value = false; toast("已清空记录") }
+            "clearAll" -> {
+                putLedger("[]")
+                doseDrugState.value = "氟伏沙明"; doseAmountState.value = "100 mg"
+                doseTimeState.value = "给药时间 今日 08:00 · 口服"
+                settingsOpen.value = false; toast("已清空记录")
+            }
             else -> Log.w(tag, "act 未知路由: " + name)
         }
     }
@@ -189,10 +202,38 @@ object DshComposeHost {
                 val old = appCtx?.getSharedPreferences("dsh-storage", 0)?.getString("ledger", "[]") ?: "[]"
                 val merged = if (old.trim() == "[]") "[$rec]" else "[$rec," + old.trim().trimStart('[').trimEnd(']') + "]"
                 putLedger(merged)
+                applyDoseCard(drug, dt, time.toLong())
                 toast("已记录服药")
                 formOpen.value = false; selectedDrug.value = -1; doseTextState.value = ""; doseErrState.value = ""
             }
         }
+    }
+
+    /** 记录卡同步：读 prefs "ledger" 头条；空台账保留演示值（与 JS @view 同语义）。 */
+    private fun refreshDoseCard() {
+        val ctx = appCtx ?: return
+        if (doseCardInit) return
+        doseCardInit = true
+        try {
+            val prefs = ctx.getSharedPreferences("dsh-storage", 0)
+            val arr = org.json.JSONArray(prefs.getString("ledger", "[]") ?: "[]")
+            if (arr.length() > 0) {
+                val rec = arr.optJSONObject(0)
+                if (rec != null) applyDoseCard(rec.opt("drug") as? String ?: "氟伏沙明",
+                    (rec.opt("amount") as? String) ?: rec.opt("amount")?.toString() ?: "100",
+                    (rec.opt("time") as? String)?.toLongOrNull() ?: 0L)
+            }
+        } catch (e: Throwable) { Log.w(tag, "refreshDoseCard: " + e.message) }
+    }
+
+    private fun applyDoseCard(drug: String, amount: String, ms: Long) {
+        val timeTxt = if (ms > 0) {
+            val cal = java.util.Calendar.getInstance().apply { timeInMillis = ms }
+            "给药时间 今日 %02d:%02d · 口服".format(cal.get(java.util.Calendar.HOUR_OF_DAY), cal.get(java.util.Calendar.MINUTE))
+        } else "给药时间 今日 08:00 · 口服"
+        doseDrugState.value = drug
+        doseAmountState.value = amount + " mg"
+        doseTimeState.value = timeTxt
     }
 
     private fun putLedger(v: String) {

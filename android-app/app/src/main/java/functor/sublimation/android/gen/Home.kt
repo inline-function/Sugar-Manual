@@ -4,11 +4,10 @@
 
 package functor.sublimation.android.gen
 
-import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.height
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.foundation.layout.size
@@ -25,6 +24,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
@@ -34,8 +34,8 @@ import androidx.compose.material3.MaterialTheme
 @Composable
 fun Home() {
     androidx.compose.material3.Scaffold(topBar = {
-        androidx.compose.material3.TopAppBar(modifier = Modifier.height(48.dp), title = {
-            androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically) {
+        androidx.compose.material3.TopAppBar(title = {
+            androidx.compose.foundation.layout.Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Start, verticalAlignment = Alignment.CenterVertically) {
             androidx.compose.material3.Text(text = "语法糖手册", fontSize = 22.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
             androidx.compose.foundation.layout.Spacer(modifier = Modifier.padding(start = 6.dp))
             androidx.compose.material3.Text(text = "V1.0", fontSize = 11.0.sp, color = MaterialTheme.colorScheme.onPrimary)
@@ -89,13 +89,13 @@ fun Home() {
                                 androidx.compose.foundation.layout.Column(modifier = Modifier.width(10.dp)) {
                                     // 空容器
                                 }
-                                androidx.compose.material3.Text(text = "氟伏沙明", modifier = Modifier.weight(1.0f), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                androidx.compose.material3.Text(text = "100 mg", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("doseDrug"), modifier = Modifier.weight(1.0f), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("doseAmount"), modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
                             }
                             androidx.compose.foundation.layout.Column(modifier = Modifier.height(4.dp)) {
                                 // 空容器
                             }
-                            androidx.compose.material3.Text(text = "给药时间 今日 08:00 · 口服", modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
+                            androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("doseTime"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
                         }
                     }
                     androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(vertical = 12.dp)) {

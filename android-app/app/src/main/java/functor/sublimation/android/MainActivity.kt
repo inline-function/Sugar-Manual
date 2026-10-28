@@ -57,6 +57,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // 状态栏与顶栏 primary 同色（= themes.xml 的 statusBarColor；此处双保险恒定生效，日夜同色）
+        window.statusBarColor = 0xFF00695C.toInt()
+        androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
+            .isAppearanceLightStatusBars = false   // primary 为深色 → 图标恒白
+
         pickLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
             val key = pendingPickKey
             pendingPickKey = null
