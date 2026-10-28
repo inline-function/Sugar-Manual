@@ -56,7 +56,7 @@ fun Home() {
     }) { __sublPadding ->
         androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxSize().padding(__sublPadding)) {
             androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxSize()) {
-                Subl_ConcentrationChart(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.45f), labels = listOf("0", "12", "24", "36", "48"), hours = 48f, series = listOf(SublSeries("氟伏沙明", Color(0xFFFFC107), listOf(50.0f, 41.6f, 34.5f, 28.7f, 23.9f, 19.8f, 66.5f, 55.3f, 46.0f, 38.2f, 31.7f, 26.4f, 22.0f))), mainPoints = listOf(50.0f, 41.6f, 34.5f, 28.7f, 23.9f, 19.8f, 66.5f, 55.3f, 46.0f, 38.2f, 31.7f, 26.4f, 22.0f), mainColor = MaterialTheme.colorScheme.primary, showLegend = true, badge = "估算")
+                Subl_ConcentrationChart(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.45f), labels = functor.sublimation.android.DshComposeHost.chartLabels(), hours = 48f, series = functor.sublimation.android.DshComposeHost.chartSeries(), mainPoints = functor.sublimation.android.DshComposeHost.chartTotal(), mainColor = MaterialTheme.colorScheme.primary, showLegend = true, badge = "估算")
                 androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().weight(1.0f).verticalScroll(rememberScrollState())) {
                     androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp)) {
                         androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {

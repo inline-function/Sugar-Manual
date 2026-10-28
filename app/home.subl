@@ -23,9 +23,11 @@ struct Home {
         }
         Chart(
             kind = "line",
-            labels = listOf("0", "12", "24", "36", "48"),
-            points = listOf(50.0, 41.6, 34.5, 28.7, 23.9, 19.8, 66.5, 55.3, 46.0, 38.2, 31.7, 26.4, 22.0),
-            series = listOf(Series(label = "氟伏沙明", color = "#FFC107", points = listOf(50.0, 41.6, 34.5, 28.7, 23.9, 19.8, 66.5, 55.3, 46.0, 38.2, 31.7, 26.4, 22.0))),
+            // 数据槽（宿主态机）：labels/total/series 由 DshComposeHost 依 ledger 运行时计算
+            // （与 JS chartSeriesList/PkEngine 同公式；空台账→氟伏沙明演示序列）
+            labels = chartLabels(),
+            points = chartTotal(),
+            series = chartSeries(),
             color = "primary",
             legend = true,
             badge = "估算",

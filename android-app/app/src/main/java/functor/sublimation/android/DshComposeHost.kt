@@ -2,6 +2,8 @@ package functor.sublimation.android
 
 import android.util.Log
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
+import functor.sublimation.android.gen.SublSeries
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -125,7 +127,70 @@ object DshComposeHost {
     private var doseCardInit = false
     @Volatile private var appCtx: android.content.Context? = null
 
-    fun attachEnv(ctx: android.content.Context) { appCtx = ctx; refreshDoseCard() }
+    fun attachEnv(ctx: android.content.Context) { appCtx = ctx; refreshDoseCard(); recomputeChart() }
+
+    // ---------- 浓度图（与 JS chartSeriesList/PkEngine 同公式：C(t)=Σ D·F·0.5^(t/T½)；窗口 0..48h 步长 4h） ----------
+    private val chartSeriesState = mutableStateOf<List<SublSeries>>(emptyList())
+    private val chartTotalState = mutableStateOf<List<Float>>(emptyList())
+    private val chartLabelsState = mutableStateOf<List<String>>(emptyList())
+
+    /** 图表三数据槽（发射器把 Chart 的 series/points/labels CallExpr 路由到此处）。 */
+    fun chartSeries(): List<SublSeries> = chartSeriesState.value
+    fun chartTotal(): List<Float> = chartTotalState.value
+    fun chartLabels(): List<String> = chartLabelsState.value
+
+    private fun drugParams(name: String): Pair<Int, Double> = when (name) {
+        "氟伏沙明" -> 15 to 0.5      // T½ 15h · F=50%
+        "帕罗西汀" -> 24 to 1.0      // T½ 24h · F=100%
+        else -> 24 to 1.0           // 同 halfOfName/bioOfName 兜底
+    }
+    private fun drugColorOf(name: String): Int =
+        if (name == "氟伏沙明" || name == "帕罗西汀" || name == "舍曲林" || name == "氟西汀") 0xFFFFC107.toInt()
+        else 0xFF00695C.toInt()
+
+    /** 读 ledger 重算全部序列（空台账→演示序列；与 chartSeriesList 同语义）。 */
+    private fun recomputeChart() {
+        val ctx = appCtx ?: return
+        val now = System.currentTimeMillis()
+        val recs = ArrayList<Triple<String, Double, Long>>()
+        try {
+            val arr = org.json.JSONArray(ctx.getSharedPreferences("dsh-storage", 0).getString("ledger", "[]") ?: "[]")
+            for (i in 0 until arr.length()) {
+                val o = arr.optJSONObject(i) ?: continue
+                val amt = ((o.opt("amount") as? String) ?: o.opt("amount")?.toString() ?: "0").toDoubleOrNull() ?: 0.0
+                recs.add(Triple(o.opt("drug") as? String ?: "氟伏沙明", amt,
+                    (o.opt("time") as? String)?.toLongOrNull() ?: 0L))
+            }
+        } catch (e: Throwable) { Log.w(tag, "recomputeChart: " + e.message) }
+
+        val series = ArrayList<SublSeries>()
+        if (recs.isEmpty()) {
+            series.add(SublSeries("氟伏沙明", Color(0xFFFFC107),
+                pkSeries(listOf(100.0 to 0L, 100.0 to 24L), 15, 0.5)))
+        } else {
+            // recentDrugs：台账内首次出现序
+            val seen = LinkedHashSet<String>()
+            for (r in recs) seen.add(r.first)
+            for (name in seen) {
+                val (th, f) = drugParams(name)
+                val doses = recs.filter { it.first == name }.map { it.second to (it.third - now) / 3600000L }
+                series.add(SublSeries(name, Color(drugColorOf(name)), pkSeries(doses, th, f)))
+            }
+        }
+        chartSeriesState.value = series
+        chartTotalState.value = if (series.isEmpty()) emptyList()
+            else List(series[0].points.size) { i -> series.sumOf { it.points[i].toDouble() }.toFloat() }
+        chartLabelsState.value = (0..12).map { i -> if (i % 3 == 0) (i * 4).toString() else "" }
+    }
+
+    /** 0..48h 每 4h 采样（右含端点）；浓度取 1 位小数（与 JS 数值显示同尺度）。 */
+    private fun pkSeries(doses: List<Pair<Double, Long>>, tHalf: Int, bio: Double): List<Float> =
+        (0..48 step 4).map { t ->
+            val c = doses.fold(0.0) { acc, d ->
+                if (t >= d.second) acc + d.first * bio * Math.pow(0.5, (t - d.second).toDouble() / tHalf) else acc
+            }
+            Math.round(c * 10.0) / 10.0.toFloat()
+        }
 
     /** 布尔态读：isFormOpen/isSettingsOpen/isDocOpen/isSel(k)。 */
     fun boolArg(name: String, vararg args: Any?): Boolean = when (name) {
@@ -176,6 +241,7 @@ object DshComposeHost {
             "closeDoc" -> docOpen.value = false
             "clearAll" -> {
                 putLedger("[]")
+                recomputeChart()
                 doseDrugState.value = "氟伏沙明"; doseAmountState.value = "100 mg"
                 doseTimeState.value = "给药时间 今日 08:00 · 口服"
                 settingsOpen.value = false; toast("已清空记录")
@@ -203,6 +269,7 @@ object DshComposeHost {
                 val merged = if (old.trim() == "[]") "[$rec]" else "[$rec," + old.trim().trimStart('[').trimEnd(']') + "]"
                 putLedger(merged)
                 applyDoseCard(drug, dt, time.toLong())
+                recomputeChart()
                 toast("已记录服药")
                 formOpen.value = false; selectedDrug.value = -1; doseTextState.value = ""; doseErrState.value = ""
             }
