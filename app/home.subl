@@ -1,21 +1,23 @@
 // home.subl —— 首页 @compose 视图（契约 §2：编译期展开为 gen/ 下真 Kotlin Compose）
 //
 // 与 main.subl 的 content() 同构：顶栏 / 浓度图（45%）/ 预警标签流 / 记录卡 / FAB。
-// 契约 §4 的状态槽（JS pushState → DshComposeHost.stateOf）尚未落地：这里把「台账为空时
-// 的演示数据」（main.subl 的 demoDoses 回退）按编译期常量内联——与契约「可折叠常量内联字面量」
-// 一致，手机看到的是与首次安装一致的演示首页；交互（FAB→表单、记录增删）在状态槽落地后接通。
+// 交互（契约 §4 交互态）：发射器把 `unchecked f(args)` 形的 onClick lambda 抽成路由名，
+// 宿主 DshComposeHost.act/boolArg/strArg 在 Kotlin 侧持交互态（formOpen/选中行/剂量/校验错误），
+// 与 main.subl 的 JS 逻辑同语义、storage 同源（ledger 写同一 SharedPreferences）。
+// 表单细节 1:1 对齐 Kotlin 参考 DoseEntrySheet.kt：选药行副标题（管理类·T½·F·给药途径）、
+// 选中行 ✓、OutlinedTextField label+isError+supportingText、四级校验、AlertDialog 文档/设置。
 
 @compose
 struct Home {
     Box(modifier = fillMaxSize()) {
         TopAppBar(title = "语法糖手册", subtitle = "V1.0", modifier = height(48)) {
-            TextButton() {
+            TextButton(onClick = { unchecked openDocDialog() }) {
                 Icon(name = "info", size = 22, tint = "onPrimary")
             }
-            TextButton() {
+            TextButton(onClick = { unchecked noNavigation() }) {
                 Icon(name = "menu", size = 22, tint = "onPrimary")
             }
-            TextButton() {
+            TextButton(onClick = { unchecked openSettingsDialog() }) {
                 Icon(name = "settings", size = 22, tint = "onPrimary")
             }
         }
@@ -54,7 +56,7 @@ struct Home {
             }
             Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = "surfaceVariant") {
                 Box(modifier = fillWidth().paddingHV(16, 12)) {
-                    Box(modifier = fillWidth(), orientation = "horizontal", contentAlignment = CenterStart()) {
+                    Box(modifier = fillWidth(), orientation = "horizontal") {
                         Box(modifier = width(4).height(20).background("#FFC107")) {}
                         Box(modifier = width(10)) {}
                         Text(text = "氟伏沙明", modifier = weight(1.0), size = 16, bold = true, color = "onSurface")
@@ -69,8 +71,49 @@ struct Home {
             }
             Box(modifier = height(96)) {}
         }
-        BottomSheet(visible = false) {
-            Text(text = "＋服用药物", size = 22, bold = true)
+        BottomSheet(visible = isFormOpen(), onDismiss = { unchecked cancelForm() }) {
+            Box(modifier = fillWidth().paddingHV(24, 16), orientation = "vertical", spacing = 12) {
+                Text(text = "＋服用药物", size = 22, bold = true, color = "onSurface")
+                Text(text = "选择药物并填写剂量（mg）", size = 12, color = "onSurfaceVariant")
+                Text(text = "药物", size = 14, color = "onSurfaceVariant")
+                Box(modifier = fillWidth(), orientation = "vertical", spacing = 6) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(0) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "氟伏沙明", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 15h · F=50% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(0)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(1) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "帕罗西汀", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 24h · F=100% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(1)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+                }
+                TextField(placeholder = "剂量 (mg)", label = "剂量 (mg)", text = curDose(), errText = doseErr(), keyboard = "number", onChange = { t => unchecked setDose(t) })
+                Box(modifier = fillWidth(), orientation = "horizontal", arrangement = "End", spacing = 8) {
+                    TextButton(label = "取消", onClick = { unchecked cancelForm() }) {}
+                    Button(label = "确认", onClick = { unchecked commitDose() }) {}
+                }
+            }
+        }
+        AlertDialog(visible = isSettingsOpen(), title = "设置", confirmText = "清空记录", dismissText = "关闭", onConfirm = { unchecked clearAll() }, onDismiss = { unchecked closeSettings() }) {
+            Box(modifier = fillWidth(), orientation = "vertical", spacing = 8) {
+                Text(text = "语法糖手册 V1.0", size = 16, bold = true, color = "onSurface")
+                Text(text = "SfA（Sublimation for Android）@compose 通路演示\n按钮交互经 DshComposeHost.act 路由到 Kotlin 侧交互态。", color = "onSurfaceVariant", size = 12)
+            }
+        }
+        AlertDialog(visible = isDocOpen(), title = "药物说明", confirmText = "知道了", dismissText = "关闭", onConfirm = { unchecked closeDoc() }, onDismiss = { unchecked closeDoc() }) {
+            Box(modifier = fillWidth(), orientation = "vertical", spacing = 8) {
+                Text(text = "氟伏沙明 / 帕罗西汀", size = 16, bold = true, color = "onSurface")
+                Text(text = "演示子集：SSRI 联用，CYP2D6 抑制-底物相互作用；T½ 与 F 按演示资料。", color = "onSurfaceVariant", size = 12)
+            }
         }
         FloatingButton(icon = "add", text = "＋服用药物", color = "primary", onClick = { unchecked toggleForm() })
     }

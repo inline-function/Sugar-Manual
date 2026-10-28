@@ -4,9 +4,14 @@
 // JS 侧状态、不触发视图重组——重组会重建输入框并丢失焦点/光标；提交时再由按钮
 // 等控件读取已保存的状态。
 
+// label：输入框常驻标签（≈ Kotlin OutlinedTextField 的 label 槽）。
+// errText：非空即 isError 态——红框 + 下置红字 supportingText（≈ Kotlin isError + supportingText）。
+
 @view struct TextField(
     placeholder: Str = "",
     text: Str = "",
+    label: Str = "",
+    errText: Str = "",
     keyboard: Str = "text",
     onChange: (Str) => Null = fun(t: Str): Null { null },
     modifier: List[MKind] = emptyList(),

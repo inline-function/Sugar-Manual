@@ -12,11 +12,29 @@
     window.__dshShim = __nativeBr ? "native" : "prompt";
     window.__dshAndroid = function (kind, args) {
       var a = (args === undefined || args === null) ? "[]" : JSON.stringify(args);
+      // 本设备 prompt 与原生接口的返回值都被剥成 "null"（t61 实测）—— storage 读写回值不可依赖。
+      // JS 侧缓存兜底：storagePut 时同步写 JS map；storageGet 命中缓存直接返回（绕开被剥的回值通道）。
+      if (kind === "storagePut") {
+        try {
+          var pk = (args && args[0] !== undefined) ? String(args[0]) : "";
+          var pv = (args && args[1] !== undefined) ? String(args[1]) : "";
+          globalThis.__dshStore = globalThis.__dshStore || {};
+          if (pk !== "") globalThis.__dshStore[pk] = pv;
+        } catch (e) {}
+      } else if (kind === "storageGet") {
+        try {
+          var gk = (args && args[0] !== undefined) ? String(args[0]) : "";
+          globalThis.__dshStore = globalThis.__dshStore || {};
+          if (Object.prototype.hasOwnProperty.call(globalThis.__dshStore, gk)) return globalThis.__dshStore[gk];
+        } catch (e) {}
+      }
       // 原生接口优先：无 10KB prompt 截断（layout 树能整包送达）；仅在缺失时退 prompt。
-      // 协议回值统一为 "null" 字符串（本设备两端回值都被剥成 undefined，不可依赖回值）。
-      if (__nativeBr) { try { __nativeBr.dispatch(kind, a); return "null"; } catch (e) {} }
-      try { prompt("dsh:" + kind + ":" + a); return "null"; } catch (e) {}
-      return "null";
+      var __dv = "null";
+      if (__nativeBr) { try { __dv = __nativeBr.dispatch(kind, a); } catch (e) {} }
+      else { try { __dv = prompt("dsh:" + kind + ":" + a); } catch (e) {} }
+      var __s = String(__dv);
+      if (__s === "null" || __s === "undefined" || __s === "") return "null";
+      return __s;
     };
     // 兼容 globalThis !== window 的硬化 WebView：把桥同时挂到 globalThis（编译产物按 globalThis 探测）
     try { globalThis.__dshAndroid = window.__dshAndroid; } catch (e) {}

@@ -41,6 +41,7 @@ import com.google.android.material.card.MaterialCardView
 import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.materialswitch.MaterialSwitch
 import com.google.android.material.slider.Slider
+import com.google.android.material.textfield.TextInputLayout
 import org.json.JSONArray
 import org.json.JSONObject
 /**
@@ -676,6 +677,10 @@ class DshBridge(private val activity: MainActivity) {
     }
 
     private fun buildTextField(node: JSONObject): View {
+        // label/errText ≈ Kotlin OutlinedTextField 的 label 槽 + isError/supportingText：
+        // label 非空 → TextInputLayout 常驻标签；errText 非空 → isError 态（红框 + 下置错误文本）。
+        val label = node.optString("label", "")
+        val errText = node.optString("errText", "")
         val et = EditText(activity)
         et.hint = node.optString("placeholder", "")
         et.setText(node.optString("text", ""))
@@ -686,6 +691,7 @@ class DshBridge(private val activity: MainActivity) {
             "email" -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
             else -> InputType.TYPE_CLASS_TEXT
         }
+        et.setSingleLine(true)  // ≈ Kotlin OutlinedTextField(singleLine = true)
         val onChangeId = node.optString("onChange", "")
         if (onChangeId.isNotEmpty()) {
             et.addTextChangedListener(object : TextWatcher {
@@ -697,8 +703,25 @@ class DshBridge(private val activity: MainActivity) {
                 }
             })
         }
-        applyModifiers(et, node)
-        return et
+        if (label.isEmpty() && errText.isEmpty()) {
+            applyModifiers(et, node)
+            return et
+        }
+        // 常驻标签 / 错误态走 TextInputLayout 包裹（Kotlin OutlinedTextField 的 label + isError/supportingText）。
+        val til = TextInputLayout(activity).apply {
+            if (label.isNotEmpty()) {
+                hint = label
+                setHintEnabled(true)
+            } else {
+                setHintEnabled(false)
+            }
+            isErrorEnabled = errText.isNotEmpty()
+            if (errText.isNotEmpty()) error = errText
+            endIconMode = TextInputLayout.END_ICON_NONE
+        }
+        til.addView(et, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        applyModifiers(til, node)
+        return til
     }
 
     private fun buildSwitch(node: JSONObject): View {
@@ -1168,28 +1191,32 @@ class DshBridge(private val activity: MainActivity) {
     private fun buildBottomSheet(node: JSONObject, children: JSONArray?): View {
         val key = dialogKey(node)
         if (node.optBoolean("visible", false)) {
-            if (dialogs[key] == null) {
-                val inner = LinearLayout(activity).apply {
-                    orientation = LinearLayout.VERTICAL
-                    setPadding(dp(24), dp(16), dp(24), dp(16))
-                    layoutParams = ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT)
+            val inner = LinearLayout(activity).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(dp(24), dp(16), dp(24), dp(16))
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT)
+            }
+            if (children != null) {
+                for (i in 0 until children.length()) {
+                    val c = children.optJSONObject(i) ?: continue
+                    inner.addView(buildView(c.toString()))
                 }
-                if (children != null) {
-                    for (i in 0 until children.length()) {
-                        val c = children.optJSONObject(i) ?: continue
-                        inner.addView(buildView(c.toString()))
+            }
+            val existing = dialogs[key] as? BottomSheetDialog
+            activity.runOnUiThread {
+                if (existing != null) {
+                    // 已显隐中的抽屉：整抽屉内容替换（visible=true 的新树直送，不丢回掉已注册键）
+                    existing.setContentView(inner)
+                } else {
+                    val sheet = BottomSheetDialog(activity)
+                    sheet.setContentView(inner)
+                    sheet.setCancelable(true)
+                    sheet.setOnCancelListener {
+                        jsCallback(node.optString("onDismiss", ""), ""); dismissDialog(key)
                     }
-                }
-                val sheet = BottomSheetDialog(activity)
-                sheet.setContentView(inner)
-                sheet.setCancelable(true)
-                sheet.setOnCancelListener {
-                    jsCallback(node.optString("onDismiss", ""), ""); dismissDialog(key)
-                }
-                sheet.setOnDismissListener { dismissDialogFromCallback(key) }
-                activity.runOnUiThread {
+                    sheet.setOnDismissListener { dismissDialogFromCallback(key) }
                     dialogs[key] = sheet
                     sheet.show()
                 }

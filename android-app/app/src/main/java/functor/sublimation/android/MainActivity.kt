@@ -73,6 +73,7 @@ class MainActivity : ComponentActivity() {
         web = buildWebView()
         // 逻辑 ↔ 布局 的桥：Compose 侧读状态槽、写回调（契约 §4）
         DshComposeHost.attach(web) { f -> runOnUiThread(f) }
+        DshComposeHost.attachEnv(applicationContext)
         web.loadUrl("file:///android_asset/app.js.html")
 
         val scheme = lightColorScheme(

@@ -53,6 +53,16 @@ fun pickKey(): Str = "sm_pick"
 fun doseKey(): Str = "sm_dose"
 fun settingsKey(): Str = "sm_set"
 fun docKey(): Str = "sm_doc"
+fun errKey(): Str = "sm_err"
+
+@impure
+fun doseErr(): Str = storageGet(errKey())
+
+@impure
+fun setDoseErr(e: Str): Null {
+    unchecked storagePut(errKey(), e)
+    return null
+}
 
 @impure
 fun isFormOpen(): Bool = storageGet(formKey()) == "1"
@@ -342,6 +352,7 @@ fun toggleForm(): Null {
         unchecked setFormOpen(true)
         unchecked setPickUnset()
         unchecked setDose("")
+        unchecked setDoseErr("")
     }
     unchecked refreshHome()
     return null
@@ -350,6 +361,7 @@ fun toggleForm(): Null {
 @impure
 fun pickDrugAt(k: Nat): Null {
     unchecked setPickAt(k)
+    unchecked setDoseErr("")
     unchecked refreshHome()
     return null
 }
@@ -359,6 +371,7 @@ fun cancelForm(): Null {
     unchecked setFormOpen(false)
     unchecked setPickUnset()
     unchecked setDose("")
+    unchecked setDoseErr("")
     unchecked refreshHome()
     return null
 }
@@ -369,19 +382,24 @@ fun commitDose(): Null {
     unchecked var ok: Bool = isPickSet()
     unchecked var dt: Str = strTrim(curDose())
     if (ok == false) {
+        unchecked setDoseErr("请先选择药物")
         unchecked toast("请先选择药物", false)
     } else {
         if (dt == "") {
+            unchecked setDoseErr("剂量必须为数字")
             unchecked toast("剂量必须为数字", false)
         } else {
             if (isNumber(dt) == false) {
+                unchecked setDoseErr("剂量必须为数字")
                 unchecked toast("剂量必须为数字", false)
             } else {
                 var amt: Rat = ratOr(dt, 0.0)
                 if (amt <= 0.0) {
+                    unchecked setDoseErr("剂量必须大于 0")
                     unchecked toast("剂量必须大于 0", false)
                 } else {
                     if (amt > 10000.0) {
+                        unchecked setDoseErr("单次剂量不得超过 10000 mg")
                         unchecked toast("单次剂量不得超过 10000 mg", false)
                     } else {
                         unchecked var recs: List[DoseRec] = loadLedger()
@@ -393,6 +411,7 @@ fun commitDose(): Null {
                         unchecked saveLedger(nr)
                         unchecked setFormOpen(false)
                         unchecked setPickUnset()
+                        unchecked setDoseErr("")
                         unchecked setDose("")
                         unchecked toast("已记录服药，浓度曲线与记录已刷新", false)
                         unchecked refreshHome()
@@ -417,7 +436,7 @@ fun drugAt(drugs: List[Drug], n: Nat): Str = when (elementAt(drugs, n)) {
 
 // 表单面板（≈ ModalBottomSheet：BottomSheet 视图，visible 数据字段驱显隐）。
 @composable
-fun formPanel(open: Bool, drugs: List[Drug], idx: Nat, sel: Bool, dt: Str): BottomSheet = BottomSheet(visible = open, onDismiss = { unchecked cancelForm() }) {
+fun formPanel(open: Bool, drugs: List[Drug], idx: Nat, sel: Bool, dt: Str, de: Str): BottomSheet = BottomSheet(visible = open, onDismiss = { unchecked cancelForm() }) {
     Box(modifier = fillWidth().padding4(24, 0, 24, 24)) {
         Text(text = "＋服用药物", size = 22, bold = true)
         Box(modifier = height(4)) {}
@@ -428,7 +447,7 @@ fun formPanel(open: Bool, drugs: List[Drug], idx: Nat, sel: Bool, dt: Str): Bott
         // 参考的药物列表高 168dp、条间距 6dp：height(168) + spacing，行平铺经 children。
         Box(modifier = fillWidth().height(168), scrollable = true, spacing = 6, children = drugRowsFrom(drugs, 0, idx, sel))
         Box(modifier = height(12)) {}
-        TextField(placeholder = "剂量 (mg)", text = dt, keyboard = "number",
+        TextField(placeholder = "剂量 (mg)", label = "剂量 (mg)", text = dt, keyboard = "number", errText = de,
             onChange = { t => unchecked setDose(t) })
         Box(modifier = height(16)) {}
         Box(modifier = fillWidth(), orientation = "horizontal", arrangement = "End", contentAlignment = CenterStart()) {
@@ -533,6 +552,7 @@ fun content(): Box {
     unchecked var idx: Nat = curPick()
     unchecked var sel: Bool = isPickSet()
     unchecked var dt: Str = curDose()
+    unchecked var de: Str = doseErr()
     unchecked @mut var recs: List[DoseRec] = loadLedger()
     unchecked @mut var nowMs: Nat = timeNow()
     unchecked var drugs: List[Drug] = coadmin()
@@ -544,7 +564,7 @@ fun content(): Box {
     @mut var chart = Chart(kind = "line", points = total, series = seriesXs, labels = chartLabels(), color = "primary", legend = true, badge = "估算", modifier = fillWidth().height(chartHeightDp(sh, dpi)))
     unchecked var rows: List[MedCard] = medRowsOf(recs, drugs)
     @mut var lower = lowerBox(adr, rows, drugs, sh, dpi)
-    @mut var sheet = formPanel(open, drugs, idx, sel, dt)
+    @mut var sheet = formPanel(open, drugs, idx, sel, dt, de)
     @mut var setDlg = settingsDialog(setOp)
     @mut var docDlg = docDialog(docOp)
     return Box(modifier = fillMaxSize()) {

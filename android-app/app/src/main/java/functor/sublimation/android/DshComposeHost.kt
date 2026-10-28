@@ -108,6 +108,102 @@ object DshComposeHost {
         }
     }
 
+
+    // ---------- 契约 §4 交互态（发射器直发 Kotlin 侧状态；JS 主逻辑仍跑 WebView，两端 storage 同源） ----------
+    // act 路由名 = subl 侧函数名（toggleForm/cancelForm/pickDrugAt/setDose/commitDose/……），
+    // 由 ComposeEmitter 的 onClickRoute 从 `unchecked f(args)` lambda 抽出。
+    private val formOpen = mutableStateOf(false)
+    private val selectedDrug = mutableStateOf(-1)
+    private val doseTextState = mutableStateOf("")
+    private val doseErrState = mutableStateOf("")
+    private val settingsOpen = mutableStateOf(false)
+    private val docOpen = mutableStateOf(false)
+    @Volatile private var appCtx: android.content.Context? = null
+
+    fun attachEnv(ctx: android.content.Context) { appCtx = ctx }
+
+    /** 布尔态读：isFormOpen/isSettingsOpen/isDocOpen/isSel(k)。 */
+    fun boolArg(name: String, vararg args: Any?): Boolean = when (name) {
+        "isFormOpen" -> formOpen.value
+        "isSettingsOpen" -> settingsOpen.value
+        "isDocOpen" -> docOpen.value
+        "isSel" -> (args.getOrNull(0) as? Int) == selectedDrug.value
+        else -> { Log.w(tag, "boolArg 未知路由: " + name); false }
+    }
+
+    /** 字符串态读：curDose（剂量输入）、doseErr（校验错误）。 */
+    fun strArg(name: String): String = when (name) {
+        "curDose" -> doseTextState.value
+        "doseErr" -> doseErrState.value
+        else -> { Log.w(tag, "strArg 未知路由: " + name); "" }
+    }
+
+    /** TextField onValueChange → actText("setDose", v)。 */
+    fun actText(name: String, v: String) {
+        if (name == "setDose") {
+            doseTextState.value = v
+            if (doseErrState.value.isNotEmpty()) doseErrState.value = ""
+        } else Log.w(tag, "actText 未知路由: " + name)
+    }
+
+    /** 交互动作（onClick → 宿主态机；与 main.subl 的 JS 逻辑同语义，storage 同源）。 */
+    fun act(name: String, args: List<Any?> = emptyList()) {
+        when (name) {
+            "toggleForm" -> {
+                formOpen.value = !formOpen.value
+                if (formOpen.value) { selectedDrug.value = -1; doseTextState.value = ""; doseErrState.value = "" }
+            }
+            "cancelForm" -> {
+                formOpen.value = false; selectedDrug.value = -1; doseTextState.value = ""; doseErrState.value = ""
+            }
+            "pickDrugAt" -> {
+                selectedDrug.value = (args.getOrNull(0) as? Int) ?: 0
+                doseErrState.value = ""
+            }
+            "commitDose" -> commitDose()
+            "noNavigation" -> toast("药物页：当前视图协议无多页导航")
+            "openSettingsDialog" -> settingsOpen.value = true
+            "closeSettings" -> settingsOpen.value = false
+            "openDocDialog" -> docOpen.value = true
+            "closeDoc" -> docOpen.value = false
+            "clearAll" -> { putLedger("[]"); settingsOpen.value = false; toast("已清空记录") }
+            else -> Log.w(tag, "act 未知路由: " + name)
+        }
+    }
+
+    private fun commitDose() {
+        val pick = selectedDrug.value
+        val dt = doseTextState.value.trim()
+        val amt = dt.toDoubleOrNull()
+        when {
+            pick < 0 -> { doseErrState.value = "请先选择药物"; toast("请先选择药物") }
+            dt.isEmpty() || amt == null -> { doseErrState.value = "剂量必须为数字"; toast("剂量必须为数字") }
+            amt <= 0.0 -> { doseErrState.value = "剂量必须大于 0"; toast("剂量必须大于 0") }
+            amt > 10000.0 -> { doseErrState.value = "单次剂量不得超过 10000 mg"; toast("单次剂量不得超过 10000 mg") }
+            else -> {
+                val drug = if (pick == 0) "氟伏沙明" else "帕罗西汀"
+                val time = System.currentTimeMillis().toString()
+                val rec = "{\"drug\":" + org.json.JSONObject.quote(drug) +
+                    ",\"amount\":" + org.json.JSONObject.quote(dt) +
+                    ",\"time\":" + org.json.JSONObject.quote(time) + "}"
+                val old = appCtx?.getSharedPreferences("dsh-storage", 0)?.getString("ledger", "[]") ?: "[]"
+                val merged = if (old.trim() == "[]") "[$rec]" else "[$rec," + old.trim().trimStart('[').trimEnd(']') + "]"
+                putLedger(merged)
+                toast("已记录服药")
+                formOpen.value = false; selectedDrug.value = -1; doseTextState.value = ""; doseErrState.value = ""
+            }
+        }
+    }
+
+    private fun putLedger(v: String) {
+        appCtx?.getSharedPreferences("dsh-storage", 0)?.edit()?.putString("ledger", v)?.apply()
+    }
+
+    private fun toast(msg: String) {
+        val ctx = appCtx
+        if (ctx != null) ui { android.widget.Toast.makeText(ctx, msg, android.widget.Toast.LENGTH_SHORT).show() }
+    }
+
     /** 调试：当前已注册槽位。 */
     fun slotKeys(): List<String> = status.keys.toList()
 
