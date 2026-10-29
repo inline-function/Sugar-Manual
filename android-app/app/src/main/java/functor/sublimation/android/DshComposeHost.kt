@@ -129,7 +129,7 @@ object DshComposeHost {
 
     fun attachEnv(ctx: android.content.Context) { appCtx = ctx; refreshDoseCard(); recomputeChart() }
 
-    // ---------- 浓度图（与 JS chartSeriesList/PkEngine 同公式：C(t)=Σ D·F·0.5^(t/T½)；窗口 0..48h 步长 4h） ----------
+    // ---------- 浓度图（与 JS chartSeriesList/PkEngine 同公式：C(t)=Σ D·F·0.5^(t/T½)；窗口 -12h..+36h 步长 1h，t=0=现在） ----------
     private val chartSeriesState = mutableStateOf<List<SublSeries>>(emptyList())
     private val chartTotalState = mutableStateOf<List<Float>>(emptyList())
     private val chartLabelsState = mutableStateOf<List<String>>(emptyList())
@@ -166,7 +166,7 @@ object DshComposeHost {
         val series = ArrayList<SublSeries>()
         if (recs.isEmpty()) {
             series.add(SublSeries("氟伏沙明", Color(0xFFFFC107),
-                pkSeries(listOf(100.0 to 0L, 100.0 to 24L), 15, 0.5)))
+                pkSeries(listOf(100.0 to -24L, 100.0 to 0L), 15, 0.5)))  // 演示：24h 前一剂 + 当前一剂
         } else {
             // recentDrugs：台账内首次出现序
             val seen = LinkedHashSet<String>()
@@ -180,12 +180,12 @@ object DshComposeHost {
         chartSeriesState.value = series
         chartTotalState.value = if (series.isEmpty()) emptyList()
             else List(series[0].points.size) { i -> series.sumOf { it.points[i].toDouble() }.toFloat() }
-        chartLabelsState.value = (0..12).map { i -> if (i % 3 == 0) (i * 4).toString() else "" }
+        chartLabelsState.value = (-12..36 step 12).map { "${it}h" }
     }
 
-    /** 0..48h 每 4h 采样（右含端点）；浓度取 1 位小数（与 JS 数值显示同尺度）。 */
+    /** -12h..+36h 每 1h 采样（t=0 为当前时间；供图表视口内裁剪绘制）；浓度取 1 位小数。 */
     private fun pkSeries(doses: List<Pair<Double, Long>>, tHalf: Int, bio: Double): List<Float> =
-        (0..48 step 4).map { t ->
+        (-12..36).map { t ->
             val c = doses.fold(0.0) { acc, d ->
                 if (t >= d.second) acc + d.first * bio * Math.pow(0.5, (t - d.second).toDouble() / tHalf) else acc
             }
