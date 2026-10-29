@@ -127,18 +127,23 @@ check("series 平铺且逐药（演示=氟伏沙明金色线）",
   JSON.stringify(chartN.series.map(s => [s.label, s.color, s.points.length])));
 check("总线 = 逐药分量逐点求和", eq(pts, chartN.series[0].points.map(Number)));
 
-console.log("== E 预警标签流（FlowRow 平铺） ==");
-const alertsBox = lowerN.children[0].children[0];
-check("流容器 wrap=true spacing=8", alertsBox.wrap === true && alertsBox.spacing === 8, JSON.stringify({w: alertsBox.wrap, s: alertsBox.spacing}));
-const tags = alertsBox.children;
-check("标签是流容器的直接子级（平铺 21 个，非嵌套链）", tags.length === 30 && tags.every(t => t.tag === "Box"), "n=" + tags.length);
-const tagLevels = [["恶心", "#33D32F2F", "#C62828"], ["嗜睡", "#33D32F2F", "#C62828"], ["失眠", "#33D32F2F", "#C62828"]];
+console.log("== E 呼吸抑制预警空态 + CYP 代谢流（FlowRow 平铺） ==");
+const respBox = lowerN.children[0];
+check("空台账呼吸抑制预警：暂无预警占位", findByTag(respBox, "Text").some(t => t.text === "暂无预警"), JSON.stringify(findByTag(respBox, "Text").map(x => x.text)));
+check("空台账无呼吸抑制标签", !findByTag(tree, "Text").some(t => typeof t.text === "string" && t.text.indexOf("呼吸抑制") === 0), JSON.stringify(findByTag(tree, "Text").map(x => String(x.text)).filter(s => s.indexOf("呼吸") >= 0)));
+const metabBox = lowerN.children[1];
+check("CYP 流标题", findByTag(metabBox, "Text").some(t => t.text === "CYP450 代谢相互作用"));
+const flowBox = metabBox.children[1];
+check("CYP 流容器 wrap=true spacing=8", flowBox.wrap === true && flowBox.spacing === 8, JSON.stringify({w: flowBox.wrap, s: flowBox.spacing}));
+const tags = flowBox.children;
+check("CYP 标签平铺为直接子级（4 个，非嵌套链）", tags.length === 4 && tags.every(t => t.tag === "Box"), "n=" + tags.length + " " + tags.map(b => b.children[0].text).join(","));
+const tagLevels = [["CYP2D6 抑制 ×11", "#33D32F2F", "#C62828"], ["CYP2C19 抑制 ×5", "#33D32F2F", "#C62828"], ["CYP2C9 抑制 ×2", "#334CAF50", "#2E7D32"], ["CYP3A4 抑制 ×2", "#334CAF50", "#2E7D32"]];
 tagLevels.forEach((exp, i) => {
-  const t = tags[i], tx = t.children[0];
-  check("标签[" + i + "] " + exp[0] + "：链 [Clip(12), Background(" + exp[1] + "), PaddingH(12), PaddingV(5)]",
+  const t = tags.find(b => b.children[0].text === exp[0]) || tags[i], tx = t.children[0];
+  check("CYP 标签 " + exp[0] + "：链 [Clip(12), Background(" + exp[1] + "), PaddingH(12), PaddingV(5)]",
     eq(mods(t), ["Clip(12)", "Background(" + exp[1] + ")", "PaddingH(12)", "PaddingV(5)"]), mods(t).join(","));
-  check("标签[" + i + "] 字 " + exp[2] + " 14sp bold", tx.text === exp[0] && tx.color === exp[2] && tx.size === 14 && tx.bold === true, JSON.stringify({t: tx.text, c: tx.color}));
-  check("标签[" + i + "] flash 布尔字段存在（过量条目驱闪烁）", typeof tx.flash === "boolean" && tx.flash === false, String(tx.flash));
+  check("CYP 标签 " + exp[0] + " 字 " + exp[2] + " 14sp bold", tx.text === exp[0] && tx.color === exp[2] && tx.size === 14 && tx.bold === true, JSON.stringify({t: tx.text, c: tx.color}));
+  check("CYP 标签 " + exp[0] + " flash=false", tx.flash === false, String(tx.flash));
 });
 
 console.log("== F 记录卡 ==");

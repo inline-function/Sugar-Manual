@@ -150,21 +150,31 @@ object DshComposeHost {
     private val settingsOpen = mutableStateOf(false)
     private val drugListOpen = mutableStateOf(false)
     private val docNameState = mutableStateOf("")
-    // 记录卡（dose_drug/doseAmount/doseTime）：空台账→演示值，commitDose 后由 ledger 头条驱动
-    private val doseDrugState = mutableStateOf("氟伏沙明")
-    private val doseAmountState = mutableStateOf("100 mg")
-    private val doseTimeState = mutableStateOf("给药时间 今日 08:00 · 口服")
-    private var doseCardInit = false
+    // 服药记录列表（最近 10 条：name_k/dose_k/time_k/bar_k 槽位 + hasRec(k) 显隐）
+    private data class HostRec(val name: String, val amount: String, val timeMs: Long)
+    private val recListState = mutableStateOf(ArrayList<HostRec>())
     @Volatile private var appCtx: android.content.Context? = null
 
-    // BZD×阿片联用呼吸抑制红色警示（与 JS 侧 advMetab flash 同语义：两类同服时红底闪烁）
-    private val warnState = mutableStateOf("")
-    private fun recWarn(names: Set<String>) {
-        warnState.value = if (names.any { it in drugBzd } && names.any { it in drugOpioid.keys })
-            "BZD×阿片联用：呼吸抑制风险（FDA 黑框警示）" else ""
+    // 呼吸抑制风险（与 JS 侧 respAlert 同模型：类内最大权重、跨类相加、阈值 3/5/7）
+    private val opioidWeight = mapOf("吗啡" to 5, "羟考酮" to 5, "芬太尼" to 5, "哌替啶" to 5, "可待因" to 4, "曲马多" to 4)
+    private val bzdWeight = mapOf("地西泮" to 4, "艾司唑仑" to 4, "阿普唑仑" to 4, "氯硝西泮" to 4, "劳拉西泮" to 4, "咪达唑仑" to 2)
+    private val warnLevelState = mutableStateOf(0)
+    private val warnScoreState = mutableStateOf(0)
+    private fun recomputeWarn(names: Set<String>) {
+        val o = names.mapNotNull { opioidWeight[it] }.maxOrNull() ?: 0
+        val b = names.mapNotNull { bzdWeight[it] }.maxOrNull() ?: 0
+        val score = o + b
+        warnScoreState.value = score
+        warnLevelState.value = if (score >= 7) 3 else if (score >= 5) 2 else 0
+    }
+    private fun warnText(level: Int): String {
+        val s = warnScoreState.value
+        return if (level == 3) "呼吸抑制（联用叠加） · 权重×$s"
+        else if (level == 2) "呼吸抑制（剂量依赖） · 权重×$s"
+        else ""
     }
 
-    fun attachEnv(ctx: android.content.Context) { appCtx = ctx; refreshDoseCard(); recomputeChart() }
+    fun attachEnv(ctx: android.content.Context) { appCtx = ctx; refreshRecList(); recomputeChart() }
 
     // ---------- 浓度图（与 JS chartSeriesList/PkEngine 同公式：C(t)=Σ D·F·0.5^(t/T½)；窗口 -12h..+36h 步长 1h，t=0=现在） ----------
     private val chartSeriesState = mutableStateOf<List<SublSeries>>(emptyList())
@@ -218,7 +228,7 @@ object DshComposeHost {
         } catch (e: Throwable) { Log.w(tag, "recomputeChart: " + e.message) }
 
         val names = recs.map { it.first }.toSet()
-        recWarn(names)
+        recomputeWarn(names)
         val series = ArrayList<SublSeries>()
         if (recs.isEmpty()) {
             series.add(SublSeries("氟伏沙明", Color(0xFFFFC107),
@@ -254,22 +264,45 @@ object DshComposeHost {
         "isSettingsOpen" -> settingsOpen.value
         "isListOpen" -> drugListOpen.value
         "isDocOpen" -> docNameState.value.isNotEmpty()
-        "hasWarn" -> warnState.value.isNotEmpty()
+        "hasWarn" -> warnLevelState.value >= 3
+        "hasWarn2" -> warnLevelState.value == 2
+        "noWarn" -> warnLevelState.value == 0
+        "hasRec" -> {
+            val k = args.getOrNull(0) as? Int ?: 0
+            k >= 0 && k < recListState.value.size && k < 10
+        }
+        "noRec" -> recListState.value.isEmpty()
         "isSel" -> (args.getOrNull(0) as? Int) == selectedDrug.value
         else -> { Log.w(tag, "boolArg 未知路由: " + name); false }
     }
 
-    /** 字符串态读：curDose（剂量输入）、doseErr（校验错误）。 */
+    /** 字符串态读：curDose（剂量输入）、doseErr（校验错误）、呼吸抑制风险、记录列表槽位。 */
     fun strArg(name: String): String = when (name) {
         "curDose" -> doseTextState.value
         "doseErr" -> doseErrState.value
-        "doseDrug" -> doseDrugState.value
-        "doseAmount" -> doseAmountState.value
-        "doseTime" -> doseTimeState.value
         "docName" -> docNameState.value
         "docBody" -> drugDocText(docNameState.value)
-        "warnLine" -> warnState.value
-        else -> { Log.w(tag, "strArg 未知路由: " + name); "" }
+        "warnLine" -> warnText(3)
+        "warnLine2" -> warnText(2)
+        "recCount" -> {
+            val n = recListState.value.size
+            if (n == 0) "" else if (n > 10) "共 $n 条 · 显示最近 10 条" else "共 $n 条"
+        }
+        else -> {
+            // 记录卡槽位：name_k / dose_k / time_k
+            val k = name.removePrefix("name").removePrefix("dose").removePrefix("time").toIntOrNull()
+            if (k != null && k in 0 until 10 && k < recListState.value.size && (name.startsWith("name") || name.startsWith("dose") || name.startsWith("time"))) {
+                val r = recListState.value[k]
+                when {
+                    name.startsWith("name") -> r.name
+                    name.startsWith("dose") -> r.amount + " mg"
+                    else -> if (r.timeMs > 0) {
+                        val cal = java.util.Calendar.getInstance().apply { timeInMillis = r.timeMs }
+                        "给药时间 今日 %02d:%02d · 口服".format(cal.get(java.util.Calendar.HOUR_OF_DAY), cal.get(java.util.Calendar.MINUTE))
+                    } else "给药时间 · 口服"
+                }
+            } else { Log.w(tag, "strArg 未知路由: " + name); "" }
+        }
     }
 
     /** TextField onValueChange → actText("setDose", v)。 */
@@ -304,13 +337,12 @@ object DshComposeHost {
                 docNameState.value = if (idx != null) drugNames.getOrNull(idx) ?: "" else (args.getOrNull(0) as? String) ?: ""
                 drugListOpen.value = false
             }
-            "openDocForCurrent" -> { docNameState.value = doseDrugState.value; drugListOpen.value = false }
             "closeDoc" -> docNameState.value = ""
             "clearAll" -> {
                 putLedger("[]")
+                recListState.value = ArrayList()
+                recomputeWarn(emptySet())
                 recomputeChart()
-                doseDrugState.value = "氟伏沙明"; doseAmountState.value = "100 mg"
-                doseTimeState.value = "给药时间 今日 08:00 · 口服"
                 settingsOpen.value = false; toast("已清空记录")
             }
             else -> Log.w(tag, "act 未知路由: " + name)
@@ -335,7 +367,7 @@ object DshComposeHost {
                 val old = appCtx?.getSharedPreferences("dsh-storage", 0)?.getString("ledger", "[]") ?: "[]"
                 val merged = if (old.trim() == "[]") "[$rec]" else "[$rec," + old.trim().trimStart('[').trimEnd(']') + "]"
                 putLedger(merged)
-                applyDoseCard(drug, dt, time.toLong())
+                refreshRecList()
                 recomputeChart()
                 toast("已记录服药")
                 formOpen.value = false; selectedDrug.value = -1; doseTextState.value = ""; doseErrState.value = ""
@@ -343,31 +375,24 @@ object DshComposeHost {
         }
     }
 
-    /** 记录卡同步：读 prefs "ledger" 头条；空台账保留演示值（与 JS @view 同语义）。 */
-    private fun refreshDoseCard() {
+    /** 记录列表同步：读 prefs "ledger" 全量（最近 10 条驱动 name_k/dose_k/time_k/bar_k 槽位）。 */
+    private fun refreshRecList() {
         val ctx = appCtx ?: return
-        if (doseCardInit) return
-        doseCardInit = true
         try {
-            val prefs = ctx.getSharedPreferences("dsh-storage", 0)
-            val arr = org.json.JSONArray(prefs.getString("ledger", "[]") ?: "[]")
-            if (arr.length() > 0) {
-                val rec = arr.optJSONObject(0)
-                if (rec != null) applyDoseCard(rec.opt("drug") as? String ?: "氟伏沙明",
-                    (rec.opt("amount") as? String) ?: rec.opt("amount")?.toString() ?: "100",
-                    (rec.opt("time") as? String)?.toLongOrNull() ?: 0L)
-            }
-        } catch (e: Throwable) { Log.w(tag, "refreshDoseCard: " + e.message) }
+            recListState.value = readRecs(ctx.getSharedPreferences("dsh-storage", 0).getString("ledger", "[]") ?: "[]")
+        } catch (e: Throwable) { Log.w(tag, "refreshRecList: " + e.message) }
     }
 
-    private fun applyDoseCard(drug: String, amount: String, ms: Long) {
-        val timeTxt = if (ms > 0) {
-            val cal = java.util.Calendar.getInstance().apply { timeInMillis = ms }
-            "给药时间 今日 %02d:%02d · 口服".format(cal.get(java.util.Calendar.HOUR_OF_DAY), cal.get(java.util.Calendar.MINUTE))
-        } else "给药时间 今日 08:00 · 口服"
-        doseDrugState.value = drug
-        doseAmountState.value = amount + " mg"
-        doseTimeState.value = timeTxt
+    private fun readRecs(json: String): ArrayList<HostRec> {
+        val arr = org.json.JSONArray(json)
+        val out = ArrayList<HostRec>()
+        for (i in 0 until arr.length()) {
+            val o = arr.optJSONObject(i) ?: continue
+            out.add(HostRec(o.opt("drug") as? String ?: "",
+                ((o.opt("amount") as? String) ?: o.opt("amount")?.toString() ?: "0"),
+                (o.opt("time") as? String)?.toLongOrNull() ?: 0L))
+        }
+        return out
     }
 
     private fun putLedger(v: String) {

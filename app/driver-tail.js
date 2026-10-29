@@ -51,22 +51,23 @@
   __smA("预警无区标题", !texts0.includes("相互作用预警"));
   __smA("预警无组标题", !texts0.some((s) => String(s).indexOf("危险") === 0 || String(s).indexOf("警告") === 0));
   __smA("标签名不带权重", !texts0.some((s) => /^\S+ \d+/.test(String(s))), "got " + JSON.stringify(texts0.slice(0, 12)));
-  __smA("危险标签 恶心", texts0.includes("恶心"));
+  // CYP 代谢预警仍走 tagBg 三级色（联用不良反应流已下线）
   const tagBoxes = __smNodes(root0).filter((n) => n.tag === "Box" && (n.modifiers || []).some((m) => m.tag === "Background" && String(m["0"]).indexOf("D32F2F") >= 0));
   __smA("三级标签底色存在", tagBoxes.length >= 2, "got " + tagBoxes.map((b) => (b.modifiers || []).filter((m) => m.tag === "Background").map((m) => m["0"])).join(","));
   const dangerTag = tagBoxes.find((b) => (b.modifiers || []).some((m) => m.tag === "Background" && m["0"] === "#33D32F2F"));
-  __smA("危险标签含恶心", dangerTag && (dangerTag.children[0] || {}).text === "恶心" && (dangerTag.children[0] || {}).color === "#C62828", "got " + JSON.stringify(dangerTag && dangerTag.children.map((c) => c.text)));
+  __smA("危险级 CYP 标签", dangerTag && (dangerTag.children[0] || {}).text.indexOf("CYP") === 0 && (dangerTag.children[0] || {}).color === "#C62828", "got " + JSON.stringify(dangerTag && dangerTag.children.map((c) => c.text)));
   __smA("标签横向流", __smNodes(root0).some((n) => n.wrap === true && n.tag === "Box"));
+  // 空台账无呼吸抑制预警（单药未服，引擎闭置）
+  __smA("空台账暂无预警", texts0.includes("暂无预警"));
+  __smA("空台账无呼吸抑制标签", !texts0.some((s) => typeof s === "string" && s.indexOf("呼吸抑制") === 0), "got " + JSON.stringify(texts0.filter((s) => String(s).indexOf("呼吸") >= 0)));
   // CYP450 代谢相互作用预警链（SSRI 极强 CYP2D6/2C19 抑制 + 可待因/曲马多/羟考酮 2D6 底物）
   const cypTexts = __smNodes(root0).filter((n) => n.tag === "Text" && typeof n.text === "string" && n.text.indexOf("CYP") === 0).map((n) => n.text);
   __smA("CYP 预警标题", texts0.includes("CYP450 代谢相互作用"));
   __smA("CYP2D6 抑制标签", cypTexts.some((s) => s.indexOf("CYP2D6 抑制") === 0), "got " + JSON.stringify(cypTexts));
   __smA("CYP2C19 抑制标签", cypTexts.some((s) => s.indexOf("CYP2C19 抑制") === 0), "got " + JSON.stringify(cypTexts));
-  // BZD×阿片联用呼吸抑制：过量条目同名 → 闪烁标签（#40 红底）
-  const flashCells = __smNodes(root0).filter((n) => n.tag === "Box" && (n.modifiers || []).some((m) => m.tag === "Background" && String(m["0"]).indexOf("#40") === 0));
-  const flashTexts = flashCells.map((b) => (b.children[0] || {}).text);
-  __smA("呼吸抑制闪烁标签", flashTexts.includes("呼吸抑制"), "got " + JSON.stringify(flashTexts));
-  __smA("BZD 阿片呼吸抑制链", texts0.includes("呼吸抑制（与阿片/酒精合用）"));
+  // 呼吸抑制红色闪烁仅在两类同服时出现（空台账无 #40 flash）
+  const flashCells0 = __smNodes(root0).filter((n) => n.tag === "Box" && (n.modifiers || []).some((m) => m.tag === "Background" && String(m["0"]).indexOf("#40") === 0));
+  __smA("空台账无红色闪烁", flashCells0.length === 0, "got " + JSON.stringify(flashCells0.map((b) => (b.children[0] || {}).text)));
   __smA("记录区标题", texts0.includes("服药记录"));
   __smA("空台账占位", texts0.includes("暂无服药记录"));
   __smA("底部 96dp 留白", __smNodes(root0).some((n) => n.tag === "Box" && (n.modifiers || []).some((m) => m.tag === "Height" && m["0"] === 96)));
@@ -199,6 +200,32 @@
   __smA("取消草稿复位", __smStore["sm_dose"] === "");
   __smA("取消未选复位", __smStore["sm_pick"] === "");
 
+  // ---------- 呼吸抑制风险叠加（单类不报 / 双类红色危险） ----------
+  const fab4 = __smNodes(__smRoot()).find((n) => n.tag === "FloatingButton");
+  __smCall(fab4, "onClick");
+  const rowsY = __smNodes(__smRoot()).filter((n) => n.tag === "Box" && typeof n.onClick === "string" && (n.children || [])[0] && n.children[0].tag === "Box" && (n.children[0].children || [])[0] && n.children[0].children[0].tag === "Text" && (n.children[0].children || [])[1] && n.children[0].children[1].tag === "Text");
+  __smCall(rowsY.find((b) => b.children[0].children[0].text === "吗啡"), "onClick");
+  const tfY = __smNodes(__smRoot()).find((n) => n.tag === "TextField");
+  __smCall(tfY, "onChange", "10");
+  __smCall(__smFindButton(__smRoot(), "确认"), "onClick");
+  const rootM = __smRoot();
+  const respTagM = __smNodes(rootM).filter((n) => n.tag === "Text" && typeof n.text === "string" && n.text.indexOf("呼吸抑制") === 0);
+  __smA("单类吗啡=警告不红", respTagM.length === 1 && respTagM[0].text.indexOf("剂量依赖") >= 0 && respTagM[0].color === "#E65100" && respTagM[0].flash !== true, "got " + JSON.stringify(respTagM.map((n) => [n.text, n.color])));
+  __smA("单类无红闪(flash)", !__smNodes(rootM).some((n) => n.tag === "Text" && n.flash === true));
+  const fab5 = __smNodes(__smRoot()).find((n) => n.tag === "FloatingButton");
+  __smCall(fab5, "onClick");
+  const rowsZ = __smNodes(__smRoot()).filter((n) => n.tag === "Box" && typeof n.onClick === "string" && (n.children || [])[0] && n.children[0].tag === "Box" && (n.children[0].children || [])[0] && n.children[0].children[0].tag === "Text" && (n.children[0].children || [])[1] && n.children[0].children[1].tag === "Text");
+  __smCall(rowsZ.find((b) => b.children[0].children[0].text === "地西泮"), "onClick");
+  const tfZ = __smNodes(__smRoot()).find((n) => n.tag === "TextField");
+  __smCall(tfZ, "onChange", "5");
+  __smCall(__smFindButton(__smRoot(), "确认"), "onClick");
+  const rootD = __smRoot();
+  const respTagD = __smNodes(rootD).filter((n) => n.tag === "Text" && typeof n.text === "string" && n.text.indexOf("呼吸抑制") === 0);
+  __smA("双类叠加红色危险", respTagD.length === 1 && respTagD[0].text.indexOf("联用叠加") >= 0 && respTagD[0].text.indexOf("权重×9") >= 0 && respTagD[0].color === "#D32F2F" && respTagD[0].flash === true, "got " + JSON.stringify(respTagD.map((n) => [n.text, n.color, n.flash])));
+  const flashBoxD = __smNodes(rootD).find((n) => n.tag === "Box" && (n.modifiers || []).some((m) => m.tag === "Background" && m["0"] === "#40D32F2F"));
+  __smA("红底 #40 通路", !!flashBoxD);
+  __smA("呼吸抑制后台账 3 条", JSON.parse(__smStore["ledger"]).length === 3, "got " + __smStore["ledger"]);
+
   // ---------- 纯函数层 ----------
   __smA("tagBg 三级", tagBg(3, false) === "#33D32F2F" && tagBg(2, false) === "#33F9A825" && tagBg(1, false) === "#334CAF50", JSON.stringify([tagBg(3, false), tagBg(2, false), tagBg(1, false)]));
   __smA("tagFg 三级", tagFg(3, false) === "#C62828" && tagFg(2, false) === "#E65100" && tagFg(1, false) === "#2E7D32", JSON.stringify([tagFg(3, false), tagFg(2, false), tagFg(1, false)]));
@@ -212,8 +239,12 @@
   __smA("drugDetail 吗啡", drugDetail(morphine()) === "处方药 · T½ 2h · F=34% · 口服", "got " + drugDetail(morphine()));
   __smA("drugDetail 咪达唑仑", drugDetail(midazolam()) === "处方药 · T½ 3h · F=44% · 口服", "got " + drugDetail(midazolam()));
   __smA("rowBold", rowBold(1, 1, true) === true && rowBold(1, 1, false) === false && rowBold(0, 1, true) === false);
-  __smA("itemsAt 过滤", itemsAt(3, [Trigger("a", 8), Trigger("b", 5), Trigger("c", 2)]).length === 1, "got " + JSON.stringify(itemsAt(3, [Trigger("a", 8), Trigger("b", 5), Trigger("c", 2)])));
-  __smA("alertItems 降序混排", (function () { const ts = alertItems(Alert(3, [Trigger("恶", 8), Trigger("失", 6), Trigger("小", 4)])); return ts.length === 3 && ts[0].score === 8 && ts[2].score === 4; })());
+  __smA("respWeight 阿片>BZD", respWeightOf(morphine()) === 5 && respWeightOf(diazepam()) === 4 && respWeightOf(morphine()) > respWeightOf(diazepam()), "got " + [respWeightOf(morphine()), respWeightOf(diazepam())]);
+  __smA("respWeight 可待因", respWeightOf(codeine()) === 4);
+  __smA("respAlert 单吗啡警告", (function () { const a = respAlert(core_collection__cons(morphine(), core_collection__emptyList())); return a.level === 2 && a.items.length === 1 && a.items[0].name === "呼吸抑制（剂量依赖）" && a.items[0].score === 5; })());
+  __smA("respAlert 双类红危险", (function () { const a = respAlert(core_collection__cons(morphine(), core_collection__cons(diazepam(), core_collection__emptyList()))); return a.level === 3 && a.items[0].name === "呼吸抑制（联用叠加）" && a.items[0].score === 9; })());
+  __smA("respAlert 双BZD不报红", (function () { const a = respAlert(core_collection__cons(diazepam(), core_collection__cons(estazolam(), core_collection__emptyList()))); return a.level === 1 && a.items.length === 0; })());
+  __smA("respAlert 空集无预警", (function () { const a = respAlert(core_collection__emptyList()); return a.level === 0 && a.items.length === 0; })());
   __smA("routeOf 回退口服", routeOf("未知", core_collection__emptyList()) === "口服");
   __smA("firstRoute", firstRoute(core_collection__cons(PkProfile("口服", "常释", 15, "不稳", "一级", "对数", 0.5, core_collection__emptyList()), core_collection__emptyList())) === "口服");
   __smA("ledger 往返", (function () { saveLedger([DoseRec("测试药", 50.0, 123)]); const b = loadLedger(); return b.length === 1 && b[0].drug === "测试药" && b[0].amount === 50 && b[0].time === 123; })());

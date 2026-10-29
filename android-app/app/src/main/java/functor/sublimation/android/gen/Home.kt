@@ -23,9 +23,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.runtime.Composable
@@ -60,53 +60,222 @@ fun Home() {
                 androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().weight(1.0f).verticalScroll(rememberScrollState())) {
                     androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp)) {
                         androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                            androidx.compose.material3.Text(text = "联用预警", modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                            androidx.compose.material3.Text(text = "呼吸抑制风险", modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
                             if (functor.sublimation.android.DshComposeHost.boolArg("hasWarn")) {
                             androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(Color(0x40D32F2F)).padding(horizontal = 12.dp, vertical = 6.dp)) {
                                 androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("warnLine"), modifier = Modifier, color = Color(0xFFD32F2F), fontSize = 14.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
                             }
                             }
-                            androidx.compose.foundation.layout.FlowRow(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                                androidx.compose.foundation.layout.Column(modifier = Modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(Color(0x33D32F2F)).padding(horizontal = 12.dp, vertical = 5.dp)) {
-                                    androidx.compose.material3.Text(text = "恶心", modifier = Modifier, color = Color(0xFFC62828), fontSize = 14.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                }
-                                androidx.compose.foundation.layout.Column(modifier = Modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(Color(0x33F9A825)).padding(horizontal = 12.dp, vertical = 5.dp)) {
-                                    androidx.compose.material3.Text(text = "失眠", modifier = Modifier, color = Color(0xFFE65100), fontSize = 14.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                }
-                                androidx.compose.foundation.layout.Column(modifier = Modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(Color(0x33F9A825)).padding(horizontal = 12.dp, vertical = 5.dp)) {
-                                    androidx.compose.material3.Text(text = "嗜睡", modifier = Modifier, color = Color(0xFFE65100), fontSize = 14.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                }
-                                androidx.compose.foundation.layout.Column(modifier = Modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(Color(0x3355595F)).padding(horizontal = 12.dp, vertical = 5.dp)) {
-                                    androidx.compose.material3.Text(text = "头晕", modifier = Modifier, color = Color(0xFF44464F), fontSize = 14.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                }
+                            if (functor.sublimation.android.DshComposeHost.boolArg("hasWarn2")) {
+                            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(Color(0x40F9A825)).padding(horizontal = 12.dp, vertical = 6.dp)) {
+                                androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("warnLine2"), modifier = Modifier, color = Color(0xFFE65100), fontSize = 14.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                            }
+                            }
+                            if (functor.sublimation.android.DshComposeHost.boolArg("noWarn")) {
+                            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                                androidx.compose.material3.Text(text = "暂无预警", modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.0.sp)
+                            }
                             }
                         }
                     }
-                    androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(start = 24.dp, top = 16.dp, end = 24.dp, bottom = 8.dp)) {
-                        androidx.compose.material3.Text(text = "服药记录", modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                    androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth().padding(start = 24.dp, top = 16.dp, end = 24.dp, bottom = 8.dp)) {
+                        androidx.compose.material3.Text(text = "服药记录", modifier = Modifier.weight(1.0f), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("recCount"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
                     }
-                    androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().clickable { functor.sublimation.android.DshComposeHost.act("openDocForCurrent") }) {
+                    if (functor.sublimation.android.DshComposeHost.boolArg("hasRec", 0)) {
+                    androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth()) {
                         androidx.compose.material3.Card(colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp), elevation = androidx.compose.material3.CardDefaults.cardElevation(0.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(vertical = 6.dp)) {
                             androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
                                 androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth()) {
-                                    androidx.compose.foundation.layout.Column(modifier = Modifier.width(4.dp).height(20.dp).background(Color(0xFFFFC107))) {
-                                        // 空容器
-                                    }
                                     androidx.compose.foundation.layout.Column(modifier = Modifier.width(10.dp)) {
                                         // 空容器
                                     }
-                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("doseDrug"), modifier = Modifier.weight(1.0f), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("doseAmount"), modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("name0"), modifier = Modifier.weight(1.0f), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("dose0"), modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
                                 }
                                 androidx.compose.foundation.layout.Column(modifier = Modifier.height(4.dp)) {
                                     // 空容器
                                 }
-                                androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("doseTime"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
+                                androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("time0"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
                             }
                         }
                     }
+                    }
+                    if (functor.sublimation.android.DshComposeHost.boolArg("hasRec", 1)) {
+                    androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth()) {
+                        androidx.compose.material3.Card(colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp), elevation = androidx.compose.material3.CardDefaults.cardElevation(0.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(vertical = 6.dp)) {
+                            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+                                androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth()) {
+                                    androidx.compose.foundation.layout.Column(modifier = Modifier.width(10.dp)) {
+                                        // 空容器
+                                    }
+                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("name1"), modifier = Modifier.weight(1.0f), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("dose1"), modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                }
+                                androidx.compose.foundation.layout.Column(modifier = Modifier.height(4.dp)) {
+                                    // 空容器
+                                }
+                                androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("time1"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
+                            }
+                        }
+                    }
+                    }
+                    if (functor.sublimation.android.DshComposeHost.boolArg("hasRec", 2)) {
+                    androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth()) {
+                        androidx.compose.material3.Card(colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp), elevation = androidx.compose.material3.CardDefaults.cardElevation(0.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(vertical = 6.dp)) {
+                            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+                                androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth()) {
+                                    androidx.compose.foundation.layout.Column(modifier = Modifier.width(10.dp)) {
+                                        // 空容器
+                                    }
+                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("name2"), modifier = Modifier.weight(1.0f), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("dose2"), modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                }
+                                androidx.compose.foundation.layout.Column(modifier = Modifier.height(4.dp)) {
+                                    // 空容器
+                                }
+                                androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("time2"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
+                            }
+                        }
+                    }
+                    }
+                    if (functor.sublimation.android.DshComposeHost.boolArg("hasRec", 3)) {
+                    androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth()) {
+                        androidx.compose.material3.Card(colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp), elevation = androidx.compose.material3.CardDefaults.cardElevation(0.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(vertical = 6.dp)) {
+                            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+                                androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth()) {
+                                    androidx.compose.foundation.layout.Column(modifier = Modifier.width(10.dp)) {
+                                        // 空容器
+                                    }
+                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("name3"), modifier = Modifier.weight(1.0f), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("dose3"), modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                }
+                                androidx.compose.foundation.layout.Column(modifier = Modifier.height(4.dp)) {
+                                    // 空容器
+                                }
+                                androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("time3"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
+                            }
+                        }
+                    }
+                    }
+                    if (functor.sublimation.android.DshComposeHost.boolArg("hasRec", 4)) {
+                    androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth()) {
+                        androidx.compose.material3.Card(colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp), elevation = androidx.compose.material3.CardDefaults.cardElevation(0.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(vertical = 6.dp)) {
+                            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+                                androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth()) {
+                                    androidx.compose.foundation.layout.Column(modifier = Modifier.width(10.dp)) {
+                                        // 空容器
+                                    }
+                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("name4"), modifier = Modifier.weight(1.0f), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("dose4"), modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                }
+                                androidx.compose.foundation.layout.Column(modifier = Modifier.height(4.dp)) {
+                                    // 空容器
+                                }
+                                androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("time4"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
+                            }
+                        }
+                    }
+                    }
+                    if (functor.sublimation.android.DshComposeHost.boolArg("hasRec", 5)) {
+                    androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth()) {
+                        androidx.compose.material3.Card(colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp), elevation = androidx.compose.material3.CardDefaults.cardElevation(0.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(vertical = 6.dp)) {
+                            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+                                androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth()) {
+                                    androidx.compose.foundation.layout.Column(modifier = Modifier.width(10.dp)) {
+                                        // 空容器
+                                    }
+                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("name5"), modifier = Modifier.weight(1.0f), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("dose5"), modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                }
+                                androidx.compose.foundation.layout.Column(modifier = Modifier.height(4.dp)) {
+                                    // 空容器
+                                }
+                                androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("time5"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
+                            }
+                        }
+                    }
+                    }
+                    if (functor.sublimation.android.DshComposeHost.boolArg("hasRec", 6)) {
+                    androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth()) {
+                        androidx.compose.material3.Card(colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp), elevation = androidx.compose.material3.CardDefaults.cardElevation(0.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(vertical = 6.dp)) {
+                            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+                                androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth()) {
+                                    androidx.compose.foundation.layout.Column(modifier = Modifier.width(10.dp)) {
+                                        // 空容器
+                                    }
+                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("name6"), modifier = Modifier.weight(1.0f), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("dose6"), modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                }
+                                androidx.compose.foundation.layout.Column(modifier = Modifier.height(4.dp)) {
+                                    // 空容器
+                                }
+                                androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("time6"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
+                            }
+                        }
+                    }
+                    }
+                    if (functor.sublimation.android.DshComposeHost.boolArg("hasRec", 7)) {
+                    androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth()) {
+                        androidx.compose.material3.Card(colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp), elevation = androidx.compose.material3.CardDefaults.cardElevation(0.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(vertical = 6.dp)) {
+                            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+                                androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth()) {
+                                    androidx.compose.foundation.layout.Column(modifier = Modifier.width(10.dp)) {
+                                        // 空容器
+                                    }
+                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("name7"), modifier = Modifier.weight(1.0f), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("dose7"), modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                }
+                                androidx.compose.foundation.layout.Column(modifier = Modifier.height(4.dp)) {
+                                    // 空容器
+                                }
+                                androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("time7"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
+                            }
+                        }
+                    }
+                    }
+                    if (functor.sublimation.android.DshComposeHost.boolArg("hasRec", 8)) {
+                    androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth()) {
+                        androidx.compose.material3.Card(colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp), elevation = androidx.compose.material3.CardDefaults.cardElevation(0.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(vertical = 6.dp)) {
+                            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+                                androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth()) {
+                                    androidx.compose.foundation.layout.Column(modifier = Modifier.width(10.dp)) {
+                                        // 空容器
+                                    }
+                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("name8"), modifier = Modifier.weight(1.0f), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("dose8"), modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                }
+                                androidx.compose.foundation.layout.Column(modifier = Modifier.height(4.dp)) {
+                                    // 空容器
+                                }
+                                androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("time8"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
+                            }
+                        }
+                    }
+                    }
+                    if (functor.sublimation.android.DshComposeHost.boolArg("hasRec", 9)) {
+                    androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth()) {
+                        androidx.compose.material3.Card(colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp), elevation = androidx.compose.material3.CardDefaults.cardElevation(0.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(vertical = 6.dp)) {
+                            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+                                androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth()) {
+                                    androidx.compose.foundation.layout.Column(modifier = Modifier.width(10.dp)) {
+                                        // 空容器
+                                    }
+                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("name9"), modifier = Modifier.weight(1.0f), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("dose9"), modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                }
+                                androidx.compose.foundation.layout.Column(modifier = Modifier.height(4.dp)) {
+                                    // 空容器
+                                }
+                                androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("time9"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
+                            }
+                        }
+                    }
+                    }
+                    if (functor.sublimation.android.DshComposeHost.boolArg("noRec")) {
                     androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(vertical = 12.dp)) {
-                        androidx.compose.material3.Text(text = "演示数据：空台账时按示范剂量展示，记录服药后由逻辑层驱动", modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
+                        androidx.compose.material3.Text(text = "暂无服药记录（空台账时上方曲线为演示数据）", modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.0.sp)
+                    }
                     }
                     androidx.compose.foundation.layout.Column(modifier = Modifier.height(96.dp)) {
                         // 空容器
@@ -399,7 +568,7 @@ fun Home() {
                 androidx.compose.material3.ModalBottomSheet(onDismissRequest = { functor.sublimation.android.DshComposeHost.act("closeDrugList") }, sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
                     androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp)) {
                         androidx.compose.material3.Text(text = "药库名单", modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 22.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                        androidx.compose.material3.Text(text = "糖手册：记录服药 → 估算血药浓度 → 联用预警。点击药名查看该药完整资料。", modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
+                        androidx.compose.material3.Text(text = "糖手册：记录服药 → 估算血药浓度 → 呼吸抑制风险预警。点击药名查看该药完整资料。", modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
                         androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().height(320.dp).verticalScroll(rememberScrollState())) {
                             androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
                                 androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).clickable { functor.sublimation.android.DshComposeHost.act("openDocFor", listOf(0)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {

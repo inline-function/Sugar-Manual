@@ -34,47 +34,157 @@ struct Home {
             modifier = fillWidth().fractionHeight(0.45)
         )
         Box(modifier = fillWidth().weight(1.0), scrollable = true) {
+            // 呼吸抑制风险（宿主态机按 ledger 算权重：阿片+BZD 叠加 → 红；单类 → 橙；否则空态）
             Box(modifier = fillWidth().paddingHV(24, 8)) {
                 Box(modifier = fillWidth(), orientation = "vertical", spacing = 8) {
-                    Text(text = "联用预警", size = 16, bold = true, color = "onSurface")
+                    Text(text = "呼吸抑制风险", size = 16, bold = true, color = "onSurface")
                     Box(modifier = fillWidth().clip(12).background("#40D32F2F").paddingHV(12, 6), visible = hasWarn()) {
                         Text(text = warnLine(), color = "#D32F2F", size = 14, bold = true)
                     }
-                    Box(modifier = fillWidth(), wrap = true, spacing = 8) {
-                        Box(modifier = clip(12).background("#33D32F2F").paddingHV(12, 5)) {
-                            Text(text = "恶心", color = "#C62828", size = 14, bold = true)
-                        }
-                        Box(modifier = clip(12).background("#33F9A825").paddingHV(12, 5)) {
-                            Text(text = "失眠", color = "#E65100", size = 14, bold = true)
-                        }
-                        Box(modifier = clip(12).background("#33F9A825").paddingHV(12, 5)) {
-                            Text(text = "嗜睡", color = "#E65100", size = 14, bold = true)
-                        }
-                        Box(modifier = clip(12).background("#3355595F").paddingHV(12, 5)) {
-                            Text(text = "头晕", color = "#44464F", size = 14, bold = true)
-                        }
+                    Box(modifier = fillWidth().clip(12).background("#40F9A825").paddingHV(12, 6), visible = hasWarn2()) {
+                        Text(text = warnLine2(), color = "#E65100", size = 14, bold = true)
+                    }
+                    Box(modifier = fillWidth().paddingV(4), visible = noWarn()) {
+                        Text(text = "暂无预警", color = "onSurfaceVariant", size = 14)
                     }
                 }
             }
-            Box(modifier = fillWidth().padding4(24, 16, 24, 8)) {
-                Text(text = "服药记录", size = 16, bold = true, color = "onSurface")
+            Box(modifier = fillWidth().padding4(24, 16, 24, 8), orientation = "horizontal") {
+                Text(text = "服药记录", modifier = weight(1.0), size = 16, bold = true, color = "onSurface")
+                Text(text = recCount(), size = 12, color = "onSurfaceVariant")
             }
-            Box(modifier = fillWidth(), onClick = { unchecked openDocForCurrent() }) {
-            Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = "surfaceVariant") {
-                Box(modifier = fillWidth().paddingHV(16, 12)) {
-                    Box(modifier = fillWidth(), orientation = "horizontal") {
-                        Box(modifier = width(4).height(20).background("#FFC107")) {}
-                        Box(modifier = width(10)) {}
-                        Text(text = doseDrug(), modifier = weight(1.0), size = 16, bold = true, color = "onSurface")
-                        Text(text = doseAmount(), size = 16, bold = true, color = "primary")
+            Box(modifier = fillWidth(), visible = hasRec(0)) {
+                Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = "surfaceVariant") {
+                    Box(modifier = fillWidth().paddingHV(16, 12)) {
+                        Box(modifier = fillWidth(), orientation = "horizontal") {
+                            Box(modifier = width(10)) {}
+                            Text(text = name0(), modifier = weight(1.0), size = 16, bold = true, color = "onSurface")
+                            Text(text = dose0(), size = 16, bold = true, color = "primary")
+                        }
+                        Box(modifier = height(4)) {}
+                        Text(text = time0(), color = "onSurfaceVariant", size = 12)
                     }
-                    Box(modifier = height(4)) {}
-                    Text(text = doseTime(), color = "onSurfaceVariant", size = 12)
                 }
             }
+            Box(modifier = fillWidth(), visible = hasRec(1)) {
+                Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = "surfaceVariant") {
+                    Box(modifier = fillWidth().paddingHV(16, 12)) {
+                        Box(modifier = fillWidth(), orientation = "horizontal") {
+                            Box(modifier = width(10)) {}
+                            Text(text = name1(), modifier = weight(1.0), size = 16, bold = true, color = "onSurface")
+                            Text(text = dose1(), size = 16, bold = true, color = "primary")
+                        }
+                        Box(modifier = height(4)) {}
+                        Text(text = time1(), color = "onSurfaceVariant", size = 12)
+                    }
+                }
             }
-            Box(modifier = fillWidth().paddingH(24).paddingV(12), contentAlignment = Center()) {
-                Text(text = "演示数据：空台账时按示范剂量展示，记录服药后由逻辑层驱动", color = "onSurfaceVariant", size = 12)
+            Box(modifier = fillWidth(), visible = hasRec(2)) {
+                Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = "surfaceVariant") {
+                    Box(modifier = fillWidth().paddingHV(16, 12)) {
+                        Box(modifier = fillWidth(), orientation = "horizontal") {
+                            Box(modifier = width(10)) {}
+                            Text(text = name2(), modifier = weight(1.0), size = 16, bold = true, color = "onSurface")
+                            Text(text = dose2(), size = 16, bold = true, color = "primary")
+                        }
+                        Box(modifier = height(4)) {}
+                        Text(text = time2(), color = "onSurfaceVariant", size = 12)
+                    }
+                }
+            }
+            Box(modifier = fillWidth(), visible = hasRec(3)) {
+                Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = "surfaceVariant") {
+                    Box(modifier = fillWidth().paddingHV(16, 12)) {
+                        Box(modifier = fillWidth(), orientation = "horizontal") {
+                            Box(modifier = width(10)) {}
+                            Text(text = name3(), modifier = weight(1.0), size = 16, bold = true, color = "onSurface")
+                            Text(text = dose3(), size = 16, bold = true, color = "primary")
+                        }
+                        Box(modifier = height(4)) {}
+                        Text(text = time3(), color = "onSurfaceVariant", size = 12)
+                    }
+                }
+            }
+            Box(modifier = fillWidth(), visible = hasRec(4)) {
+                Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = "surfaceVariant") {
+                    Box(modifier = fillWidth().paddingHV(16, 12)) {
+                        Box(modifier = fillWidth(), orientation = "horizontal") {
+                            Box(modifier = width(10)) {}
+                            Text(text = name4(), modifier = weight(1.0), size = 16, bold = true, color = "onSurface")
+                            Text(text = dose4(), size = 16, bold = true, color = "primary")
+                        }
+                        Box(modifier = height(4)) {}
+                        Text(text = time4(), color = "onSurfaceVariant", size = 12)
+                    }
+                }
+            }
+            Box(modifier = fillWidth(), visible = hasRec(5)) {
+                Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = "surfaceVariant") {
+                    Box(modifier = fillWidth().paddingHV(16, 12)) {
+                        Box(modifier = fillWidth(), orientation = "horizontal") {
+                            Box(modifier = width(10)) {}
+                            Text(text = name5(), modifier = weight(1.0), size = 16, bold = true, color = "onSurface")
+                            Text(text = dose5(), size = 16, bold = true, color = "primary")
+                        }
+                        Box(modifier = height(4)) {}
+                        Text(text = time5(), color = "onSurfaceVariant", size = 12)
+                    }
+                }
+            }
+            Box(modifier = fillWidth(), visible = hasRec(6)) {
+                Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = "surfaceVariant") {
+                    Box(modifier = fillWidth().paddingHV(16, 12)) {
+                        Box(modifier = fillWidth(), orientation = "horizontal") {
+                            Box(modifier = width(10)) {}
+                            Text(text = name6(), modifier = weight(1.0), size = 16, bold = true, color = "onSurface")
+                            Text(text = dose6(), size = 16, bold = true, color = "primary")
+                        }
+                        Box(modifier = height(4)) {}
+                        Text(text = time6(), color = "onSurfaceVariant", size = 12)
+                    }
+                }
+            }
+            Box(modifier = fillWidth(), visible = hasRec(7)) {
+                Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = "surfaceVariant") {
+                    Box(modifier = fillWidth().paddingHV(16, 12)) {
+                        Box(modifier = fillWidth(), orientation = "horizontal") {
+                            Box(modifier = width(10)) {}
+                            Text(text = name7(), modifier = weight(1.0), size = 16, bold = true, color = "onSurface")
+                            Text(text = dose7(), size = 16, bold = true, color = "primary")
+                        }
+                        Box(modifier = height(4)) {}
+                        Text(text = time7(), color = "onSurfaceVariant", size = 12)
+                    }
+                }
+            }
+            Box(modifier = fillWidth(), visible = hasRec(8)) {
+                Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = "surfaceVariant") {
+                    Box(modifier = fillWidth().paddingHV(16, 12)) {
+                        Box(modifier = fillWidth(), orientation = "horizontal") {
+                            Box(modifier = width(10)) {}
+                            Text(text = name8(), modifier = weight(1.0), size = 16, bold = true, color = "onSurface")
+                            Text(text = dose8(), size = 16, bold = true, color = "primary")
+                        }
+                        Box(modifier = height(4)) {}
+                        Text(text = time8(), color = "onSurfaceVariant", size = 12)
+                    }
+                }
+            }
+            Box(modifier = fillWidth(), visible = hasRec(9)) {
+                Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = "surfaceVariant") {
+                    Box(modifier = fillWidth().paddingHV(16, 12)) {
+                        Box(modifier = fillWidth(), orientation = "horizontal") {
+                            Box(modifier = width(10)) {}
+                            Text(text = name9(), modifier = weight(1.0), size = 16, bold = true, color = "onSurface")
+                            Text(text = dose9(), size = 16, bold = true, color = "primary")
+                        }
+                        Box(modifier = height(4)) {}
+                        Text(text = time9(), color = "onSurfaceVariant", size = 12)
+                    }
+                }
+            }
+            Box(modifier = fillWidth().paddingH(24).paddingV(12), contentAlignment = Center(), visible = noRec()) {
+                Text(text = "暂无服药记录（空台账时上方曲线为演示数据）", color = "onSurfaceVariant", size = 14)
             }
             Box(modifier = height(96)) {}
         }
@@ -335,7 +445,7 @@ struct Home {
         BottomSheet(visible = isListOpen(), onDismiss = { unchecked closeDrugList() }) {
             Box(modifier = fillWidth().paddingHV(24, 16), orientation = "vertical", spacing = 8) {
                 Text(text = "药库名单", size = 22, bold = true, color = "onSurface")
-                Text(text = "糖手册：记录服药 → 估算血药浓度 → 联用预警。点击药名查看该药完整资料。", size = 12, color = "onSurfaceVariant")
+                Text(text = "糖手册：记录服药 → 估算血药浓度 → 呼吸抑制风险预警。点击药名查看该药完整资料。", size = 12, color = "onSurfaceVariant")
                 Box(modifier = fillWidth().height(320), scrollable = true) {
                     Box(modifier = fillWidth(), orientation = "vertical", spacing = 6) {
                     Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(0) }) {

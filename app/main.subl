@@ -64,6 +64,16 @@ fun demoDoses(): List[Dose] = cons(Dose(100.0, 0), cons(Dose(100.0, 24), emptyLi
 @impure
 fun coadmin(): List[Drug] = append(loadDrugs(), cons(fluvoxamine(), cons(paroxetine(), cons(fluoxetine(), cons(sertraline(), cons(citalopram(), cons(escitalopram(), cons(diazepam(), cons(estazolam(), cons(alprazolam(), cons(clonazepam(), cons(lorazepam(), cons(midazolam(), cons(morphine(), cons(oxycodone(), cons(fentanyl(), cons(codeine(), cons(tramadol(), cons(pethidine(), emptyList())))))))))))))))))))
 
+// 台账联用集（呼吸抑制风险引擎输入：以实际服药药名为准，非全库演示集）。
+@impure
+fun coadminOf(recs: List[DoseRec]): List[Drug] = coadminNames(recentDrugs(recs), coadmin())
+@impure
+fun coadminNames(names: List[Str], all: List[Drug]): List[Drug] = when (names) {
+    Nil => emptyList()
+    is Cons(n, rest) => cons(drugByName(n, all), coadminNames(rest, all))
+    else => emptyList()
+}
+
 // ---------- 表单/弹层状态（storage KV：layout 重渲染时跨帧保持） ----------
 
 fun formKey(): Str = "sm_form"
@@ -189,27 +199,34 @@ fun noNavigation(): Null {
     null
 }
 
-// ---------- 预警标签流（≈ InteractionAlerts：FlowRow 混排，仅颜色分级） ----------
-
-// 混排顺序 = 等级降序（参考按权重降序、危险在前）。
-fun alertItems(adr: Alert): List[Trigger] = append(itemsAt(3, adr.items), append(itemsAt(2, adr.items), itemsAt(1, adr.items)))
-fun itemsAt(l: Nat, ts: List[Trigger]): List[Trigger] = filter(ts) { t => advLevel(t.score) == l }
-
-// 过量反应来源（参考 AlertEngine.overdose → flash=true + 危险级红）：条目名落在联用药品的
-// overdose 清单里即闪烁。台账联用集（氟伏沙明有过量清单）驱动。
-fun isOverdoseName(name: Str, drugs: List[Drug]): Bool =
-    drugs.fold(false) { acc, d => if (containsRated(d.overdose, name)) true else acc }
+// ---------- 呼吸抑制风险标签流（≈ InteractionAlerts：FlowRow，替代原联用不良反应流） ----------
 
 @composable
-fun alertStream(adr: Alert, drugs: List[Drug]): Any = if (size(adr.items) == 0) {
+fun respStream(rs: Alert): Any = if (size(rs.items) == 0) {
     Box(modifier = fillWidth().paddingHV(24, 8)) {
         Text(text = "暂无预警", color = "onSurfaceVariant", size = 14)
     }
 } else {
     Box(modifier = fillWidth().paddingHV(24, 8)) {
         // FlowRow：wrap=true → 流式换行；spacing=8 横竖间距（参考的 spacedBy(8.dp)）。
-        // children= 平铺：标签是流容器的直接子级（递归列表经 children 平铺，非嵌套链）。
-        Box(modifier = fillWidth(), wrap = true, spacing = 8, children = tagList(alertItems(adr), drugs))
+        Box(modifier = fillWidth(), wrap = true, spacing = 8, children = respTagList(rs.items))
+    }
+}
+
+fun respTagList(items: List[Trigger]): List[Any] = when (items) {
+    Nil => emptyList()
+    is Cons(t1, rest) => cons(respTagCell(t1), respTagList(rest))
+    else => emptyList()
+}
+
+// 危险（两类叠加 ≥7）走 overdose 红底 flash 通路（tagBg/tagFg 的 #40 同款）；
+// 警告（单类剂量依赖 ≥5）为橙色提示，不出红色。
+@composable
+fun respTagCell(t1: Trigger): Any {
+    var lv: Nat = advLevel(t1.score)
+    var od: Bool = lv >= 3
+    return Box(modifier = clip(12).background(tagBg(lv, od)).paddingHV(12, 5)) {
+        Text(text = concat(t1.name, concat(" · 权重×", toStr(t1.score))), color = tagFg(lv, od), size = 14, bold = true, flash = od)
     }
 }
 
@@ -237,18 +254,6 @@ fun metabTagList(ts: List[Trigger]): List[Any] = when (ts) {
 fun metabTagCell(t: Trigger): Any = Box(modifier = clip(12).background(tagBg(metabLevel(t.score), false)).paddingHV(12, 5)) {
     Text(text = concat(t.name, concat(" 抑制 ×", toStr(t.score))), color = tagFg(metabLevel(t.score), false), size = 14, bold = true)
 }
-@composable
-fun tagList(ts: List[Trigger], drugs: List[Drug]): List[Any] = when (ts) {
-    Nil => emptyList()
-    is Cons(t, rest) => cons(tagCell(t, drugs), tagList(rest, drugs))
-    else => emptyList()
-}
-
-@composable
-fun tagCell(t: Trigger, drugs: List[Drug]): Any = Box(modifier = clip(12).background(tagBg(advLevel(t.score), isOverdoseName(t.name, drugs))).paddingHV(12, 5)) {
-    Text(text = t.name, color = tagFg(advLevel(t.score), isOverdoseName(t.name, drugs)), size = 14, bold = true, flash = isOverdoseName(t.name, drugs))
-}
-
 // ---------- 服药记录（≈ DoseLogList：Card + 颜色竖条 + 四字段） ----------
 
 struct MedCard(name: Str, time: Str, route: Str, dose: Str)
@@ -635,7 +640,7 @@ fun drugListSheet(open: Bool, drugs: List[Drug]): BottomSheet = BottomSheet(visi
     Box(modifier = fillWidth().padding4(24, 0, 24, 24)) {
         Text(text = "药库名单", size = 22, bold = true)
         Box(modifier = height(4)) {}
-        Text(text = "糖手册：记录服药 → 估算血药浓度 → 联用预警。点击药名查看该药完整资料；相互作用链复用 metabAlert 匹配逻辑。\n源码：github.com/inline-function/Sugar-Manual", color = "onSurfaceVariant", size = 12)
+        Text(text = "糖手册：记录服药 → 估算血药浓度 → 呼吸抑制风险预警。点击药名查看该药完整资料；相互作用链复用 metabAlert 匹配逻辑。\n源码：github.com/inline-function/Sugar-Manual", color = "onSurfaceVariant", size = 12)
         Box(modifier = height(12)) {}
         Box(modifier = fillWidth().height(320), scrollable = true, spacing = 6, children = drugListRows(drugs))
     }
@@ -644,7 +649,10 @@ fun drugListSheet(open: Bool, drugs: List[Drug]): BottomSheet = BottomSheet(visi
 // ---- 资料页内容 ----
 
 // 标签条（含【超说明书】黄色标记）。
-fun inOffLabel(s: Str): Bool = strIndexOf(s, "超说明书") >= 0
+fun inOffLabel(s: Str): Bool = when (strIndexOf(s, "超说明书")) {
+    is Some(_) => true
+    None => false
+}
 @composable
 fun tagChip(s: Str): Any = Box(modifier = clip(12).paddingHV(10, 4), backgroundColor = if (inOffLabel(s)) "primaryContainer" else "surfaceVariant") {
     Text(text = s, size = 11, color = "onSurfaceVariant")
@@ -803,8 +811,8 @@ fun chartHeightDp(sh: Nat, dpi: Nat): Nat = (contentHeightDp(sh, dpi) * 45) / 10
 fun lowerHeightDp(sh: Nat, dpi: Nat): Nat = contentHeightDp(sh, dpi) - chartHeightDp(sh, dpi)
 
 @composable
-fun lowerBox(adr: Alert, rows: List[MedCard], drugs: List[Drug], met: Alert, sh: Nat, dpi: Nat): Box = Box(modifier = fillWidth().height(lowerHeightDp(sh, dpi)), scrollable = true) {
-    alertStream(adr, drugs)
+fun lowerBox(rs: Alert, rows: List[MedCard], drugs: List[Drug], met: Alert, sh: Nat, dpi: Nat): Box = Box(modifier = fillWidth().height(lowerHeightDp(sh, dpi)), scrollable = true) {
+    respStream(rs)
     metabStream(met)
     recordTitle()
     // 记录卡平铺为直接子级（children=），空台账给「暂无服药记录」占位。
@@ -826,7 +834,8 @@ fun content(): Box {
     unchecked @mut var recs: List[DoseRec] = loadLedger()
     unchecked @mut var nowMs: Nat = timeNow()
     unchecked var drugs: List[Drug] = coadmin()
-    var adr: Alert = adrAlert(drugs)
+    unchecked var drugsOf: List[Drug] = coadminOf(recs)
+    var rs: Alert = respAlert(drugsOf)
     var met: Alert = metabAlert(drugs)
     unchecked var sh: Nat = screenHeight()
     unchecked var dpi: Nat = screenDensity()
@@ -834,7 +843,7 @@ fun content(): Box {
     var total: List[Rat] = totalPoints(seriesXs)
     @mut var chart = Chart(kind = "line", points = total, series = seriesXs, labels = chartLabels(), color = "primary", legend = true, badge = "估算", modifier = fillWidth().height(chartHeightDp(sh, dpi)))
     unchecked var rows: List[MedCard] = medRowsOf(recs, drugs)
-    @mut var lower = lowerBox(adr, rows, drugs, met, sh, dpi)
+    @mut var lower = lowerBox(rs, rows, drugs, met, sh, dpi)
     @mut var sheet = formPanel(open, drugs, idx, sel, dt, de)
     @mut var setDlg = settingsDialog(setOp)
     @mut var listSheet = drugListSheet(listOp, drugs)

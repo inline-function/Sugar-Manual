@@ -1,14 +1,18 @@
 // app/warn.subl —— 预警引擎（纯函数）
 //
 // 规格见 docs/语法糖手册.md §预警：
-//   不良反应预警 —— 联用药品中「相同不良反应名称」的频率权重合计。
-//     权重：罕见 1 / 少见 2 / 常见 3 / 十分常见 5；阈值：提示 3 / 警告 5 / 危险 7
+//   呼吸抑制风险 —— 阿片与苯二氮卓类各自的呼吸抑制**权重**，跨类叠加：
+//     阿片（μ 激动剂）为剂量依赖性呼吸抑制的主驱动（权重高）；
+//     BZD 单用呼吸抑制少见（权重低）、与阿片联用显著协同放大（教科书级事实）。
+//     类内取最大、跨类相加，阈值沿用规格：提示 3 / 警告 5 / 危险 7。
+//     **单类单药永不过危险阈**（类内最大 5），两类同服方可叠加至 7+ → 红色危险。
 //   代谢相互作用 —— 联用药品「CYP 酶抑制交集」的抑制权重合计。
 //     权重：弱效 1 / 中效 2 / 强效 3 / 极强 5；阈值：提示 1 / 警告 3 / 危险 5
 //
 // 语义约定（对规格的两点落地，注释存档）：
-//   1. 「相同不良反应」按条目计：每药统计其急性 + 慢性两段清单，同名条目合计
-//      （即同一药品急性/慢性重复列出某反应也算重复证据——保守侧）；
+//   1. 「呼吸抑制」按受控词表计频率权重（罕见 1 / 少见 2 / 常见 3 / 十分常见 5，
+//      词表外 0）；「呼吸抑制（与阿片/酒精合用）」等括注条目是相互作用描述本身，
+//      不计入单药权重（避免循环归因）；
 //   2. 「酶抑制交集」按药品数计：某酶被 >= 2 个联用药品关联（抑制或经代谢）
 //      才触发，权重只计抑制剂（经代谢本身不贡献权重——受控词表无对应权重）。
 
@@ -55,34 +59,57 @@ fun metabLevel(score: Nat): Nat = if (score >= 5) 3 else if (score >= 3) 2 else 
 // 条目计分表：名称 -> (权重合计, 条目数)。
 struct Score(name: Str, total: Nat, count: Nat)
 
-// 联用药品不良反应聚合：逐并入各药急性 + 慢性两段。
-fun aggAdr(drugs: List[Drug]): List[Score] =
-    drugs.fold(emptyList()) { acc, d => aggSection(aggSection(acc, d.acuteAdv), d.chronicAdv) }
+// ---------- 呼吸抑制风险（联用叠加模型） ----------
 
-// 把一段（急性或慢性）条目并入聚合表。
-fun aggSection(acc: List[Score], xs: List[Rated]): List[Score] =
-    xs.fold(acc) { a, e => addScore(a, e.name, adrWeight(e.level)) }
+// 分类：tags 含「阿片」→ 阿片类；含「苯二氮卓」→ 苯二氮卓类（其余类不计入呼吸抑制叠加）。
+fun tagHas(s: Str, key: Str): Bool = when (strIndexOf(s, key)) {
+    is Some(_) => true
+    None => false
+}
+fun classTagged(d: Drug, key: Str): Bool = d.tags.fold(false) { acc, s => if (tagHas(s, key)) true else acc }
 
-// 为名称加一次权重（表内已有则累加）。
-fun addScore(acc: List[Score], name: Str, w: Nat): List[Score] = when (acc) {
-    Nil => cons(Score(name, w, 1), emptyList())
-    is Cons(s, rest) => if (s.name == name)
-        cons(Score(name, s.total + w, s.count + 1), rest)
-    else cons(s, addScore(rest, name, w))
-    else => acc
+// 「呼吸抑制」精确条目（急性或慢性）的频率权重最高值（受控词表外条目 0）。
+fun respBaseWeight(xs: List[Rated]): Nat = when (xs) {
+    Nil => 0
+    is Cons(r, rest) => if (r.name == "呼吸抑制")
+        respMax(adrWeight(r.level), respBaseWeight(rest))
+    else respBaseWeight(rest)
+    else => 0
+}
+fun respMax(a: Nat, b: Nat): Nat = if (a > b) a else b
+
+// 过量段含「呼吸抑制」条目：剂量依赖性呼吸抑制的文献证据（固定证据分 2）。
+fun hasOverdoseResp(xs: List[Rated]): Bool = when (xs) {
+    Nil => false
+    is Cons(r, rest) => if (tagHas(r.name, "呼吸抑制")) true else hasOverdoseResp(rest)
+    else => false
 }
 
-// 不良反应预警：触发项 = 条目数 >= 2 的同名反应；等级 = 各触发项等级之最高者。
-fun adrAlert(drugs: List[Drug]): Alert {
-    var ts: List[Trigger] = adrTriggers(drugs)
-    return Alert(maxLevelAdv(ts), ts)
+// 单药呼吸抑制权重 = 频率词表权重（类内最高）+ 过量证据分。
+// 参考值：吗啡等强阿片 常见3 + 证据2 = 5；可待因/曲马多 少见2 + 证据2 = 4；BZD 少见2 + 证据2 = 4。
+fun respWeightOf(d: Drug): Nat =
+    respBaseWeight(append(d.acuteAdv, d.chronicAdv)) + (if (hasOverdoseResp(d.overdose)) 2 else 0)
+
+// 类内最大权重（同类多药不重复累加——同类叠加不触发危险，避免多药 BZD 误报红色）。
+fun classMaxWeight(drugs: List[Drug], key: Str): Nat = when (drugs) {
+    Nil => 0
+    is Cons(d, rest) => if (classTagged(d, key))
+        respMax(respWeightOf(d), classMaxWeight(rest, key))
+    else classMaxWeight(rest, key)
+    else => 0
 }
 
-fun adrTriggers(drugs: List[Drug]): List[Trigger] =
-    map(filter(aggAdr(drugs)) { s => s.count >= 2 }) { s => Trigger(s.name, s.total) }
-
-fun maxLevelAdv(ts: List[Trigger]): Nat =
-    ts.fold(0) { acc, t => if (advLevel(t.score) > acc) advLevel(t.score) else acc }
+// 呼吸抑制风险预警：分 = 阿片类最大权重 + BZD 类最大权重；等级沿用规格阈值 3/5/7。
+// 单类单药（如仅吗啡 5）达不到 7 → 至多「警告」（剂量依赖提示），绝非红色危险；
+// 两类同服（5 + 4 >= 9）→ 危险，UI 红底闪烁（overdose 通路）。
+fun respAlert(drugs: List[Drug]): Alert {
+    var score: Nat = classMaxWeight(drugs, "阿片") + classMaxWeight(drugs, "苯二氮卓")
+    var lv: Nat = advLevel(score)
+    var ts: List[Trigger] = if (lv >= 3) cons(Trigger("呼吸抑制（联用叠加）", score), emptyList())
+        else if (lv >= 2) cons(Trigger("呼吸抑制（剂量依赖）", score), emptyList())
+        else emptyList()
+    return Alert(lv, ts)
+}
 
 // ---------- 代谢相互作用预警 ----------
 
