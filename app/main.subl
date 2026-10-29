@@ -35,7 +35,17 @@ fun tagFg(level: Nat, overdose: Bool): Str = if (overdose) "#D32F2F" else when (
 
 // ---------- 药物颜色（参考 DrugPalettes：SSRI 血清素能剂金色 #FFC107，缺失回退 #00695C） ----------
 
-fun drugColor(name: Str): Str = if (name == "氟伏沙明") "#FFC107" else if (name == "帕罗西汀") "#FFC107" else if (name == "舍曲林") "#FFC107" else if (name == "氟西汀") "#FFC107" else "#00695C"
+fun drugColor(name: Str): Str = if (name == "氟伏沙明") "#FFC107"
+    else if (name == "帕罗西汀") "#FFC107"
+    else if (name == "舍曲林") "#FFC107"
+    else if (name == "氟西汀") "#FFC107"
+    else if (name == "西酞普兰") "#FFC107"
+    else if (name == "艾司西酞普兰") "#FFC107"
+    else if (name == "地西泮") "#1976D2"
+    else if (name == "艾司唑仑") "#1976D2"
+    else if (name == "阿普唑仑") "#1976D2"
+    else if (name == "氯硝西泮") "#1976D2"
+    else "#00695C"
 
 // ---------- 演示剂量（空台账回退：home 首启不空图） ----------
 
@@ -44,7 +54,7 @@ fun demoDoses(): List[Dose] = cons(Dose(100.0, 0), cons(Dose(100.0, 24), emptyLi
 // ---------- 示例联用集（引擎评估用） ----------
 
 @impure
-fun coadmin(): List[Drug] = append(loadDrugs(), cons(fluvoxamine(), cons(paroxetine(), emptyList())))
+fun coadmin(): List[Drug] = append(loadDrugs(), cons(fluvoxamine(), cons(paroxetine(), cons(fluoxetine(), cons(sertraline(), cons(citalopram(), cons(escitalopram(), cons(diazepam(), cons(estazolam(), cons(alprazolam(), cons(clonazepam(), emptyList())))))))))))
 
 // ---------- 表单/弹层状态（storage KV：layout 重渲染时跨帧保持） ----------
 

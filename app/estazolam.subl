@@ -1,0 +1,25 @@
+// app/estazolam.subl —— 艾司唑仑完整资料
+// 数值来源：艾司唑仑药品说明书与 CYP3A4 代谢相互作用研究（PubMed 12021628）。
+// halfLife=17h（10-24h 范围均值）；绝对生物利用度未公开，bio=1.0 为「按完全吸收建模」
+// 的估算前提（图表按估算对待，非实测值）。
+
+fun estazolam(): Drug = Drug(
+    name = "艾司唑仑",
+    category = "处方药",
+    tags = strList("苯二氮卓类,催眠药,镇静药,助眠药"),
+    description = "艾司唑仑是三唑并苯二氮卓类短-中效催眠药（中国临床常用），用于失眠的入睡困难与夜间易醒。口服吸收较快，主要经 CYP3A4 代谢（与 CYP3A4 抑制剂如氟伏沙明、克拉霉素、伊曲康唑合用血药浓度升高；与诱导剂如利福平、卡马西平合用疗效下降）；活性代谢物少、蓄积弱于地西泮。与阿片类或乙醇合用可致严重呼吸抑制（黑框警告），高龄与慢阻肺患者更敏感。",
+    effects = ratedList("强效|GABA-A受体苯二氮卓位点变构调节"),
+    enzymes = strList("CYP3A4"),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 17, tmax = "2-3h",
+        clearance = "一级（CYP3A4 氧化）", curve = "对数", bio = 1.0,
+        metabolites = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|催眠（入睡）;强效|镇静"),
+    chronicTher = ratedList("强效|入睡困难;强效|睡眠维持"),
+    acuteAdv = ratedList("少见|呼吸抑制;常见|嗜睡（次日残余）;常见|头晕"),
+    chronicAdv = ratedList("常见|嗜睡;常见|头晕;常见|口干;常见|记忆损害（顺行性）;少见|呼吸抑制（与阿片/酒精合用）;少见|依赖（长期使用）;少见|跌倒（老年）;罕见|幻觉"),
+    withdraw = ratedList("常见|反跳性失眠（骤停）;常见|焦虑反跳;少见|癫痫发作（骤停高剂量）"),
+    overdose = ratedList(">8mg|呼吸抑制")
+)

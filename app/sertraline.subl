@@ -1,0 +1,24 @@
+// app/sertraline.subl —— 舍曲林完整资料
+// 数值来源：舍曲林药品说明书与综述。halfLife=26h（22-36h 范围均值）；
+// bio=0.44 为综述报告口服生物利用度均值（个体差异大，说明书未给绝对值）。
+
+fun sertraline(): Drug = Drug(
+    name = "舍曲林",
+    category = "处方药",
+    tags = strList("选择性血清素再摄取抑制剂,SSRIs,五朵金花,抗抑郁药,抗强迫药,抗焦虑药,抗创伤药"),
+    description = "舍曲林是萘胺类选择性血清素再摄取抑制剂，用于抑郁症、强迫症、惊恐障碍、社交焦虑障碍与创伤后应激障碍（其中创伤后应激与经前烦躁在中国部分属【超说明书】用法）。对心血管安全性相对较好，可用于冠心病及心梗后抑郁患者。经 CYP2D6（次要）、CYP2C19、CYP3A4 与 CYP2B6 代谢，活性代谢物去甲舍曲林活性很低；自身仅为弱 CYP2D6 抑制剂，对经 2D6 活化的前体药影响弱于帕罗西汀与氟西汀；腹泻等胃肠道反应在 SSRI 中较突出。",
+    effects = ratedList("强效|血清素转运体抑制;极弱|正肾素转运体抑制;极弱|多巴胺转运体抑制"),
+    enzymes = strList("CYP2D6,CYP2C19,CYP3A4,CYP2B6"),
+    inhibitions = ratedList("弱效|CYP2D6可逆性抑制;极弱|CYP2B6可逆性抑制"),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 26, tmax = "4.5-8.4h",
+        clearance = "一级", curve = "对数", bio = 0.44,
+        metabolites = cons(Rated("弱效", "去甲舍曲林"), emptyList())
+    ), emptyList()),
+    acuteTher = ratedList("弱效|激活（早期）"),
+    chronicTher = ratedList("极强|抗强迫;强效|抗抑郁;强效|抗焦虑;强效|抗创伤"),
+    acuteAdv = ratedList("罕见|血清素综合征"),
+    chronicAdv = ratedList("十分常见|恶心;常见|腹泻;常见|失眠;常见|嗜睡;常见|头晕;常见|口干;常见|出汗;常见|性功能障碍;少见|低血钠症;少见|震颤;罕见|自杀冲动"),
+    withdraw = ratedList("常见|头晕;常见|失眠;常见|易激惹;常见|恶心;少见|电击样感觉"),
+    overdose = ratedList(">1000mg|血清素综合征")
+)

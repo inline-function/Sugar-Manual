@@ -1,0 +1,24 @@
+// app/clonazepam.subl —— 氯硝西泮完整资料
+// 数值来源：氯硝西泮药品说明书与综述。halfLife=30h（20-60h 范围均值）、bio=0.9
+// （口服吸收良好，80% 以上）；经 CYP3A4 硝基还原代谢。
+
+fun clonazepam(): Drug = Drug(
+    name = "氯硝西泮",
+    category = "处方药",
+    tags = strList("苯二氮卓类,抗焦虑药,抗癫痫药,助眠药,超说明书（躁狂辅助/惊恐/静坐不能）"),
+    description = "氯硝西泮是长效硝基苯二氮卓类，中国说明书适应证为癫痫（失神发作、肌阵挛发作）与焦虑状态。常用【超说明书】场景包括双相障碍躁狂或混合发作的辅助镇静、惊恐障碍、抗精神病药所致静坐不能与快动眼睡眠行为障碍。口服吸收良好，半衰期长（约 20-60 小时），日间残余效应与蓄积明显；经 CYP3A4 代谢。与阿片类或乙醇合用可致严重呼吸抑制（黑框警告）；长期使用产生依赖，骤停可诱发癫痫反跳。",
+    effects = ratedList("强效|GABA-A受体苯二氮卓位点变构调节;强效|提高癫痫发作阈"),
+    enzymes = strList("CYP3A4"),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 30, tmax = "1-4h",
+        clearance = "一级（CYP3A4 硝基还原）", curve = "对数", bio = 0.9,
+        metabolites = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|镇静;强效|抗焦虑"),
+    chronicTher = ratedList("强效|抗癫痫;强效|抗焦虑;强效|抗惊恐（超说明书）;强效|躁狂辅助镇静（超说明书）"),
+    acuteAdv = ratedList("少见|呼吸抑制;常见|嗜睡;常见|头晕"),
+    chronicAdv = ratedList("十分常见|嗜睡;常见|头晕;常见|共济失调;常见|记忆损害（顺行性）;常见|疲劳;常见|依赖（长期使用）;少见|呼吸抑制（与阿片/酒精合用）;少见|行为脱抑制（儿童）;少见|跌倒（老年）"),
+    withdraw = ratedList("常见|癫痫反跳（骤停）;常见|焦虑反跳;常见|失眠;常见|震颤;少见|戒断性谵妄"),
+    overdose = ratedList(">20mg|呼吸抑制")
+)

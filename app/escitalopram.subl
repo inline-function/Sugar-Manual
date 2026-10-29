@@ -1,0 +1,23 @@
+// app/escitalopram.subl —— 艾司西酞普兰完整资料
+// 数值来源：艾司西酞普兰药品说明书与综述。halfLife=30h（说明书 27-32h）、bio=0.8（约 80%）。
+
+fun escitalopram(): Drug = Drug(
+    name = "艾司西酞普兰",
+    category = "处方药",
+    tags = strList("选择性血清素再摄取抑制剂,SSRIs,五朵金花,抗抑郁药,抗焦虑药"),
+    description = "艾司西酞普兰是西酞普兰的左旋 S-构型异构体，5-HT 再摄取抑制活性集中、对转运体选择性更高，起效与耐受优于消旋体；用于抑郁症、广泛性焦虑障碍、惊恐障碍与社交焦虑障碍。经 CYP3A4、CYP2C19 与 CYP2D6 代谢，对 CYP2D6 抑制极弱、相互作用少；剂量依赖性 QT 间期延长风险弱于消旋体，但高剂量仍须监测。",
+    effects = ratedList("强效|血清素转运体抑制;极弱|正肾素转运体抑制"),
+    enzymes = strList("CYP3A4,CYP2C19,CYP2D6"),
+    inhibitions = ratedList("极弱|CYP2D6可逆性抑制"),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 30, tmax = "4h",
+        clearance = "一级", curve = "对数", bio = 0.8,
+        metabolites = cons(Rated("极弱", "去甲基艾司西酞普兰"), emptyList())
+    ), emptyList()),
+    acuteTher = ratedList("弱效|镇静"),
+    chronicTher = ratedList("极强|抗抑郁;强效|抗焦虑;强效|抗惊恐"),
+    acuteAdv = ratedList("罕见|血清素综合征"),
+    chronicAdv = ratedList("十分常见|恶心;常见|嗜睡;常见|失眠;常见|出汗;常见|性功能障碍;常见|口干;常见|头晕;少见|QT间期延长;少见|低血钠症;少见|自杀冲动"),
+    withdraw = ratedList("常见|头晕;常见|失眠;常见|恶心;少见|电击样感觉"),
+    overdose = ratedList(">400mg|QT间期延长;>600mg|血清素综合征")
+)

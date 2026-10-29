@@ -1,0 +1,26 @@
+// app/fluoxetine.subl —— 氟西汀完整资料
+// 按 docs/语法糖手册.md「药物资料」逐条录入；辅助函数 ratedList/strList 复用 fluvoxamine.subl。
+// 数值来源：氟西汀药品说明书与综述（分子层面药动学与地区无关）。halfLife=96h 为慢性给药
+// 后母药消除半衰期（急性 1-4 天、慢性 4-6 天）；去甲氟西汀 7-15 天记入代谢物条目；
+// bio=0.6 取说明书报告口服生物利用度范围（约 40-90%）中值。
+
+fun fluoxetine(): Drug = Drug(
+    name = "氟西汀",
+    category = "处方药",
+    tags = strList("选择性血清素再摄取抑制剂,SSRIs,五朵金花,抗抑郁药,抗强迫药,抗焦虑药,抗贪食药"),
+    description = "氟西汀是选择性血清素再摄取抑制剂类抗抑郁药，用于抑郁症、强迫症、神经性贪食症与经前烦躁障碍。口服吸收良好，经 CYP2D6 代谢为活性产物去甲氟西汀；母药半衰期长（慢性给药后约 4-6 天）、去甲氟西汀约 7-15 天，是「五朵金花」中消除最慢者，漏服后血药波动小、停药综合征发生率低，但清除受肝功能与合并用药影响显著。氟西汀是 CYP2D6 强抑制剂，可使经 2D6 活化的前体药（可待因、曲马多）镇痛效应下降，并升高三环类抗抑郁药、部分抗精神病药血药浓度。",
+    effects = ratedList("强效|血清素转运体抑制;极弱|正肾素转运体抑制;极弱|多巴胺转运体抑制"),
+    enzymes = strList("CYP2D6"),
+    inhibitions = ratedList("极强|CYP2D6可逆性抑制;中效|CYP2C19可逆性抑制;弱效|CYP3A4可逆性抑制;弱效|CYP2C9可逆性抑制"),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 96, tmax = "6-8h",
+        clearance = "一级（慢）", curve = "对数", bio = 0.6,
+        metabolites = cons(Rated("强效", "去甲氟西汀（半衰期约 7-15 天）"), emptyList())
+    ), emptyList()),
+    acuteTher = ratedList("弱效|激活（早期）"),
+    chronicTher = ratedList("极强|抗抑郁;强效|抗强迫;强效|抗焦虑;强效|抗贪食"),
+    acuteAdv = ratedList("罕见|血清素综合征"),
+    chronicAdv = ratedList("十分常见|恶心;常见|失眠;常见|头痛;常见|腹泻;常见|厌食;常见|出汗;常见|性功能障碍;少见|焦虑（早期）;少见|低血钠症;少见|皮疹;少见|自杀冲动（年轻成人）;罕见|躁狂转换"),
+    withdraw = ratedList("少见|停药综合征（代谢物缓释）;常见|恶心;少见|头晕"),
+    overdose = ratedList(">1500mg|恶心与躁动")
+)

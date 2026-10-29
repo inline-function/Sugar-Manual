@@ -111,6 +111,11 @@ object DshComposeHost {
     }
 
 
+    /** 选药行序 → 药名（与 home.subl 表单行 pickDrugAt(0..9) 一一对应）。 */
+    private val drugNames = listOf("氟伏沙明", "帕罗西汀", "氟西汀", "舍曲林", "西酞普兰", "艾司西酞普兰", "地西泮", "艾司唑仑", "阿普唑仑", "氯硝西泮")
+    private val drugSsri = setOf("氟伏沙明", "帕罗西汀", "舍曲林", "氟西汀", "西酞普兰", "艾司西酞普兰")
+    private val drugBzd = setOf("地西泮", "艾司唑仑", "阿普唑仑", "氯硝西泮")
+
     // ---------- 契约 §4 交互态（发射器直发 Kotlin 侧状态；JS 主逻辑仍跑 WebView，两端 storage 同源） ----------
     // act 路由名 = subl 侧函数名（toggleForm/cancelForm/pickDrugAt/setDose/commitDose/……），
     // 由 ComposeEmitter 的 onClickRoute 从 `unchecked f(args)` lambda 抽出。
@@ -142,10 +147,19 @@ object DshComposeHost {
     private fun drugParams(name: String): Pair<Int, Double> = when (name) {
         "氟伏沙明" -> 15 to 0.5      // T½ 15h · F=50%
         "帕罗西汀" -> 24 to 1.0      // T½ 24h · F=100%
+        "氟西汀" -> 96 to 0.6       // T½ 96h（慢性给药母药）· F=60%
+        "舍曲林" -> 26 to 0.44      // T½ 26h · F=44%
+        "西酞普兰" -> 35 to 0.8     // T½ 35h · F=80%
+        "艾司西酞普兰" -> 30 to 0.8 // T½ 30h · F=80%
+        "地西泮" -> 36 to 0.9       // T½ 36h · F=90%
+        "艾司唑仑" -> 17 to 1.0     // T½ 17h · F 未公开，按完全吸收建模（估算）
+        "阿普唑仑" -> 11 to 0.9     // T½ 11h · F=90%
+        "氯硝西泮" -> 30 to 0.9     // T½ 30h · F=90%
         else -> 24 to 1.0           // 同 halfOfName/bioOfName 兜底
     }
     private fun drugColorOf(name: String): Int =
-        if (name == "氟伏沙明" || name == "帕罗西汀" || name == "舍曲林" || name == "氟西汀") 0xFFFFC107.toInt()
+        if (drugSsri.contains(name)) 0xFFFFC107.toInt()
+        else if (drugBzd.contains(name)) 0xFF1976D2.toInt()
         else 0xFF00695C.toInt()
 
     /** 读 ledger 重算全部序列（空台账→演示序列；与 chartSeriesList 同语义）。 */
@@ -260,7 +274,7 @@ object DshComposeHost {
             amt <= 0.0 -> { doseErrState.value = "剂量必须大于 0"; toast("剂量必须大于 0") }
             amt > 10000.0 -> { doseErrState.value = "单次剂量不得超过 10000 mg"; toast("单次剂量不得超过 10000 mg") }
             else -> {
-                val drug = if (pick == 0) "氟伏沙明" else "帕罗西汀"
+                val drug = drugNames.getOrElse(pick) { "氟伏沙明" }
                 val time = System.currentTimeMillis().toString()
                 val rec = "{\"drug\":" + org.json.JSONObject.quote(drug) +
                     ",\"amount\":" + org.json.JSONObject.quote(dt) +

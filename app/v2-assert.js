@@ -84,17 +84,17 @@ check("根 Box modifiers = [FillMaxSize]", eq(mods(tree), ["FillMaxSize"]));
 
 console.log("== B 顶栏（TopAppBar） ==");
 const topBar = tree.children[0];
-check("顶栏链 [FillWidth, Height(64), Background(primaryContainer)]",
-  eq(mods(topBar), ["FillWidth", "Height(64)", "Background(primaryContainer)"]), mods(topBar).join(","));
+check("顶栏链 [FillWidth, Height(48), Background(primary)]",
+  eq(mods(topBar), ["FillWidth", "Height(48)", "Background(primary)"]), mods(topBar).join(","));
 check("顶栏水平 + SpaceBetween 右推", topBar.orientation === "horizontal" && topBar.arrangement === "SpaceBetween");
-check("顶栏 64dp", topBar.modifiers.some(m => m.tag === "Height" && m[0] === 64));
+check("顶栏 48dp", topBar.modifiers.some(m => m.tag === "Height" && m[0] === 48));
 const tbKids = topBar.children[0].children;
 check("标题行：语法糖手册(22 bold) + V1.0(11)", tbKids[0].text === "语法糖手册" && tbKids[2].text === "V1.0", JSON.stringify(tbKids.map(c => c.text || "[" + c.tag + "]")));
 const titleT = topBar.children[0].children[0];
-check("标题 22sp bold onPrimaryContainer", titleT.size === 22 && titleT.bold === true && titleT.color === "onPrimaryContainer");
+check("标题 22sp bold onPrimary", titleT.size === 22 && titleT.bold === true && titleT.color === "onPrimary");
 const tbActions = topBar.children[1].children;
-const tbLabels = tbActions.map(b => b.label);
-check("actions 三个 TextButton：文档/药物/设置", eq(tbLabels, ["文档", "药物", "设置"]), JSON.stringify(tbLabels));
+const tbIcons = tbActions.map(b => b.children[0] && b.children[0].name);
+check("actions 三个 Icon-only TextButton：info/menu/settings", tbActions.length === 3 && eq(tbIcons, ["info", "menu", "settings"]), JSON.stringify(tbIcons));
 const tbKeys = tbActions.map(b => b.onClick);
 check("顶栏三个 TextButton 实例键互异", new Set(tbKeys).size === 3, tbKeys.join(","));
 
@@ -131,8 +131,8 @@ console.log("== E 预警标签流（FlowRow 平铺） ==");
 const alertsBox = lowerN.children[0].children[0];
 check("流容器 wrap=true spacing=8", alertsBox.wrap === true && alertsBox.spacing === 8, JSON.stringify({w: alertsBox.wrap, s: alertsBox.spacing}));
 const tags = alertsBox.children;
-check("标签是流容器的直接子级（平铺 3 个，非嵌套链）", tags.length === 3 && tags.every(t => t.tag === "Box"), "n=" + tags.length);
-const tagLevels = [["恶心", "#33D32F2F", "#C62828"], ["嗜睡", "#33F9A825", "#E65100"], ["失眠", "#33F9A825", "#E65100"]];
+check("标签是流容器的直接子级（平铺 21 个，非嵌套链）", tags.length === 21 && tags.every(t => t.tag === "Box"), "n=" + tags.length);
+const tagLevels = [["恶心", "#33D32F2F", "#C62828"], ["嗜睡", "#33D32F2F", "#C62828"], ["失眠", "#33D32F2F", "#C62828"]];
 tagLevels.forEach((exp, i) => {
   const t = tags[i], tx = t.children[0];
   check("标签[" + i + "] " + exp[0] + "：链 [Clip(12), Background(" + exp[1] + "), PaddingH(12), PaddingV(5)]",
@@ -164,9 +164,9 @@ check("FAB 点击 → 表单 visible=true（BottomSheet 显隐是数据字段）
 const rowsBox = findByTag(sheet, "Box").find(b => b.scrollable === true && (b.modifiers || []).some(m => m.tag === "Height" && m[0] === 168));
 check("药物列表高 168dp + spacing=6 + scrollable", rowsBox !== undefined && rowsBox.spacing === 6, JSON.stringify({h: !!rowsBox, s: rowsBox && rowsBox.spacing}));
 const rows = rowsBox.children;
-check("两行选药（氟伏沙明/帕罗西汀）平铺为直接子级", rows.length === 2 && rows.every(r => r.tag === "Box"), "n=" + rows.length);
+check("十药选药行平铺为直接子级", rows.length === 10 && rows.every(r => r.tag === "Box"), "n=" + rows.length);
 const rowKeys = rows.map(r => r.onClick);
-check("选药行实例键互异（__dshCb 每行独立槽位）", new Set(rowKeys).size === 2, rowKeys.join(","));
+check("选药行实例键互异（__dshCb 每行独立槽位）", new Set(rowKeys).size === 10, rowKeys.join(","));
 check("选药行整行可点 + 圆角 12 链", rows.every(r => (r.modifiers || []).some(m => m.tag === "Clip" && m[0] === 12) && typeof r.onClick === "string"));
 // 串点击回归：点第 2 行只选第 2 行
 callKey(rowKeys[1]);
@@ -204,8 +204,8 @@ check("总线 = 分量线", eq(chart2.points.map(Number), chart2.series[0].point
 const cards = findByTag(tree, "Card");
 check("记录卡渲染 1 张（Card 组件）", cards.length === 1, "n=" + cards.length);
 const card = cards[0];
-check("卡链 [FillWidth, PaddingV(6)] cornerRadius=12 elevation=1 surfaceVariant",
-  eq(mods(card), ["FillWidth", "PaddingV(6)"]) && card.cornerRadius === 12 && card.elevation === 1 && card.backgroundColor === "surfaceVariant",
+check("卡链 [FillWidth, PaddingH(24), PaddingV(6)] cornerRadius=12 surfaceVariant",
+  eq(mods(card), ["FillWidth", "PaddingH(24)", "PaddingV(6)"]) && card.cornerRadius === 12 && card.backgroundColor === "surfaceVariant",
   mods(card).join(",") + " r=" + card.cornerRadius);
 const rowLine = card.children[0].children[0];
 check("卡内行：4×20 色条（width(4).height(20) 一条链）",
@@ -242,7 +242,7 @@ let dlgs = findByTag(tree, "AlertDialog");
 check("取消/遮罩关闭表单 → 两个 AlertDialog 都在（stub 占位）", dlgs.length === 2);
 // 设置
 const topTree = latestTree();
-const setBtn = findByTag(topTree, "TextButton").find(b => b.label === "设置");
+const setBtn = findByTag(topTree, "TextButton").find(b => (b.children || []).some(c => c.tag === "Icon" && c.name === "settings"));
 callKey(setBtn.onClick);
 tree = latestTree();
 dlgs = findByTag(tree, "AlertDialog");
@@ -253,7 +253,7 @@ tree = latestTree();
 check("清空记录 → 台账空 + 弹层关", JSON.parse(storage.get("ledger")).length === 0 && findByTag(tree, "AlertDialog").every(d => !d.visible));
 check("台账空后回到演示序列（氟伏沙明）", findByTag(tree, "Chart")[0].series[0].label === "氟伏沙明");
 // 文档
-const docBtn = findByTag(tree, "TextButton").find(b => b.label === "文档");
+const docBtn = findByTag(tree, "TextButton").find(b => (b.children || []).some(c => c.tag === "Icon" && c.name === "info"));
 callKey(docBtn.onClick);
 tree = latestTree();
 const docDlg = findByTag(tree, "AlertDialog").find(d => d.title === "文档");

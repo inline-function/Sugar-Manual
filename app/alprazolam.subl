@@ -1,0 +1,24 @@
+// app/alprazolam.subl —— 阿普唑仑完整资料
+// 数值来源：阿普唑仑药品说明书与综述。halfLife=11h（6.3-26.9h 范围）、bio=0.9（口服吸收良好，
+// 报告值 80% 以上）；CYP3A4 为主代谢酶。
+
+fun alprazolam(): Drug = Drug(
+    name = "阿普唑仑",
+    category = "处方药",
+    tags = strList("苯二氮卓类,抗焦虑药,抗惊恐药,镇静药,超说明书（抑郁伴焦虑）"),
+    description = "阿普唑仑是三唑并苯二氮卓类中效抗焦虑药，用于广泛性焦虑障碍与惊恐障碍；中国常见【超说明书】用法包括抑郁伴焦虑状态与经前综合征。口服后 1-2 小时达峰、起效快，适合急性焦虑发作；经 CYP3A4 代谢（α-羟化）为弱活性产物。与 CYP3A4/2D6 抑制剂（氟伏沙明、氟西汀、帕罗西汀、克拉霉素）合用血药浓度升高、过度镇静风险增加；与阿片类或乙醇合用可致严重呼吸抑制（黑框警告）。短效苯二氮卓骤停戒断症状较重，宜递减停药。",
+    effects = ratedList("强效|GABA-A受体苯二氮卓位点变构调节"),
+    enzymes = strList("CYP3A4"),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 11, tmax = "1-2h",
+        clearance = "一级（CYP3A4 氧化）", curve = "对数", bio = 0.9,
+        metabolites = cons(Rated("极弱", "α-羟基阿普唑仑"), emptyList())
+    ), emptyList()),
+    acuteTher = ratedList("强效|抗焦虑（快速起效）;强效|镇静"),
+    chronicTher = ratedList("强效|抗焦虑;强效|抗惊恐;中效|催眠（焦虑性失眠）"),
+    acuteAdv = ratedList("少见|呼吸抑制;常见|嗜睡;常见|头晕"),
+    chronicAdv = ratedList("常见|嗜睡;常见|头晕;常见|疲劳;常见|共济失调;常见|记忆损害（顺行性）;常见|性功能障碍;常见|依赖（长期使用）;少见|呼吸抑制（与阿片/酒精合用）;少见|反常兴奋;少见|跌倒（老年）"),
+    withdraw = ratedList("常见|焦虑反跳;常见|失眠反跳;常见|震颤;常见|出汗;少见|癫痫发作（骤停）;罕见|谵妄（骤停高剂量）"),
+    overdose = ratedList(">10mg|呼吸抑制")
+)
