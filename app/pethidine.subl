@@ -1,0 +1,25 @@
+// app/pethidine.subl —— 哌替啶完整资料
+// 数值来源：药品说明书与综述。halfLife=3-5h（均值取 4h）、tmax 口服 1-2h；
+// bio=0.5 为常引用约 50%（口服首过明显，权威说明书未给绝对值，标注为估算）；
+// 代谢物去甲哌替啶经 CYP3A4 生成，蓄积致神经毒性。
+
+fun pethidine(): Drug = Drug(
+    name = "哌替啶",
+    category = "处方药",
+    tags = strList("阿片类,弱阿片镇痛药,合成苯基哌啶类,麻醉药品（管制）,超说明书（术后寒战治疗）"),
+    description = "哌替啶（度冷丁）是合成苯基哌啶类 μ 阿片受体激动剂，曾广泛用于急性疼痛与分娩镇痛，现因代谢物毒性被多数指南限制使用。主要经 CYP3A4 N-去甲基化生成去甲哌替啶（半衰期 15-30 小时），后者无镇痛活性但致神经兴奋（焦虑、肌阵挛、癫痫），重复给药与肾功能不全者蓄积风险高。与单胺氧化酶抑制剂合用可致命（兴奋、高热、抽搐），与 SSRI（氟伏沙明、舍曲林等）合用血清素综合征风险；与苯二氮卓类合用呼吸抑制。产科与术后寒战治疗为中国常见【超说明书】场景。按麻醉药品管理。",
+    effects = ratedList("强效|μ-阿片受体激动;弱效|阿托品样作用（解痉）"),
+    enzymes = strList("CYP3A4,CYP2B6"),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 4, tmax = "1-2h",
+        clearance = "一级（CYP3A4 氧化）", curve = "对数", bio = 0.5,
+        metabolites = cons(Rated("中效", "去甲哌替啶（致神经兴奋与癫痫）"), emptyList())
+    ), emptyList()),
+    acuteTher = ratedList("强效|镇痛（急性）;弱效|寒战治疗（麻醉后，超说明书）"),
+    chronicTher = ratedList("中效|镇痛（急性疼痛，少用）;弱效|分娩镇痛（现已少用）"),
+    acuteAdv = ratedList("常见|呼吸抑制;常见|恶心呕吐;常见|血压下降（体位）;常见|头晕"),
+    chronicAdv = ratedList("十分常见|恶心;常见|便秘;常见|嗜睡;常见|呼吸抑制;常见|出汗;常见|耐受（重复给药）;常见|依赖（重复给药）;少见|去甲哌替啶神经毒性（焦虑、肌阵挛、癫痫）;少见|尿潴留;罕见|血清素综合征（与 MAOI 或 SSRI 合用）"),
+    withdraw = ratedList("常见|阿片戒断综合征（骤停）;常见|焦虑;常见|出汗;常见|失眠"),
+    overdose = ratedList(">200mg|癫痫（去甲哌替啶蓄积）")
+)

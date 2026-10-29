@@ -8,7 +8,7 @@ fun escitalopram(): Drug = Drug(
     description = "艾司西酞普兰是西酞普兰的左旋 S-构型异构体，5-HT 再摄取抑制活性集中、对转运体选择性更高，起效与耐受优于消旋体；用于抑郁症、广泛性焦虑障碍、惊恐障碍与社交焦虑障碍。经 CYP3A4、CYP2C19 与 CYP2D6 代谢，对 CYP2D6 抑制极弱、相互作用少；剂量依赖性 QT 间期延长风险弱于消旋体，但高剂量仍须监测。",
     effects = ratedList("强效|血清素转运体抑制;极弱|正肾素转运体抑制"),
     enzymes = strList("CYP3A4,CYP2C19,CYP2D6"),
-    inhibitions = ratedList("极弱|CYP2D6可逆性抑制"),
+    inhibitions = ratedList("极弱|CYP2D6"),
     pk = cons(PkProfile(
         route = "口服", form = "常释", halfLife = 30, tmax = "4h",
         clearance = "一级", curve = "对数", bio = 0.8,

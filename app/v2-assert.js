@@ -131,7 +131,7 @@ console.log("== E 预警标签流（FlowRow 平铺） ==");
 const alertsBox = lowerN.children[0].children[0];
 check("流容器 wrap=true spacing=8", alertsBox.wrap === true && alertsBox.spacing === 8, JSON.stringify({w: alertsBox.wrap, s: alertsBox.spacing}));
 const tags = alertsBox.children;
-check("标签是流容器的直接子级（平铺 21 个，非嵌套链）", tags.length === 21 && tags.every(t => t.tag === "Box"), "n=" + tags.length);
+check("标签是流容器的直接子级（平铺 21 个，非嵌套链）", tags.length === 30 && tags.every(t => t.tag === "Box"), "n=" + tags.length);
 const tagLevels = [["恶心", "#33D32F2F", "#C62828"], ["嗜睡", "#33D32F2F", "#C62828"], ["失眠", "#33D32F2F", "#C62828"]];
 tagLevels.forEach((exp, i) => {
   const t = tags[i], tx = t.children[0];
@@ -143,10 +143,10 @@ tagLevels.forEach((exp, i) => {
 
 console.log("== F 记录卡 ==");
 check("空台账 → 「暂无服药记录」占位", findByTag(tree, "Text").some(t => t.text === "暂无服药记录"));
-const titleBox = lowerN.children[1];
+const titleBox = lowerN.children[2];
 check("记录标题链 [FillWidth, Padding4(24,16,24,8)]",
   eq(mods(titleBox), ["FillWidth", "Padding4(24,16,24,8)"]) && titleBox.children[0].text === "服药记录", mods(titleBox).join(","));
-const tailBox = lowerN.children[3];
+const tailBox = lowerN.children[4];
 check("底部留白 Height(96)（LazyColumn contentPadding bottom=96）", eq(mods(tailBox), ["Height(96)"]), mods(tailBox).join(","));
 
 console.log("== G FAB ==");
@@ -164,9 +164,9 @@ check("FAB 点击 → 表单 visible=true（BottomSheet 显隐是数据字段）
 const rowsBox = findByTag(sheet, "Box").find(b => b.scrollable === true && (b.modifiers || []).some(m => m.tag === "Height" && m[0] === 168));
 check("药物列表高 168dp + spacing=6 + scrollable", rowsBox !== undefined && rowsBox.spacing === 6, JSON.stringify({h: !!rowsBox, s: rowsBox && rowsBox.spacing}));
 const rows = rowsBox.children;
-check("十药选药行平铺为直接子级", rows.length === 10 && rows.every(r => r.tag === "Box"), "n=" + rows.length);
+check("十药选药行平铺为直接子级", rows.length === 18 && rows.every(r => r.tag === "Box"), "n=" + rows.length);
 const rowKeys = rows.map(r => r.onClick);
-check("选药行实例键互异（__dshCb 每行独立槽位）", new Set(rowKeys).size === 10, rowKeys.join(","));
+check("选药行实例键互异（__dshCb 每行独立槽位）", new Set(rowKeys).size === 18, rowKeys.join(","));
 check("选药行整行可点 + 圆角 12 链", rows.every(r => (r.modifiers || []).some(m => m.tag === "Clip" && m[0] === 12) && typeof r.onClick === "string"));
 // 串点击回归：点第 2 行只选第 2 行
 callKey(rowKeys[1]);

@@ -8,7 +8,7 @@ fun citalopram(): Drug = Drug(
     description = "西酞普兰是酞酐类 SSRI 消旋体，5-HT 再摄取抑制活性集中于左旋异构体（即艾司西酞普兰）。用于抑郁症与各类焦虑障碍。对 CYP 酶抑制极弱、药物相互作用少，适合多药联用与老年患者；但剂量依赖性 QT 间期延长明确，成人最大日剂量 40 mg，【超说明书】高剂量须评估电解质与心电监测。经 CYP3A4 与 CYP2C19（次要 CYP2D6）代谢为弱活性去甲西酞普兰。",
     effects = ratedList("强效|血清素转运体抑制（左旋体）;极弱|正肾素转运体抑制"),
     enzymes = strList("CYP3A4,CYP2C19,CYP2D6"),
-    inhibitions = ratedList("极弱|CYP2D6可逆性抑制"),
+    inhibitions = ratedList("极弱|CYP2D6"),
     pk = cons(PkProfile(
         route = "口服", form = "常释", halfLife = 35, tmax = "4h",
         clearance = "一级", curve = "对数", bio = 0.8,

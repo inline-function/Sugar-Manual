@@ -112,9 +112,10 @@ object DshComposeHost {
 
 
     /** 选药行序 → 药名（与 home.subl 表单行 pickDrugAt(0..9) 一一对应）。 */
-    private val drugNames = listOf("氟伏沙明", "帕罗西汀", "氟西汀", "舍曲林", "西酞普兰", "艾司西酞普兰", "地西泮", "艾司唑仑", "阿普唑仑", "氯硝西泮")
+    private val drugNames = listOf("氟伏沙明", "帕罗西汀", "氟西汀", "舍曲林", "西酞普兰", "艾司西酞普兰", "地西泮", "艾司唑仑", "阿普唑仑", "氯硝西泮", "劳拉西泮", "咪达唑仑", "吗啡", "羟考酮", "芬太尼", "可待因", "曲马多", "哌替啶")
     private val drugSsri = setOf("氟伏沙明", "帕罗西汀", "舍曲林", "氟西汀", "西酞普兰", "艾司西酞普兰")
-    private val drugBzd = setOf("地西泮", "艾司唑仑", "阿普唑仑", "氯硝西泮")
+    private val drugBzd = setOf("地西泮", "艾司唑仑", "阿普唑仑", "氯硝西泮", "劳拉西泮", "咪达唑仑")
+    private val drugOpioid = mapOf("吗啡" to 0xFF795548.toInt(), "羟考酮" to 0xFFE64A19.toInt(), "芬太尼" to 0xFF6A1B9A.toInt(), "可待因" to 0xFF8D6E63.toInt(), "曲马多" to 0xFF00897B.toInt(), "哌替啶" to 0xFFAD1457.toInt())
 
     // ---------- 契约 §4 交互态（发射器直发 Kotlin 侧状态；JS 主逻辑仍跑 WebView，两端 storage 同源） ----------
     // act 路由名 = subl 侧函数名（toggleForm/cancelForm/pickDrugAt/setDose/commitDose/……），
@@ -154,13 +155,21 @@ object DshComposeHost {
         "地西泮" -> 36 to 0.9       // T½ 36h · F=90%
         "艾司唑仑" -> 17 to 1.0     // T½ 17h · F 未公开，按完全吸收建模（估算）
         "阿普唑仑" -> 11 to 0.9     // T½ 11h · F=90%
-        "氯硝西泮" -> 30 to 0.9     // T½ 30h · F=90%
+        "氯硝西泮" -> 30 to 0.9     // T½ 30h · F≈90%
+        "劳拉西泮" -> 12 to 0.94    // T½ 12h · F≈94%
+        "咪达唑仑" -> 3 to 0.44     // T½ 3h · F=44%
+        "吗啡" -> 2 to 0.34         // T½ 2h · F=34%
+        "羟考酮" -> 4 to 0.87       // T½ 4h · F≈87%
+        "芬太尼" -> 17 to 0.92      // T½ 17h（透皮表观）· F≈92%
+        "可待因" -> 3 to 0.6        // T½ 3h · F≈60%
+        "曲马多" -> 6 to 0.66       // T½ 6h · F=66%
+        "哌替啶" -> 4 to 0.5        // T½ 4h · F≈50%
         else -> 24 to 1.0           // 同 halfOfName/bioOfName 兜底
     }
     private fun drugColorOf(name: String): Int =
         if (drugSsri.contains(name)) 0xFFFFC107.toInt()
         else if (drugBzd.contains(name)) 0xFF1976D2.toInt()
-        else 0xFF00695C.toInt()
+        else drugOpioid[name] ?: 0xFF00695C.toInt()
 
     /** 读 ledger 重算全部序列（空台账→演示序列；与 chartSeriesList 同语义）。 */
     private fun recomputeChart() {

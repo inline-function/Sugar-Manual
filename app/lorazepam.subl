@@ -1,0 +1,24 @@
+// app/lorazepam.subl —— 劳拉西泮完整资料
+// 数值来源：药品说明书与综述。halfLife=12h（10-20h 范围）、bio=0.9（口服吸收良好，
+// 常引用约 90%）；经 UGT2B7/2B15 直接葡萄糖醛酸化，不经 CYP 酶代谢。
+
+fun lorazepam(): Drug = Drug(
+    name = "劳拉西泮",
+    category = "处方药",
+    tags = strList("苯二氮卓类,抗焦虑药,镇静药,催眠药,抗癫痫药（持续状态）,超说明书（失眠与化疗止吐辅助）"),
+    description = "劳拉西泮是中效 1,4-苯二氮卓类，用于焦虑症、焦虑性失眠、癫痫持续状态（静脉）、化疗相关恶心呕吐辅助与术前镇静。与多数苯二氮卓不同，其主要经 UGT2B7/2B15 葡萄糖醛酸化直接清除、不经 CYP450 氧化，故与 CYP 抑制剂（氟伏沙明、克拉霉素等）相互作用少，适合肝功能不全或多药联用场景；高龄与合用阿片/乙醇时呼吸抑制风险增加（黑框警告），长期使用产生依赖。",
+    effects = ratedList("强效|GABA-A受体苯二氮卓位点变构调节"),
+    enzymes = strList("UGT2B7,UGT2B15"),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 12, tmax = "2h",
+        clearance = "一级（UGT 葡萄糖醛酸化）", curve = "对数", bio = 0.94,
+        metabolites = cons(Rated("极弱", "劳拉西泮葡萄糖醛酸结合物（无活性）"), emptyList())
+    ), emptyList()),
+    acuteTher = ratedList("强效|抗焦虑（持续状态）;强效|镇静（起效较快）"),
+    chronicTher = ratedList("强效|抗焦虑;强效|焦虑性失眠;中效|抗癫痫（持续状态首选静注）;中效|化疗止吐辅助（超说明书）"),
+    acuteAdv = ratedList("少见|呼吸抑制;常见|嗜睡;常见|头晕"),
+    chronicAdv = ratedList("十分常见|嗜睡;常见|头晕;常见|乏力;常见|共济失调;常见|记忆损害（顺行性）;常见|依赖（长期使用）;少见|呼吸抑制（与阿片/酒精合用）;少见|跌倒（老年）;少见|矛盾攻击性（脑损伤者）"),
+    withdraw = ratedList("常见|焦虑反跳;常见|失眠反跳;常见|震颤;常见|出汗;少见|癫痫发作（骤停高剂量）"),
+    overdose = ratedList(">10mg|呼吸抑制")
+)

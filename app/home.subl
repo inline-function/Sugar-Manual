@@ -102,7 +102,7 @@ struct Home {
                     Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(2) }) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "氟西汀", size = 16, bold = true, color = "onSurface")
-                            Text(text = "处方药 · T½ 96h · F=60% · 口服", size = 12, color = "onSurfaceVariant")
+                            Text(text = "处方药 · T½ 96h · F≈60% · 口服", size = 12, color = "onSurfaceVariant")
                         }
                         Box(modifier = paddingH(8), visible = isSel(2)) {
                             Text(text = "✓", size = 16, bold = true, color = "primary")
@@ -142,7 +142,7 @@ struct Home {
                     Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(6) }) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "地西泮", size = 16, bold = true, color = "onSurface")
-                            Text(text = "处方药 · T½ 36h · F=90% · 口服", size = 12, color = "onSurfaceVariant")
+                            Text(text = "处方药 · T½ 36h · F≈90% · 口服", size = 12, color = "onSurfaceVariant")
                         }
                         Box(modifier = paddingH(8), visible = isSel(6)) {
                             Text(text = "✓", size = 16, bold = true, color = "primary")
@@ -152,7 +152,7 @@ struct Home {
                     Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(7) }) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "艾司唑仑", size = 16, bold = true, color = "onSurface")
-                            Text(text = "处方药 · T½ 17h · F=100% · 口服", size = 12, color = "onSurfaceVariant")
+                            Text(text = "处方药 · T½ 17h · F≈100% · 口服", size = 12, color = "onSurfaceVariant")
                         }
                         Box(modifier = paddingH(8), visible = isSel(7)) {
                             Text(text = "✓", size = 16, bold = true, color = "primary")
@@ -162,7 +162,7 @@ struct Home {
                     Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(8) }) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "阿普唑仑", size = 16, bold = true, color = "onSurface")
-                            Text(text = "处方药 · T½ 11h · F=90% · 口服", size = 12, color = "onSurfaceVariant")
+                            Text(text = "处方药 · T½ 11h · F≈90% · 口服", size = 12, color = "onSurfaceVariant")
                         }
                         Box(modifier = paddingH(8), visible = isSel(8)) {
                             Text(text = "✓", size = 16, bold = true, color = "primary")
@@ -172,9 +172,89 @@ struct Home {
                     Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(9) }) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "氯硝西泮", size = 16, bold = true, color = "onSurface")
-                            Text(text = "处方药 · T½ 30h · F=90% · 口服", size = 12, color = "onSurfaceVariant")
+                            Text(text = "处方药 · T½ 30h · F≈90% · 口服", size = 12, color = "onSurfaceVariant")
                         }
                         Box(modifier = paddingH(8), visible = isSel(9)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(10) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "劳拉西泮", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 12h · F≈94% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(10)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(11) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "咪达唑仑", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 3h · F=44% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(11)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(12) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "吗啡", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 2h · F=34% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(12)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(13) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "羟考酮", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 4h · F≈87% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(13)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(14) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "芬太尼", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 17h · F≈92% · 透皮", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(14)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(15) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "可待因", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 3h · F≈60% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(15)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(16) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "曲马多", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 6h · F=66% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(16)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(17) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "哌替啶", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 4h · F≈50% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(17)) {
                             Text(text = "✓", size = 16, bold = true, color = "primary")
                         }
                     }

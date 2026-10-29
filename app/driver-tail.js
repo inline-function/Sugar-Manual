@@ -57,6 +57,16 @@
   const dangerTag = tagBoxes.find((b) => (b.modifiers || []).some((m) => m.tag === "Background" && m["0"] === "#33D32F2F"));
   __smA("危险标签含恶心", dangerTag && (dangerTag.children[0] || {}).text === "恶心" && (dangerTag.children[0] || {}).color === "#C62828", "got " + JSON.stringify(dangerTag && dangerTag.children.map((c) => c.text)));
   __smA("标签横向流", __smNodes(root0).some((n) => n.wrap === true && n.tag === "Box"));
+  // CYP450 代谢相互作用预警链（SSRI 极强 CYP2D6/2C19 抑制 + 可待因/曲马多/羟考酮 2D6 底物）
+  const cypTexts = __smNodes(root0).filter((n) => n.tag === "Text" && typeof n.text === "string" && n.text.indexOf("CYP") === 0).map((n) => n.text);
+  __smA("CYP 预警标题", texts0.includes("CYP450 代谢相互作用"));
+  __smA("CYP2D6 抑制标签", cypTexts.some((s) => s.indexOf("CYP2D6 抑制") === 0), "got " + JSON.stringify(cypTexts));
+  __smA("CYP2C19 抑制标签", cypTexts.some((s) => s.indexOf("CYP2C19 抑制") === 0), "got " + JSON.stringify(cypTexts));
+  // BZD×阿片联用呼吸抑制：过量条目同名 → 闪烁标签（#40 红底）
+  const flashCells = __smNodes(root0).filter((n) => n.tag === "Box" && (n.modifiers || []).some((m) => m.tag === "Background" && String(m["0"]).indexOf("#40") === 0));
+  const flashTexts = flashCells.map((b) => (b.children[0] || {}).text);
+  __smA("呼吸抑制闪烁标签", flashTexts.includes("呼吸抑制"), "got " + JSON.stringify(flashTexts));
+  __smA("BZD 阿片呼吸抑制链", texts0.includes("呼吸抑制（与阿片/酒精合用）"));
   __smA("记录区标题", texts0.includes("服药记录"));
   __smA("空台账占位", texts0.includes("暂无服药记录"));
   __smA("底部 96dp 留白", __smNodes(root0).some((n) => n.tag === "Box" && (n.modifiers || []).some((m) => m.tag === "Height" && m["0"] === 96)));
@@ -84,7 +94,7 @@
   function __smRowName(b) { return b.children[0].children[0]; }
   function __smRowSub(b) { return b.children[0].children[1]; }
   function __smRowChecked(b) { return (b.children || []).some((c) => c.tag === "Text" && c.text.indexOf("✓") === 0 && c.color !== "#00000000"); } // v2：✓ 常驻，未选为透明 #00000000
-  __smA("药物行 10 行", rowBtns.length === 10, "got " + rowBtns.map((b) => __smRowName(b).text).join(","));
+  __smA("药物行 18 行", rowBtns.length === 18, "got " + rowBtns.map((b) => __smRowName(b).text).join(","));
   __smA("行 0 氟伏沙明未选", rowBtns.some((b) => __smRowName(b).text === "氟伏沙明" && __smRowName(b).bold === false), "got " + JSON.stringify(rowBtns.map((b) => __smRowName(b).text)));
   __smA("行 1 帕罗西汀", rowBtns.some((b) => __smRowName(b).text === "帕罗西汀"));
   __smA("行副标题：氟伏沙明", rowBtns.some((b) => __smRowSub(b).text === "处方药 · T½ 15h · F=50% · 口服"), "got " + JSON.stringify(rowBtns.map((b) => __smRowSub(b).text)));
@@ -179,7 +189,10 @@
   __smA("drugColor BZD 蓝", drugColor("地西泮") === "#1976D2" && drugColor("阿普唑仑") === "#1976D2");
   __smA("drugDetail", drugDetail(fluvoxamine()) === "处方药 · T½ 15h · F=50% · 口服", "got " + drugDetail(fluvoxamine()));
   __smA("drugDetail 舍曲林", drugDetail(sertraline()) === "处方药 · T½ 26h · F=44% · 口服", "got " + drugDetail(sertraline()));
-  __smA("drugDetail 地西泮", drugDetail(diazepam()) === "处方药 · T½ 36h · F=90% · 口服", "got " + drugDetail(diazepam()));
+  __smA("drugDetail 地西泮", drugDetail(diazepam()) === "处方药 · T½ 36h · F≈90% · 口服", "got " + drugDetail(diazepam()));
+  __smA("drugDetail 氟西汀 F≈", drugDetail(fluoxetine()) === "处方药 · T½ 96h · F≈60% · 口服", "got " + drugDetail(fluoxetine()));
+  __smA("drugDetail 吗啡", drugDetail(morphine()) === "处方药 · T½ 2h · F=34% · 口服", "got " + drugDetail(morphine()));
+  __smA("drugDetail 咪达唑仑", drugDetail(midazolam()) === "处方药 · T½ 3h · F=44% · 口服", "got " + drugDetail(midazolam()));
   __smA("rowBold", rowBold(1, 1, true) === true && rowBold(1, 1, false) === false && rowBold(0, 1, true) === false);
   __smA("itemsAt 过滤", itemsAt(3, [Trigger("a", 8), Trigger("b", 5), Trigger("c", 2)]).length === 1, "got " + JSON.stringify(itemsAt(3, [Trigger("a", 8), Trigger("b", 5), Trigger("c", 2)])));
   __smA("alertItems 降序混排", (function () { const ts = alertItems(Alert(3, [Trigger("恶", 8), Trigger("失", 6), Trigger("小", 4)])); return ts.length === 3 && ts[0].score === 8 && ts[2].score === 4; })());

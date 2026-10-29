@@ -45,6 +45,14 @@ fun drugColor(name: Str): Str = if (name == "氟伏沙明") "#FFC107"
     else if (name == "艾司唑仑") "#1976D2"
     else if (name == "阿普唑仑") "#1976D2"
     else if (name == "氯硝西泮") "#1976D2"
+    else if (name == "劳拉西泮") "#1976D2"
+    else if (name == "咪达唑仑") "#1976D2"
+    else if (name == "吗啡") "#795548"
+    else if (name == "羟考酮") "#E64A19"
+    else if (name == "芬太尼") "#6A1B9A"
+    else if (name == "可待因") "#8D6E63"
+    else if (name == "曲马多") "#00897B"
+    else if (name == "哌替啶") "#AD1457"
     else "#00695C"
 
 // ---------- 演示剂量（空台账回退：home 首启不空图） ----------
@@ -54,7 +62,7 @@ fun demoDoses(): List[Dose] = cons(Dose(100.0, 0), cons(Dose(100.0, 24), emptyLi
 // ---------- 示例联用集（引擎评估用） ----------
 
 @impure
-fun coadmin(): List[Drug] = append(loadDrugs(), cons(fluvoxamine(), cons(paroxetine(), cons(fluoxetine(), cons(sertraline(), cons(citalopram(), cons(escitalopram(), cons(diazepam(), cons(estazolam(), cons(alprazolam(), cons(clonazepam(), emptyList())))))))))))
+fun coadmin(): List[Drug] = append(loadDrugs(), cons(fluvoxamine(), cons(paroxetine(), cons(fluoxetine(), cons(sertraline(), cons(citalopram(), cons(escitalopram(), cons(diazepam(), cons(estazolam(), cons(alprazolam(), cons(clonazepam(), cons(lorazepam(), cons(midazolam(), cons(morphine(), cons(oxycodone(), cons(fentanyl(), cons(codeine(), cons(tramadol(), cons(pethidine(), emptyList())))))))))))))))))))
 
 // ---------- 表单/弹层状态（storage KV：layout 重渲染时跨帧保持） ----------
 
@@ -196,6 +204,28 @@ fun alertStream(adr: Alert, drugs: List[Drug]): Any = if (size(adr.items) == 0) 
 
 // 标签单元（≈ AlertTag：圆角 12 + 半透明底 + 同色加粗字 + 闪烁）。
 // 圆角 = clip(12)（链元素）；半透明 #33AARRGGBB 直写（旧协议需预混实色）。
+// CYP450 代谢相互作用预警流（与 ADR 流并列）：触发酶 = 被 >=2 个药品关联且抑制权重 > 0。
+@composable
+fun metabStream(met: Alert): Any = if (size(met.items) == 0) {
+    Box(modifier = fillWidth()) {}
+} else {
+    Box(modifier = fillWidth().paddingHV(24, 8), orientation = "vertical", spacing = 6) {
+        Text(text = "CYP450 代谢相互作用", color = "onSurfaceVariant", size = 12, bold = true)
+        Box(modifier = fillWidth(), wrap = true, spacing = 8, children = metabTagList(metabItems(met)))
+    }
+}
+fun metabItems(met: Alert): List[Trigger] = append(metabAt(3, met.items), append(metabAt(2, met.items), metabAt(1, met.items)))
+fun metabAt(l: Nat, ts: List[Trigger]): List[Trigger] = filter(ts) { x => metabLevel(x.score) == l }
+@composable
+fun metabTagList(ts: List[Trigger]): List[Any] = when (ts) {
+    Nil => emptyList()
+    is Cons(x, rest) => cons(metabTagCell(x), metabTagList(rest))
+    else => emptyList()
+}
+@composable
+fun metabTagCell(t: Trigger): Any = Box(modifier = clip(12).background(tagBg(metabLevel(t.score), false)).paddingHV(12, 5)) {
+    Text(text = concat(t.name, concat(" 抑制 ×", toStr(t.score))), color = tagFg(metabLevel(t.score), false), size = 14, bold = true)
+}
 @composable
 fun tagList(ts: List[Trigger], drugs: List[Drug]): List[Any] = when (ts) {
     Nil => emptyList()
@@ -234,7 +264,20 @@ fun detailHalf(pk: List[PkProfile]): Str = toStr(halfNat(pk))
 fun detailBio(pk: List[PkProfile]): Str = toStr(bioRat(pk) * 100.0)
 
 // 参考药物行副标题：管理分类 · T½ Xh · F=Y% · 给药途径。
-fun drugDetail(d: Drug): Str = concat(concat(concat(concat(concat(concat(d.category, " · T½ "), detailHalf(d.pk)), "h · F="), detailBio(d.pk)), "% · "), firstRoute(d.pk))
+// F≈ 表示该药的生物利用度为区间中值/取整/保守假设（无单点实测），F= 表示有实测或说明书单点值。
+fun estDrug(n: Str): Bool = if (n == "氟西汀") true
+    else if (n == "地西泮") true
+    else if (n == "艾司唑仑") true
+    else if (n == "阿普唑仑") true
+    else if (n == "氯硝西泮") true
+    else if (n == "劳拉西泮") true
+    else if (n == "羟考酮") true
+    else if (n == "芬太尼") true
+    else if (n == "可待因") true
+    else if (n == "哌替啶") true
+    else false
+fun bioMark(d: Drug): Str = if (estDrug(d.name)) "h · F≈" else "h · F="
+fun drugDetail(d: Drug): Str = concat(concat(concat(concat(concat(concat(d.category, " · T½ "), detailHalf(d.pk)), bioMark(d)), detailBio(d.pk)), "% · "), firstRoute(d.pk))
 
 @impure
 fun medRowOf(r: DoseRec, drugs: List[Drug]): MedCard {
@@ -533,7 +576,7 @@ fun settingsDialog(open: Bool): AlertDialog = AlertDialog(visible = open, title 
 
 @composable
 fun docDialog(open: Bool): AlertDialog = AlertDialog(visible = open, title = "文档", confirmText = "", dismissText = "关闭", onDismiss = { unchecked closeDoc() }) {
-    Text(text = "糖手册：记录服药 → 估算血药浓度 → 联用预警。\n\n氟伏沙明（CYP2D6 底物）+ 帕罗西汀（CYP2D6 极强抑制）联用构成 CYP2D6 抑制-底物相互作用（不在首页预警），并共享恶心/失眠/嗜睡等不良反应。\n\n源码：github.com/inline-function/Sugar-Manual", size = 12, color = "onSurfaceVariant")
+    Text(text = "糖手册：记录服药 → 估算血药浓度 → 联用预警。\n\n氟伏沙明（CYP2D6 底物）+ 帕罗西汀（CYP2D6 极强抑制）联用构成 CYP2D6 抑制-底物相互作用（见首页下方「CYP450 代谢相互作用」标签），并共享恶心/失眠/嗜睡等不良反应。\n\n源码：github.com/inline-function/Sugar-Manual", size = 12, color = "onSurfaceVariant")
 }
 
 // ---------- 主界面（≈ Scaffold content） ----------
@@ -545,8 +588,9 @@ fun chartHeightDp(sh: Nat, dpi: Nat): Nat = (contentHeightDp(sh, dpi) * 45) / 10
 fun lowerHeightDp(sh: Nat, dpi: Nat): Nat = contentHeightDp(sh, dpi) - chartHeightDp(sh, dpi)
 
 @composable
-fun lowerBox(adr: Alert, rows: List[MedCard], drugs: List[Drug], sh: Nat, dpi: Nat): Box = Box(modifier = fillWidth().height(lowerHeightDp(sh, dpi)), scrollable = true) {
+fun lowerBox(adr: Alert, rows: List[MedCard], drugs: List[Drug], met: Alert, sh: Nat, dpi: Nat): Box = Box(modifier = fillWidth().height(lowerHeightDp(sh, dpi)), scrollable = true) {
     alertStream(adr, drugs)
+    metabStream(met)
     recordTitle()
     // 记录卡平铺为直接子级（children=），空台账给「暂无服药记录」占位。
     Box(modifier = fillWidth(), children = recordList(rows))
@@ -567,13 +611,14 @@ fun content(): Box {
     unchecked @mut var nowMs: Nat = timeNow()
     unchecked var drugs: List[Drug] = coadmin()
     var adr: Alert = adrAlert(drugs)
+    var met: Alert = metabAlert(drugs)
     unchecked var sh: Nat = screenHeight()
     unchecked var dpi: Nat = screenDensity()
     var seriesXs: List[Series] = chartSeriesList(recs, drugs, nowMs)
     var total: List[Rat] = totalPoints(seriesXs)
     @mut var chart = Chart(kind = "line", points = total, series = seriesXs, labels = chartLabels(), color = "primary", legend = true, badge = "估算", modifier = fillWidth().height(chartHeightDp(sh, dpi)))
     unchecked var rows: List[MedCard] = medRowsOf(recs, drugs)
-    @mut var lower = lowerBox(adr, rows, drugs, sh, dpi)
+    @mut var lower = lowerBox(adr, rows, drugs, met, sh, dpi)
     @mut var sheet = formPanel(open, drugs, idx, sel, dt, de)
     @mut var setDlg = settingsDialog(setOp)
     @mut var docDlg = docDialog(docOp)

@@ -11,7 +11,7 @@ fun fluoxetine(): Drug = Drug(
     description = "氟西汀是选择性血清素再摄取抑制剂类抗抑郁药，用于抑郁症、强迫症、神经性贪食症与经前烦躁障碍。口服吸收良好，经 CYP2D6 代谢为活性产物去甲氟西汀；母药半衰期长（慢性给药后约 4-6 天）、去甲氟西汀约 7-15 天，是「五朵金花」中消除最慢者，漏服后血药波动小、停药综合征发生率低，但清除受肝功能与合并用药影响显著。氟西汀是 CYP2D6 强抑制剂，可使经 2D6 活化的前体药（可待因、曲马多）镇痛效应下降，并升高三环类抗抑郁药、部分抗精神病药血药浓度。",
     effects = ratedList("强效|血清素转运体抑制;极弱|正肾素转运体抑制;极弱|多巴胺转运体抑制"),
     enzymes = strList("CYP2D6"),
-    inhibitions = ratedList("极强|CYP2D6可逆性抑制;中效|CYP2C19可逆性抑制;弱效|CYP3A4可逆性抑制;弱效|CYP2C9可逆性抑制"),
+    inhibitions = ratedList("极强|CYP2D6;中效|CYP2C19;弱效|CYP3A4;弱效|CYP2C9"),
     pk = cons(PkProfile(
         route = "口服", form = "常释", halfLife = 96, tmax = "6-8h",
         clearance = "一级（慢）", curve = "对数", bio = 0.6,

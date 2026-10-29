@@ -1,0 +1,24 @@
+// app/midazolam.subl —— 咪达唑仑完整资料
+// 数值来源：药品说明书与 PubMed 6117393（口服生物利用度 44%，首过显著）。
+// halfLife=3h（静脉与口服终末半衰期 1.8-4h）；CYP3A4 为主代谢酶。
+
+fun midazolam(): Drug = Drug(
+    name = "咪达唑仑",
+    category = "处方药",
+    tags = strList("苯二氮卓类,催眠药,镇静药,麻醉辅助药,超说明书（儿童口服术前镇静）"),
+    description = "咪达唑仑是短效咪唑并苯二氮卓类，起效快（静脉 1-3 分钟）、半衰期短，用于麻醉诱导与维持、ICU 镇静、术前镇静与癫痫持续状态。口服首过代谢显著（生物利用度约 44%），中国常以注射剂【超说明书】口服用于儿童术前镇静。主要经 CYP3A4 代谢，与强 CYP3A4 抑制剂（克拉霉素、伏立康唑、利托那韦）合用可致深度镇静与呼吸抑制；氟伏沙明（1A2/3A4 抑制）亦可升高其血药浓度。与阿片类合用呼吸抑制风险显著（FDA 黑框警告）。",
+    effects = ratedList("强效|GABA-A受体苯二氮卓位点变构调节;强效|催眠（起效快）"),
+    enzymes = strList("CYP3A4,CYP3A5"),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释（注射剂口服）", halfLife = 3, tmax = "0.5-1h",
+        clearance = "一级（CYP3A4 氧化）", curve = "对数", bio = 0.44,
+        metabolites = cons(Rated("极弱", "α-羟基咪达唑仑（快速结合失活）"), emptyList())
+    ), emptyList()),
+    acuteTher = ratedList("强效|催眠（快起效）;强效|镇静（术前）"),
+    chronicTher = ratedList("强效|ICU镇静;强效|麻醉诱导;强效|癫痫持续状态（静注）;中效|儿童术前镇静（口服，超说明书）"),
+    acuteAdv = ratedList("少见|呼吸抑制（静注常见剂量相关）;常见|嗜睡;常见|血压下降（静注）"),
+    chronicAdv = ratedList("十分常见|嗜睡;常见|头晕;常见|记忆损害（顺行性）;常见|耐受（ICU 长期输注）;少见|呼吸抑制（与阿片合用）;少见|谵妄（老年 ICU）;少见|低血压"),
+    withdraw = ratedList("常见|焦虑反跳;常见|失眠反跳;少见|癫痫发作（骤停高剂量）"),
+    overdose = ratedList(">20mg|呼吸抑制")
+)

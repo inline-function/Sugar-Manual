@@ -1,0 +1,24 @@
+// app/tramadol.subl —— 曲马多完整资料
+// 数值来源：药品说明书与 PubMed 23242004（口服生物利用度对照值 66%）。
+// halfLife=6h（5-7h）；O-去甲基化（CYP2D6）生成活性代谢物 M1。
+
+fun tramadol(): Drug = Drug(
+    name = "曲马多",
+    category = "处方药",
+    tags = strList("中枢性镇痛药,非典型阿片,SNRI样作用,前体药（M1）,管制（二类精神药品）,超说明书（不宁腿综合征/夜间下肢痛）"),
+    description = "曲马多是人工合成的中枢性镇痛药，结构属 4-苯基哌啶类（与可待因/吗啡结构相关但临床归类为非典型阿片）：消旋体的 (+)-异构体弱激动 μ 受体并抑制血清素再摄取，(-)-异构体抑制正肾素再摄取，镇痛由母药与活性代谢物 O-去甲基曲马多（M1，CYP2D6 生成，μ 受体亲和力更高）共同介导。用于中度疼痛；中国常见【超说明书】用于不宁腿综合征与夜间下肢痛。与 CYP2D6 抑制剂（帕罗西汀、氟西汀）合用镇痛下降并增加血清素能毒性；与 SSRI/MAOI/三环类合用可致血清素综合征；与苯二氮卓类合用呼吸抑制风险增加；过量癫痫风险高。",
+    effects = ratedList("弱效|μ-阿片受体激动（母药）;强效|μ-阿片受体激动（M1）;中效|血清素再摄取抑制;强效|正肾素再摄取抑制"),
+    enzymes = strList("CYP2D6,CYP3A4,CYP2B6"),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 6, tmax = "2h",
+        clearance = "一级（CYP2D6/3A4）", curve = "对数", bio = 0.66,
+        metabolites = cons(Rated("强效", "O-去甲基曲马多（M1）"), emptyList())
+    ), emptyList()),
+    acuteTher = ratedList("中效|镇痛（中度）;弱效|镇静"),
+    chronicTher = ratedList("强效|镇痛（中度疼痛）;中效|不宁腿综合征（超说明书）;中效|夜间下肢痛（超说明书）"),
+    acuteAdv = ratedList("常见|恶心呕吐;常见|头晕;少见|呼吸抑制"),
+    chronicAdv = ratedList("十分常见|恶心;常见|头晕;常见|嗜睡;常见|出汗;常见|便秘（弱于吗啡）;少见|呼吸抑制;少见|依赖（长期使用）;少见|低血糖;罕见|癫痫（剂量相关）;罕见|过敏反应（史蒂文斯-约翰逊综合征）"),
+    withdraw = ratedList("常见|阿片样戒断综合征（骤停）;常见|焦虑;常见|出汗;常见|失眠;少见|血清素综合征（骤停）"),
+    overdose = ratedList(">400mg|癫痫与血清素综合征")
+)
