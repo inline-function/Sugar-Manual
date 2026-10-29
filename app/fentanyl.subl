@@ -18,7 +18,7 @@ fun fentanyl(): Drug = Drug(
     ), emptyList()),
     acuteTher = ratedList("极强效|镇痛（急性重度）;强效|麻醉辅助（静脉）"),
     chronicTher = ratedList("极强效|镇痛（癌痛）;强效|镇痛（慢性重度疼痛）"),
-    acuteAdv = ratedList("常见|呼吸抑制;十分常见|镇静;常见|胸壁强直（大剂量快推）;常见|恶心呕吐"),
+    acuteAdv = ratedList("常见|呼吸抑制;十分常见|镇静;常见|胸壁强直（大剂量快推）;常见|恶心呕吐;常见|欣快"),
     chronicAdv = ratedList("十分常见|便秘;十分常见|嗜睡;常见|呼吸抑制;常见|瘙痒（尤为常见）;常见|恶心;常见|呕吐;常见|出汗;常见|耐受（持续使用）;常见|依赖（持续使用）;少见|低血压;少见|撤贴反跳痛"),
     withdraw = ratedList("十分常见|阿片戒退综合征（骤停）;常见|出汗;常见|肌痛;常见|焦虑;常见|失眠"),
     overdose = ratedList(">4mg|呼吸抑制（纳洛酮需重复给药）")

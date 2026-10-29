@@ -2,7 +2,22 @@ package functor.sublimation.android
 
 import android.util.Log
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.material3.Text
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import functor.sublimation.android.gen.flash
 import functor.sublimation.android.gen.SublSeries
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
@@ -155,23 +170,53 @@ object DshComposeHost {
     private val recListState = mutableStateOf(ArrayList<HostRec>())
     @Volatile private var appCtx: android.content.Context? = null
 
-    // 呼吸抑制风险（与 JS 侧 respAlert 同模型：类内最大权重、跨类相加、阈值 3/5/7）
-    private val opioidWeight = mapOf("吗啡" to 5, "羟考酮" to 5, "芬太尼" to 5, "哌替啶" to 5, "可待因" to 4, "曲马多" to 4)
-    private val bzdWeight = mapOf("地西泮" to 4, "艾司唑仑" to 4, "阿普唑仑" to 4, "氯硝西泮" to 4, "劳拉西泮" to 4, "咪达唑仑" to 2)
-    private val warnLevelState = mutableStateOf(0)
-    private val warnScoreState = mutableStateOf(0)
-    private fun recomputeWarn(names: Set<String>) {
-        val o = names.mapNotNull { opioidWeight[it] }.maxOrNull() ?: 0
-        val b = names.mapNotNull { bzdWeight[it] }.maxOrNull() ?: 0
-        val score = o + b
-        warnScoreState.value = score
-        warnLevelState.value = if (score >= 7) 3 else if (score >= 5) 2 else 0
-    }
-    private fun warnText(level: Int): String {
-        val s = warnScoreState.value
-        return if (level == 3) "呼吸抑制（联用叠加） · 权重×$s"
-        else if (level == 2) "呼吸抑制（剂量依赖） · 权重×$s"
-        else ""
+    // ---------- 主观效应词条流（与 warn.subl effectTags 同引擎：急性/慢性不良反应跨药聚合） ----------
+    // 词条（呈现契约）：name 短文字 / level 1-3（白→黄→红）/ acute 急性→flash / pack 综合征包（◆）。
+    data class EffectTag(val name: String, val level: Int, val acute: Boolean, val pack: Boolean)
+    private data class AdvEnt(val name: String, val level: Int, val acute: Boolean)
+    /** 18 药急性/慢性不良反应频率表（与 app 各药物的 subl 数据同源；由表脚本生成，勿手改）。 */
+    private val advTable: Map<String, List<AdvEnt>> = mapOf(
+        "氟伏沙明" to listOf(AdvEnt("血清素综合征", 1, true), AdvEnt("恶心", 3, false), AdvEnt("嗜睡", 2, false), AdvEnt("失眠", 2, false), AdvEnt("腹泻", 2, false), AdvEnt("厌食", 2, false), AdvEnt("头晕", 2, false), AdvEnt("出汗", 2, false), AdvEnt("震颤", 2, false), AdvEnt("自杀冲动", 1, false), AdvEnt("低血钠症", 1, false)),
+        "帕罗西汀" to listOf(AdvEnt("恶心", 2, true), AdvEnt("嗜睡", 1, false), AdvEnt("失眠", 2, false)),
+        "氟西汀" to listOf(AdvEnt("血清素综合征", 1, true), AdvEnt("恶心", 3, false), AdvEnt("失眠", 2, false), AdvEnt("头痛", 2, false), AdvEnt("腹泻", 2, false), AdvEnt("厌食", 2, false), AdvEnt("出汗", 2, false), AdvEnt("性功能障碍", 2, false), AdvEnt("焦虑（早期）", 1, false), AdvEnt("低血钠症", 1, false), AdvEnt("皮疹", 1, false), AdvEnt("自杀冲动（年轻成人）", 1, false), AdvEnt("躁狂转换", 1, false)),
+        "舍曲林" to listOf(AdvEnt("血清素综合征", 1, true), AdvEnt("恶心", 3, false), AdvEnt("腹泻", 2, false), AdvEnt("失眠", 2, false), AdvEnt("嗜睡", 2, false), AdvEnt("头晕", 2, false), AdvEnt("口干", 2, false), AdvEnt("出汗", 2, false), AdvEnt("性功能障碍", 2, false), AdvEnt("低血钠症", 1, false), AdvEnt("震颤", 1, false), AdvEnt("自杀冲动", 1, false)),
+        "西酞普兰" to listOf(AdvEnt("血清素综合征", 1, true), AdvEnt("恶心", 3, false), AdvEnt("嗜睡", 2, false), AdvEnt("失眠", 2, false), AdvEnt("出汗", 2, false), AdvEnt("口干", 2, false), AdvEnt("性功能障碍", 2, false), AdvEnt("头晕", 2, false), AdvEnt("QT间期延长（剂量依赖）", 1, false), AdvEnt("低血钠症", 1, false), AdvEnt("自杀冲动", 1, false)),
+        "艾司西酞普兰" to listOf(AdvEnt("血清素综合征", 1, true), AdvEnt("恶心", 3, false), AdvEnt("嗜睡", 2, false), AdvEnt("失眠", 2, false), AdvEnt("出汗", 2, false), AdvEnt("性功能障碍", 2, false), AdvEnt("口干", 2, false), AdvEnt("头晕", 2, false), AdvEnt("QT间期延长", 1, false), AdvEnt("低血钠症", 1, false), AdvEnt("自杀冲动", 1, false)),
+        "地西泮" to listOf(AdvEnt("呼吸抑制", 1, true), AdvEnt("嗜睡", 2, true), AdvEnt("头晕", 2, true), AdvEnt("嗜睡", 3, false), AdvEnt("头晕", 2, false), AdvEnt("疲劳", 2, false), AdvEnt("共济失调", 2, false), AdvEnt("记忆损害（顺行性）", 2, false), AdvEnt("依赖（长期使用）", 2, false), AdvEnt("呼吸抑制（与阿片/酒精合用）", 1, false), AdvEnt("跌倒（老年）", 1, false), AdvEnt("反常兴奋", 1, false)),
+        "艾司唑仑" to listOf(AdvEnt("呼吸抑制", 1, true), AdvEnt("嗜睡（次日残余）", 2, true), AdvEnt("头晕", 2, true), AdvEnt("嗜睡", 2, false), AdvEnt("头晕", 2, false), AdvEnt("口干", 2, false), AdvEnt("记忆损害（顺行性）", 2, false), AdvEnt("呼吸抑制（与阿片/酒精合用）", 1, false), AdvEnt("依赖（长期使用）", 1, false), AdvEnt("跌倒（老年）", 1, false), AdvEnt("幻觉", 1, false)),
+        "阿普唑仑" to listOf(AdvEnt("呼吸抑制", 1, true), AdvEnt("嗜睡", 2, true), AdvEnt("头晕", 2, true), AdvEnt("嗜睡", 2, false), AdvEnt("头晕", 2, false), AdvEnt("疲劳", 2, false), AdvEnt("共济失调", 2, false), AdvEnt("记忆损害（顺行性）", 2, false), AdvEnt("性功能障碍", 2, false), AdvEnt("依赖（长期使用）", 2, false), AdvEnt("呼吸抑制（与阿片/酒精合用）", 1, false), AdvEnt("反常兴奋", 1, false), AdvEnt("跌倒（老年）", 1, false)),
+        "氯硝西泮" to listOf(AdvEnt("呼吸抑制", 1, true), AdvEnt("嗜睡", 2, true), AdvEnt("头晕", 2, true), AdvEnt("嗜睡", 3, false), AdvEnt("头晕", 2, false), AdvEnt("共济失调", 2, false), AdvEnt("记忆损害（顺行性）", 2, false), AdvEnt("疲劳", 2, false), AdvEnt("依赖（长期使用）", 2, false), AdvEnt("呼吸抑制（与阿片/酒精合用）", 1, false), AdvEnt("行为脱抑制（儿童）", 1, false), AdvEnt("跌倒（老年）", 1, false)),
+        "劳拉西泮" to listOf(AdvEnt("呼吸抑制", 1, true), AdvEnt("嗜睡", 2, true), AdvEnt("头晕", 2, true), AdvEnt("嗜睡", 3, false), AdvEnt("头晕", 2, false), AdvEnt("乏力", 2, false), AdvEnt("共济失调", 2, false), AdvEnt("记忆损害（顺行性）", 2, false), AdvEnt("依赖（长期使用）", 2, false), AdvEnt("呼吸抑制（与阿片/酒精合用）", 1, false), AdvEnt("跌倒（老年）", 1, false), AdvEnt("矛盾攻击性（脑损伤者）", 1, false)),
+        "咪达唑仑" to listOf(AdvEnt("呼吸抑制（静注常见剂量相关）", 1, true), AdvEnt("嗜睡", 2, true), AdvEnt("血压下降（静注）", 2, true), AdvEnt("嗜睡", 3, false), AdvEnt("头晕", 2, false), AdvEnt("记忆损害（顺行性）", 2, false), AdvEnt("耐受（ICU 长期输注）", 2, false), AdvEnt("呼吸抑制（与阿片合用）", 1, false), AdvEnt("谵妄（老年 ICU）", 1, false), AdvEnt("低血压", 1, false)),
+        "吗啡" to listOf(AdvEnt("呼吸抑制", 2, true), AdvEnt("镇静", 3, true), AdvEnt("恶心呕吐", 2, true), AdvEnt("血压下降（血容量不足）", 2, true), AdvEnt("欣快", 2, true), AdvEnt("便秘", 3, false), AdvEnt("嗜睡", 3, false), AdvEnt("恶心", 2, false), AdvEnt("呕吐", 2, false), AdvEnt("呼吸抑制", 2, false), AdvEnt("口干", 2, false), AdvEnt("尿潴留", 2, false), AdvEnt("瘙痒", 2, false), AdvEnt("瞳孔缩小", 2, false), AdvEnt("耐受（长期使用）", 2, false), AdvEnt("依赖（长期使用）", 2, false), AdvEnt("肌阵挛", 1, false), AdvEnt("免疫抑制（长期）", 1, false)),
+        "羟考酮" to listOf(AdvEnt("呼吸抑制", 2, true), AdvEnt("镇静", 3, true), AdvEnt("恶心呕吐", 2, true), AdvEnt("头晕", 2, true), AdvEnt("欣快", 2, true), AdvEnt("便秘", 3, false), AdvEnt("嗜睡", 3, false), AdvEnt("恶心", 2, false), AdvEnt("呕吐", 2, false), AdvEnt("呼吸抑制", 2, false), AdvEnt("头晕", 2, false), AdvEnt("瘙痒", 2, false), AdvEnt("口干", 2, false), AdvEnt("耐受（长期使用）", 2, false), AdvEnt("依赖（长期使用）", 2, false), AdvEnt("低血压", 1, false), AdvEnt("尿潴留", 1, false)),
+        "芬太尼" to listOf(AdvEnt("呼吸抑制", 2, true), AdvEnt("镇静", 3, true), AdvEnt("胸壁强直（大剂量快推）", 2, true), AdvEnt("恶心呕吐", 2, true), AdvEnt("欣快", 2, true), AdvEnt("便秘", 3, false), AdvEnt("嗜睡", 3, false), AdvEnt("呼吸抑制", 2, false), AdvEnt("瘙痒（尤为常见）", 2, false), AdvEnt("恶心", 2, false), AdvEnt("呕吐", 2, false), AdvEnt("出汗", 2, false), AdvEnt("耐受（持续使用）", 2, false), AdvEnt("依赖（持续使用）", 2, false), AdvEnt("低血压", 1, false), AdvEnt("撤贴反跳痛", 1, false)),
+        "可待因" to listOf(AdvEnt("呼吸抑制", 1, true), AdvEnt("嗜睡", 2, true), AdvEnt("恶心呕吐", 2, true), AdvEnt("便秘（弱于吗啡）", 2, true), AdvEnt("欣快", 2, true), AdvEnt("便秘", 2, false), AdvEnt("嗜睡", 2, false), AdvEnt("恶心", 2, false), AdvEnt("呼吸抑制", 1, false), AdvEnt("依赖（长期使用）", 1, false), AdvEnt("瘙痒", 1, false), AdvEnt("过敏反应（支气管痉挛）", 1, false)),
+        "曲马多" to listOf(AdvEnt("恶心呕吐", 2, true), AdvEnt("头晕", 2, true), AdvEnt("呼吸抑制", 1, true), AdvEnt("欣快", 2, true), AdvEnt("恶心", 3, false), AdvEnt("头晕", 2, false), AdvEnt("嗜睡", 2, false), AdvEnt("出汗", 2, false), AdvEnt("便秘（弱于吗啡）", 2, false), AdvEnt("呼吸抑制", 1, false), AdvEnt("依赖（长期使用）", 1, false), AdvEnt("低血糖", 1, false), AdvEnt("癫痫（剂量相关）", 1, false), AdvEnt("过敏反应（史蒂文斯-约翰逊综合征）", 1, false)),
+        "哌替啶" to listOf(AdvEnt("呼吸抑制", 2, true), AdvEnt("恶心呕吐", 2, true), AdvEnt("血压下降（体位）", 2, true), AdvEnt("头晕", 2, true), AdvEnt("欣快", 2, true), AdvEnt("恶心", 3, false), AdvEnt("便秘", 2, false), AdvEnt("嗜睡", 2, false), AdvEnt("呼吸抑制", 2, false), AdvEnt("出汗", 2, false), AdvEnt("耐受（重复给药）", 2, false), AdvEnt("依赖（重复给药）", 2, false), AdvEnt("去甲哌替啶神经毒性（焦虑、肌阵挛、癫痫）", 1, false), AdvEnt("尿潴留", 1, false), AdvEnt("血清素综合征（与 MAOI 或 SSRI 合用）", 1, false))
+    )
+    private val serotonergic = setOf("氟伏沙明", "帕罗西汀", "氟西汀", "舍曲林", "西酞普兰", "艾司西酞普兰", "曲马多", "哌替啶")
+    /** 按当前台账药品计算效应词条流（频率基准级 + 跨药来源数 +1/来源、上限 3；级降序→急性→包）。 */
+    fun effectTags(): List<EffectTag> {
+        val names = recListState.value.map { it.name }.toSet()
+        // name -> (药品下标, 条目)
+        val byName = HashMap<String, MutableList<Pair<Int, AdvEnt>>>()
+        names.forEachIndexed { idx, n ->
+            advTable[n]?.forEach { e -> byName.getOrPut(e.name) { ArrayList() }.add(idx to e) }
+        }
+        val tags = ArrayList<EffectTag>()
+        byName.forEach { (name, list) ->
+            val base = list.maxOf { it.second.level }
+            val drugs = list.map { it.first }.distinct().size
+            val level = if (base + drugs >= 4) 3 else base + drugs - 1
+            tags.add(EffectTag(name, level, list.any { it.second.acute }, name == "血清素综合征" || name == "阿片类中毒"))
+        }
+        if (drugOpioid.keys.any { it in names } && drugBzd.any { it in names }) {
+            tags.add(EffectTag("阿片类中毒", 3, acute = true, pack = true))
+        }
+        return tags.sortedWith(
+            compareByDescending<EffectTag> { it.level }.thenByDescending { it.acute }.thenByDescending { it.pack }
+        )
     }
 
     fun attachEnv(ctx: android.content.Context) { appCtx = ctx; refreshRecList(); recomputeChart() }
@@ -228,7 +273,6 @@ object DshComposeHost {
         } catch (e: Throwable) { Log.w(tag, "recomputeChart: " + e.message) }
 
         val names = recs.map { it.first }.toSet()
-        recomputeWarn(names)
         val series = ArrayList<SublSeries>()
         if (recs.isEmpty()) {
             series.add(SublSeries("氟伏沙明", Color(0xFFFFC107),
@@ -264,9 +308,7 @@ object DshComposeHost {
         "isSettingsOpen" -> settingsOpen.value
         "isListOpen" -> drugListOpen.value
         "isDocOpen" -> docNameState.value.isNotEmpty()
-        "hasWarn" -> warnLevelState.value >= 3
-        "hasWarn2" -> warnLevelState.value == 2
-        "noWarn" -> warnLevelState.value == 0
+
         "hasRec" -> {
             val k = args.getOrNull(0) as? Int ?: 0
             k >= 0 && k < recListState.value.size && k < 10
@@ -282,12 +324,6 @@ object DshComposeHost {
         "doseErr" -> doseErrState.value
         "docName" -> docNameState.value
         "docBody" -> drugDocText(docNameState.value)
-        "warnLine" -> warnText(3)
-        "warnLine2" -> warnText(2)
-        "recCount" -> {
-            val n = recListState.value.size
-            if (n == 0) "" else if (n > 10) "共 $n 条 · 显示最近 10 条" else "共 $n 条"
-        }
         else -> {
             // 记录卡槽位：name_k / dose_k / time_k
             val k = name.removePrefix("name").removePrefix("dose").removePrefix("time").toIntOrNull()
@@ -341,7 +377,6 @@ object DshComposeHost {
             "clearAll" -> {
                 putLedger("[]")
                 recListState.value = ArrayList()
-                recomputeWarn(emptySet())
                 recomputeChart()
                 settingsOpen.value = false; toast("已清空记录")
             }
@@ -409,4 +444,40 @@ object DshComposeHost {
 
     /** 调试：某槽当前值。 */
     fun slotValue(key: String): Any? = status[key]?.value
+    /** 预警标签流（@compose 同步脚本把 home 的 EFFECTTAGS_HOST 标记替换为本组合）：
+     *  FlowRow 流式换行；三级配色 白（少见/罕见）→ 黄（常见）→ 红（十分常见/聚合加深）；
+     *  急性词条 flash（gen.Modifier.flash，650ms 透明度循环），慢性不闪；综合征包加 ◆ 前缀。 */
+    @OptIn(ExperimentalLayoutApi::class)
+    @Composable
+    fun Subl_EffectTags(modifier: Modifier = Modifier, tags: List<EffectTag>) {
+        FlowRow(
+            modifier = modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            tags.forEach { tg ->
+                val bg = when (tg.level) {
+                    3 -> 0xF5D32F2F.toInt()   // 红：十分常见 / 聚合加深
+                    2 -> 0xF5FFEE58.toInt()   // 黄：常见
+                    else -> 0xF5ECEFF1.toInt()// 白：少见 / 罕见
+                }
+                val fg = if (tg.level == 3) 0xFFFFFFFF.toInt() else 0xFF4E342E.toInt()
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(bg))
+                        .padding(horizontal = 12.dp, vertical = 5.dp)
+                        .then(if (tg.acute) Modifier.flash() else Modifier)
+                ) {
+                    Text(
+                        text = (if (tg.pack) "◆ " else "") + tg.name,
+                        color = Color(fg),
+                        fontSize = 13.0.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
+
 }

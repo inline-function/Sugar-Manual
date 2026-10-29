@@ -18,7 +18,7 @@ fun pethidine(): Drug = Drug(
     ), emptyList()),
     acuteTher = ratedList("强效|镇痛（急性）;弱效|寒战治疗（麻醉后，超说明书）"),
     chronicTher = ratedList("中效|镇痛（急性疼痛，少用）;弱效|分娩镇痛（现已少用）"),
-    acuteAdv = ratedList("常见|呼吸抑制;常见|恶心呕吐;常见|血压下降（体位）;常见|头晕"),
+    acuteAdv = ratedList("常见|呼吸抑制;常见|恶心呕吐;常见|血压下降（体位）;常见|头晕;常见|欣快"),
     chronicAdv = ratedList("十分常见|恶心;常见|便秘;常见|嗜睡;常见|呼吸抑制;常见|出汗;常见|耐受（重复给药）;常见|依赖（重复给药）;少见|去甲哌替啶神经毒性（焦虑、肌阵挛、癫痫）;少见|尿潴留;罕见|血清素综合征（与 MAOI 或 SSRI 合用）"),
     withdraw = ratedList("常见|阿片戒断综合征（骤停）;常见|焦虑;常见|出汗;常见|失眠"),
     overdose = ratedList(">200mg|癫痫（去甲哌替啶蓄积）")

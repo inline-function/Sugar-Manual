@@ -21,10 +21,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.height
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
@@ -58,29 +58,8 @@ fun Home() {
             androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxSize()) {
                 Subl_ConcentrationChart(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.45f), labels = functor.sublimation.android.DshComposeHost.chartLabels(), hours = 48f, series = functor.sublimation.android.DshComposeHost.chartSeries(), mainPoints = functor.sublimation.android.DshComposeHost.chartTotal(), mainColor = MaterialTheme.colorScheme.primary, showLegend = true, badge = "估算")
                 androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().weight(1.0f).verticalScroll(rememberScrollState())) {
-                    androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp)) {
-                        androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                            androidx.compose.material3.Text(text = "呼吸抑制风险", modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                            if (functor.sublimation.android.DshComposeHost.boolArg("hasWarn")) {
-                            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(Color(0x40D32F2F)).padding(horizontal = 12.dp, vertical = 6.dp)) {
-                                androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("warnLine"), modifier = Modifier, color = Color(0xFFD32F2F), fontSize = 14.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                            }
-                            }
-                            if (functor.sublimation.android.DshComposeHost.boolArg("hasWarn2")) {
-                            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(Color(0x40F9A825)).padding(horizontal = 12.dp, vertical = 6.dp)) {
-                                androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("warnLine2"), modifier = Modifier, color = Color(0xFFE65100), fontSize = 14.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                            }
-                            }
-                            if (functor.sublimation.android.DshComposeHost.boolArg("noWarn")) {
-                            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                                androidx.compose.material3.Text(text = "暂无预警", modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.0.sp)
-                            }
-                            }
-                        }
-                    }
-                    androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth().padding(start = 24.dp, top = 16.dp, end = 24.dp, bottom = 8.dp)) {
-                        androidx.compose.material3.Text(text = "服药记录", modifier = Modifier.weight(1.0f), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("recCount"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
+                    androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(start = 24.dp, top = 10.dp, end = 24.dp, bottom = 8.dp)) {
+                        functor.sublimation.android.DshComposeHost.Subl_EffectTags(tags = functor.sublimation.android.DshComposeHost.effectTags(), modifier = Modifier)
                     }
                     if (functor.sublimation.android.DshComposeHost.boolArg("hasRec", 0)) {
                     androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth()) {

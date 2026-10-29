@@ -111,6 +111,131 @@ fun respAlert(drugs: List[Drug]): Alert {
     return Alert(lv, ts)
 }
 
+// ---------- 权重 → 呈现色（白 → 黄 → 红 连续渐变） ----------
+//
+// 与 UI 呈现层的唯一契约：宿主（DshComposeHost.kt warnColor/warnFg）与 JS 运行时
+// 按本表复制同一映射，驱动 chip 底色/字色/闪烁（权重 0 不渲染）。
+// 阈值说明（与规格 3/5/7 对齐）：
+//   权重 1-2 → 极浅黄白（#FFFDE7 系）；3-4 → 黄（#FFEE58 系）；5-6 → 橙（#FFA726 系）；≥7 → 红（#E53935 系）
+// 段内 RGB 整数线性插值（48 子步），权重 ≥9 截断到 9 → 红色饱和不再变深；
+// ≥9 另触发 flash（明显危险：真实阿片+BZD 叠加 5+4；单类最高 5 不触发）。
+
+// 截断除法（ Nat）：subl 的 / 编译为 JS 浮点除，用 (x - x%d)/d 得到与宿主
+// Kotlin Int 除法一致的正数截断；注意 subl 算符一律左结合，因子必须显式括起。
+fun quot(x: Nat, d: Nat): Nat = (x - (x % d)) / d
+
+// 整数线性插值（差值始终非负 → 截断一致）。
+fun respLerp(a: Nat, b: Nat, num: Nat, den: Nat): Nat =
+    if (a >= b) a - quot((a - b) * num, den) else a + quot((b - a) * num, den)
+
+// 自然数 → 单个十六进制字符（小写值域 0..15）。
+fun hexDigit(n: Nat): Str = if (n == 0) "0" else if (n == 1) "1" else if (n == 2) "2" else if (n == 3) "3"
+    else if (n == 4) "4" else if (n == 5) "5" else if (n == 6) "6" else if (n == 7) "7"
+    else if (n == 8) "8" else if (n == 9) "9" else if (n == 10) "A" else if (n == 11) "B"
+    else if (n == 12) "C" else if (n == 13) "D" else if (n == 14) "E" else "F"
+
+// 0..255 → 两位十六进制（不足补零）。
+fun hexByte(n: Nat): Str = concat(hexDigit(quot(n, 16)), hexDigit(n % 16))
+
+// 权重 → chip 底色（#F5 前缀 = 96% 不透明度，近似实色但兼容卡片叠加）。
+// 通道：R 255 固定至 6 段后插值到 229；G/B 三段折线（浅 → 黄 → 橙 → 红）。
+fun respR(s: Nat): Nat = if (s <= 6) 255 else respLerp(255, 229, (s - 6) * 16, 48)
+fun respG(s: Nat): Nat = if (s <= 4) respLerp(253, 238, (s - 1) * 16, 48)
+    else if (s <= 6) respLerp(238, 167, (s - 4) * 24, 48)
+    else respLerp(167, 57, (s - 6) * 16, 48)
+fun respB(s: Nat): Nat = if (s <= 4) respLerp(231, 88, (s - 1) * 16, 48)
+    else if (s <= 6) respLerp(88, 38, (s - 4) * 24, 48)
+    else respLerp(38, 53, (s - 6) * 16, 48)
+
+// 夹紧到 1..9 后给出底色（权重 0 由 UI 侧不渲染，本函数仍夹到浅端）。
+fun respColor(score: Nat): Str {
+    var s: Nat = if (score > 9) 9 else if (score < 1) 1 else score
+    return concat("#F5", concat(hexByte(respR(s)), concat(hexByte(respG(s)), hexByte(respB(s)))))
+}
+
+// 权重 → 字色：红底（>=7）用白字保证对比度，其余暖底用深棕 #4E342E。
+fun respTextColor(score: Nat): Str = if (score >= 7) "#FFFFFF" else "#4E342E"
+
+// ---------- 主观效应词条流（effectTags：联用药品急性/慢性不良反应聚合） ----------
+//
+// 用户模型（t71 rev2）：预警区 = 一堆主观效应词条 chip，白/黄/红三级（越深越重），
+// 急性词条 flash、慢性不闪，综合征包（血清素综合征/阿片类中毒）独立样式。
+// 来源 = 各药 acuteAdv/chronicAdv（频率词表）；跨药同名聚合：每多一个药物来源 +1 级（上限 3）。
+// 「血清素综合征」本身即数据词条（多药罕见 ×N），聚合到红即综合征包效果；
+// 「阿片类中毒」由引擎按联用结构（阿片类 ∩ 苯二氮卓）直接给出。
+
+// 词条（呈现层契约：name 短文字 / level 1-3 / acute 是否闪烁 / pack 综合征包标记）。
+struct EffTag(name: Str, level: Nat, acute: Bool, pack: Bool)
+
+// 聚合前条目：名 / 药品下标 / 基准级 / 是否急性来源。
+struct EffEnt(name: Str, drug: Nat, base: Nat, acute: Bool)
+
+// 频率词 → 基准级（复用 main.subl advFreqLevel：十分常见 3 / 常见 2 / 少见 1；词表外 0 引擎兜 1）。
+fun effFreqBase(freq: Str): Nat = if (advFreqLevel(freq) == 0) 1 else advFreqLevel(freq)
+
+// 单药全部词条（急性 + 慢性），带药品下标供跨药去重计数。
+fun effEntries(d: Drug, idx: Nat): List[EffEnt] = append(
+    map(d.acuteAdv) { r => EffEnt(r.name, idx, effFreqBase(r.level), true) },
+    map(d.chronicAdv) { r => EffEnt(r.name, idx, effFreqBase(r.level), false) }
+)
+
+// 联用集全部词条（按下标尾递归展开）。
+fun effAll(drugs: List[Drug]): List[EffEnt] = effAllAt(drugs, 0)
+fun effAllAt(drugs: List[Drug], idx: Nat): List[EffEnt] = when (drugs) {
+    is Cons(d, rest) => append(effEntries(d, idx), effAllAt(rest, idx + 1))
+    else => emptyList()
+}
+
+// 词条名并集；同名条目；最高基准级；含急性来源；药物来源数（下标去重）。
+fun effNames(es: List[EffEnt]): List[Str] = distinct(map(es) { e => e.name })
+fun effOfName(es: List[EffEnt], n: Str): List[EffEnt] = filter(es) { e => e.name == n }
+fun effMaxBase(es: List[EffEnt]): Nat = es.fold(0) { acc, e => if (e.base > acc) e.base else acc }
+fun effAnyAcute(es: List[EffEnt]): Bool = es.fold(false) { acc, e => if (e.acute) true else acc }
+fun effDrugCount(es: List[EffEnt]): Nat = size(distinct(map(es) { e => e.drug }))
+
+// 聚合级 = 基准 + 来源数 - 1，封顶 3（单药十分常见即红；两药常见叠加亦红）。
+fun effLevel(base: Nat, drugs: Nat): Nat = if (base + drugs >= 4) 3 else base + drugs - 1
+
+// 综合征包名表。
+fun effIsPack(n: Str): Bool = if (n == "血清素综合征") true else n == "阿片类中毒"
+
+// 一条聚合后的词条。
+fun effTagOf(es: List[EffEnt], n: Str): EffTag {
+    var ms: List[EffEnt] = effOfName(es, n)
+    var base: Nat = effMaxBase(ms)
+    var drugs: Nat = effDrugCount(ms)
+    return EffTag(n, effLevel(base, drugs), effAnyAcute(ms), effIsPack(n))
+}
+
+// 阿片类 + 苯二氮卓联用 → 阿片类中毒包（危险、急性、包样式；单类不触发）。
+fun anyTagged(drugs: List[Drug], key: Str): Bool = drugs.fold(false) { acc, d => if (classTagged(d, key)) true else acc }
+fun effPoisoningPack(drugs: List[Drug]): List[EffTag] =
+    if (anyTagged(drugs, "阿片") && anyTagged(drugs, "苯二氮卓")) cons(EffTag("阿片类中毒", 3, true, true), emptyList())
+    else emptyList()
+
+// 排序键：级降序 → 急性优先 → 包优先（红 > 黄 > 白，同级急性先、包先）。
+fun effBefore(a: EffTag, b: EffTag): Bool = if (a.level > b.level) true
+    else if (a.level < b.level) false
+    else if (a.acute && !b.acute) true
+    else if (!a.acute && b.acute) false
+    else a.pack && !b.pack
+
+// 插入排序（纯函数、结构递减）。
+fun effInsert(xs: List[EffTag], t: EffTag): List[EffTag] = when (xs) {
+    is Cons(h, rest) => if (effBefore(t, h)) cons(t, xs) else cons(h, effInsert(rest, t))
+    else => cons(t, emptyList())
+}
+fun effSortTags(xs: List[EffTag]): List[EffTag] = when (xs) {
+    is Cons(h, rest) => effInsert(effSortTags(rest), h)
+    else => emptyList()
+}
+
+// 预警区呈现契约：词条流（排序后）。与宿主 DshComposeHost.effectTags() 同表同规则。
+fun effectTags(drugs: List[Drug]): List[EffTag] {
+    var es: List[EffEnt] = effAll(drugs)
+    return effSortTags(append(map(effNames(es)) { n => effTagOf(es, n) }, effPoisoningPack(drugs)))
+}
+
 // ---------- 代谢相互作用预警 ----------
 
 // 全部出现的酶名并集（来自各药抑制清单与经代谢酶集）。

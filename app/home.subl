@@ -34,24 +34,13 @@ struct Home {
             modifier = fillWidth().fractionHeight(0.45)
         )
         Box(modifier = fillWidth().weight(1.0), scrollable = true) {
-            // 呼吸抑制风险（宿主态机按 ledger 算权重：阿片+BZD 叠加 → 红；单类 → 橙；否则空态）
-            Box(modifier = fillWidth().paddingHV(24, 8)) {
-                Box(modifier = fillWidth(), orientation = "vertical", spacing = 8) {
-                    Text(text = "呼吸抑制风险", size = 16, bold = true, color = "onSurface")
-                    Box(modifier = fillWidth().clip(12).background("#40D32F2F").paddingHV(12, 6), visible = hasWarn()) {
-                        Text(text = warnLine(), color = "#D32F2F", size = 14, bold = true)
-                    }
-                    Box(modifier = fillWidth().clip(12).background("#40F9A825").paddingHV(12, 6), visible = hasWarn2()) {
-                        Text(text = warnLine2(), color = "#E65100", size = 14, bold = true)
-                    }
-                    Box(modifier = fillWidth().paddingV(4), visible = noWarn()) {
-                        Text(text = "暂无预警", color = "onSurfaceVariant", size = 14)
-                    }
-                }
-            }
-            Box(modifier = fillWidth().padding4(24, 16, 24, 8), orientation = "horizontal") {
-                Text(text = "服药记录", modifier = weight(1.0), size = 16, bold = true, color = "onSurface")
-                Text(text = recCount(), size = 12, color = "onSurfaceVariant")
+            // 预警标签流（无标题，位于图表与记录之间）：主观效应词条 —— 联用药品的急性/慢性
+            // 不良反应跨药聚合，三级配色（白 → 黄 → 红，越深越重）、急性词条闪烁；
+            // 「血清素综合征」「阿片类中毒」为综合征包（◆ 标记）。宿主机 effectTags() 按同源
+            // 引擎（warn.subl）计算；@compose 无列表槽，同步时把 EFFECTTAGS_HOST 标记替换为
+            // Subl_EffectTags(tags = DshComposeHost.effectTags())。
+            Box(modifier = fillWidth().padding4(24, 10, 24, 8)) {
+                Text(text = "EFFECTTAGS_HOST", size = 1)
             }
             Box(modifier = fillWidth(), visible = hasRec(0)) {
                 Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = "surfaceVariant") {

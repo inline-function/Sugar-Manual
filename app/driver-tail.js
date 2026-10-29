@@ -245,6 +245,45 @@
   __smA("respAlert 双类红危险", (function () { const a = respAlert(core_collection__cons(morphine(), core_collection__cons(diazepam(), core_collection__emptyList()))); return a.level === 3 && a.items[0].name === "呼吸抑制（联用叠加）" && a.items[0].score === 9; })());
   __smA("respAlert 双BZD不报红", (function () { const a = respAlert(core_collection__cons(diazepam(), core_collection__cons(estazolam(), core_collection__emptyList()))); return a.level === 1 && a.items.length === 0; })());
   __smA("respAlert 空集无预警", (function () { const a = respAlert(core_collection__emptyList()); return a.level === 0 && a.items.length === 0; })());
+  // 白 → 黄 → 红 连续渐变色表（warn.subl respColor；宿主与 home.subl 九槽同表）
+  __smA("respColor 浅端（1-2）白系", respColor(1) === "#F5FFFDE7" && respColor(2) === "#F5FFF8B8", JSON.stringify([respColor(1), respColor(2)]));
+  __smA("respColor 黄（3-4）", respColor(3) === "#F5FFF388" && respColor(4) === "#F5FFEE58", JSON.stringify([respColor(3), respColor(4)]));
+  __smA("respColor 橙（5-6）", respColor(5) === "#F5FFCB3F" && respColor(6) === "#F5FFA726", JSON.stringify([respColor(5), respColor(6)]));
+  __smA("respColor 红（7-9）", respColor(7) === "#F5F7832B" && respColor(8) === "#F5EE5E30" && respColor(9) === "#F5E53935", JSON.stringify([respColor(7), respColor(8), respColor(9)]));
+  __smA("respColor 九档互异单调（非两档硬切）", (function () {
+    const cs = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(respColor);
+    const rs = cs.map(x => parseInt(x.slice(3, 5), 16)), gs = cs.map(x => parseInt(x.slice(5, 7), 16));
+    return new Set(cs).size === 9 && rs.every((v, k) => k === 0 || rs[k - 1] >= v) && gs.every((v, k) => k === 0 || gs[k - 1] >= v);
+  })());
+  __smA("respColor 夹紧（<1 浅 / >9 红）", respColor(0) === "#F5FFFDE7" && respColor(20) === "#F5E53935", JSON.stringify([respColor(0), respColor(20)]));
+  // 主观效应词条流（warn.subl effectTags：急性/慢性不良反应跨药聚合，三级配色，急性 flash）
+  __smA("effectTags 单药三级（欣快=常见急性/镇静=十分常见红/便秘=慢性红）", (function () {
+    const ts = effectTags(core_collection__cons(morphine(), core_collection__emptyList()));
+    const f = n => ts.find(x => x.name === n);
+    return ts.length > 5 && f("欣快").level === 2 && f("欣快").acute === true
+      && f("镇静").level === 3 && f("镇静").acute === true
+      && f("便秘").level === 3 && f("便秘").acute === false
+      && f("呼吸抑制").acute === true && !ts.some(x => x.name === "阿片类中毒");
+  })());
+  __smA("effectTags 跨药聚合升红 + 阿片类中毒包", (function () {
+    const ts = effectTags(core_collection__cons(morphine(), core_collection__cons(diazepam(), core_collection__emptyList())));
+    const f = n => ts.find(x => x.name === n);
+    const p2 = f("阿片类中毒");
+    return p2 && p2.level === 3 && p2.acute === true && p2.pack === true
+      && f("嗜睡").level === 3 && ts.length > 8;
+  })());
+  __smA("effectTags 血清素综合征包随药数加深", (function () {
+    const one = effectTags(core_collection__cons(fluvoxamine(), core_collection__emptyList())).find(x => x.name === "血清素综合征");
+    const trio = effectTags(core_collection__cons(fluvoxamine(), core_collection__cons(sertraline(), core_collection__cons(citalopram(), core_collection__emptyList())))).find(x => x.name === "血清素综合征");
+    return one.level === 1 && one.pack === true && trio.level === 3 && trio.acute === true;
+  })());
+  __smA("effectTags 排序 红 > 黄 > 白", (function () {
+    const ts = effectTags(core_collection__cons(morphine(), core_collection__cons(fluvoxamine(), core_collection__emptyList())));
+    let ok = true;
+    for (let i = 1; i < ts.length; i++) if (ts[i - 1].level < ts[i].level) ok = false;
+    return ok && ts[0].level === 3 && ts[ts.length - 1].level === 1;
+  })());
+  __smA("resp字色随底色（>=7 白字）", respTextColor(6) === "#4E342E" && respTextColor(7) === "#FFFFFF" && respTextColor(9) === "#FFFFFF");
   __smA("routeOf 回退口服", routeOf("未知", core_collection__emptyList()) === "口服");
   __smA("firstRoute", firstRoute(core_collection__cons(PkProfile("口服", "常释", 15, "不稳", "一级", "对数", 0.5, core_collection__emptyList()), core_collection__emptyList())) === "口服");
   __smA("ledger 往返", (function () { saveLedger([DoseRec("测试药", 50.0, 123)]); const b = loadLedger(); return b.length === 1 && b[0].drug === "测试药" && b[0].amount === 50 && b[0].time === 123; })());
