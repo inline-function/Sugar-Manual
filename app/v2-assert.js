@@ -56,12 +56,12 @@ function latestTree() {
 }
 function flatten(n, out) {
   out.push(n);
-  for (const c of (n.children || [])) flatten(c, out);
+  for (const c of (n.children || [])) { if (c !== null && c !== undefined) flatten(c, out); }
   return out;
 }
 function findByTag(tree, tag) {
   const out = [];
-  (function rec(n) { if (n.tag === tag) out.push(n); for (const c of (n.children || [])) rec(c); })(tree);
+  (function rec(n) { if (n !== null && n !== undefined && n.tag === tag) out.push(n); for (const c of (n.children || [])) { if (c !== null && c !== undefined) rec(c); } })(tree);
   return out;
 }
 function mods(n) {
@@ -239,7 +239,7 @@ const dismissSheet = findByTag(tree, "BottomSheet")[0];
 callKey(findByTag(dismissSheet, "Box").find(b => b.arrangement === "End").children.find(c => c.tag === "TextButton").onClick);
 tree = latestTree();
 let dlgs = findByTag(tree, "AlertDialog");
-check("取消/遮罩关闭表单 → 两个 AlertDialog 都在（stub 占位）", dlgs.length === 2);
+check("取消/遮罩关闭表单 → 设置 AlertDialog 存在（stub 占位）", dlgs.length === 1, "n=" + dlgs.length);
 // 设置
 const topTree = latestTree();
 const setBtn = findByTag(topTree, "TextButton").find(b => (b.children || []).some(c => c.tag === "Icon" && c.name === "settings"));
@@ -252,15 +252,30 @@ callKey(setDlg.onConfirm);
 tree = latestTree();
 check("清空记录 → 台账空 + 弹层关", JSON.parse(storage.get("ledger")).length === 0 && findByTag(tree, "AlertDialog").every(d => !d.visible));
 check("台账空后回到演示序列（氟伏沙明）", findByTag(tree, "Chart")[0].series[0].label === "氟伏沙明");
-// 文档
+// 文档 → 药库名单抽屉（顶栏 info icon）→ 药物资料页
 const docBtn = findByTag(tree, "TextButton").find(b => (b.children || []).some(c => c.tag === "Icon" && c.name === "info"));
 callKey(docBtn.onClick);
 tree = latestTree();
-const docDlg = findByTag(tree, "AlertDialog").find(d => d.title === "文档");
-check("文档弹层 visible=true", docDlg && docDlg.visible === true && docDlg.confirmText === "", JSON.stringify(docDlg && docDlg.visible));
-callKey(docDlg.onDismiss);
+const dlist = findByTag(tree, "BottomSheet").find(s => s.visible === true);
+check("药库名单抽屉打开", dlist && findByTag(dlist, "Text").some(x => x.text === "药库名单"), JSON.stringify(dlist && dlist.visible));
+const drows = findByTag(dlist, "Box").filter(b => b.onClick && (b.children || []).length === 3 && (b.children[0].modifiers || []).some(m => m.tag === "Width" && m["0"] === 4));
+check("药库名单 18 行", drows.length === 18, "n=" + drows.length + " " + drows.map(b => b.children[2].children[0].text).join(","));
+const morphRow = drows.find(b => b.children[2].children[0].text === "吗啡");
+callKey(morphRow.onClick);
 tree = latestTree();
-check("文档弹层关闭", !findByTag(tree, "AlertDialog").some(d => d.title === "文档" && d.visible));
+const docSheet = findByTag(tree, "BottomSheet").find(s => s.visible === true);
+check("资料页打开（吗啡）", docSheet && findByTag(docSheet, "Text").some(x => x.text === "吗啡"));
+const dtexts = findByTag(docSheet, "Text").map(x => x.text);
+check("资料页含描述+分段+PK(F 标记)+相互作用链",
+  dtexts.some(s => String(s).indexOf("天然阿片生物碱") >= 0)
+  && dtexts.some(s => String(s).indexOf("T½ 2h") >= 0 && String(s).indexOf("F=34%") >= 0)
+  && dtexts.some(s => String(s).indexOf("UGT2B7 链") === 0)
+  && dtexts.some(s => String(s).indexOf(">60mg") >= 0)
+  && dtexts.some(s => String(s).indexOf("药效") === 0), dtexts.slice(-8).join(","));
+check("资料页过量行红色闪烁", findByTag(docSheet, "Text").some(x => x.flash === true && String(x.text).indexOf(">60mg") >= 0));
+callKey(docSheet.onDismiss);
+tree = latestTree();
+check("资料页关闭", !findByTag(tree, "BottomSheet").some(s => s.visible === true));
 
 console.log("\n" + "PASSES=" + pass + " FAILS=" + fail);
 process.exit(fail === 0 ? 0 : 1);

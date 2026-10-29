@@ -11,10 +11,10 @@
 struct Home {
     Box(modifier = fillMaxSize()) {
         TopAppBar(title = "语法糖手册", subtitle = "V1.0") {
-            TextButton(onClick = { unchecked openDocDialog() }) {
+            TextButton(onClick = { unchecked openDrugList() }) {
                 Icon(name = "info", size = 22, tint = "onPrimary")
             }
-            TextButton(onClick = { unchecked noNavigation() }) {
+            TextButton(onClick = { unchecked openDrugList() }) {
                 Icon(name = "menu", size = 22, tint = "onPrimary")
             }
             TextButton(onClick = { unchecked openSettingsDialog() }) {
@@ -37,6 +37,9 @@ struct Home {
             Box(modifier = fillWidth().paddingHV(24, 8)) {
                 Box(modifier = fillWidth(), orientation = "vertical", spacing = 8) {
                     Text(text = "联用预警", size = 16, bold = true, color = "onSurface")
+                    Box(modifier = fillWidth().clip(12).background("#40D32F2F").paddingHV(12, 6), visible = hasWarn()) {
+                        Text(text = warnLine(), color = "#D32F2F", size = 14, bold = true)
+                    }
                     Box(modifier = fillWidth(), wrap = true, spacing = 8) {
                         Box(modifier = clip(12).background("#33D32F2F").paddingHV(12, 5)) {
                             Text(text = "恶心", color = "#C62828", size = 14, bold = true)
@@ -56,6 +59,7 @@ struct Home {
             Box(modifier = fillWidth().padding4(24, 16, 24, 8)) {
                 Text(text = "服药记录", size = 16, bold = true, color = "onSurface")
             }
+            Box(modifier = fillWidth(), onClick = { unchecked openDocForCurrent() }) {
             Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = "surfaceVariant") {
                 Box(modifier = fillWidth().paddingHV(16, 12)) {
                     Box(modifier = fillWidth(), orientation = "horizontal") {
@@ -67,6 +71,7 @@ struct Home {
                     Box(modifier = height(4)) {}
                     Text(text = doseTime(), color = "onSurfaceVariant", size = 12)
                 }
+            }
             }
             Box(modifier = fillWidth().paddingH(24).paddingV(12), contentAlignment = Center()) {
                 Text(text = "演示数据：空台账时按示范剂量展示，记录服药后由逻辑层驱动", color = "onSurfaceVariant", size = 12)
@@ -85,6 +90,9 @@ struct Home {
                             Text(text = "氟伏沙明", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 15h · F=50% · 口服", size = 12, color = "onSurfaceVariant")
                         }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(0) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
                         Box(modifier = paddingH(8), visible = isSel(0)) {
                             Text(text = "✓", size = 16, bold = true, color = "primary")
                         }
@@ -93,6 +101,9 @@ struct Home {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "帕罗西汀", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 24h · F=100% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(1) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
                         }
                         Box(modifier = paddingH(8), visible = isSel(1)) {
                             Text(text = "✓", size = 16, bold = true, color = "primary")
@@ -104,6 +115,9 @@ struct Home {
                             Text(text = "氟西汀", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 96h · F≈60% · 口服", size = 12, color = "onSurfaceVariant")
                         }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(2) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
                         Box(modifier = paddingH(8), visible = isSel(2)) {
                             Text(text = "✓", size = 16, bold = true, color = "primary")
                         }
@@ -113,6 +127,9 @@ struct Home {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "舍曲林", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 26h · F=44% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(3) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
                         }
                         Box(modifier = paddingH(8), visible = isSel(3)) {
                             Text(text = "✓", size = 16, bold = true, color = "primary")
@@ -124,6 +141,9 @@ struct Home {
                             Text(text = "西酞普兰", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 35h · F=80% · 口服", size = 12, color = "onSurfaceVariant")
                         }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(4) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
                         Box(modifier = paddingH(8), visible = isSel(4)) {
                             Text(text = "✓", size = 16, bold = true, color = "primary")
                         }
@@ -133,6 +153,9 @@ struct Home {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "艾司西酞普兰", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 30h · F=80% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(5) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
                         }
                         Box(modifier = paddingH(8), visible = isSel(5)) {
                             Text(text = "✓", size = 16, bold = true, color = "primary")
@@ -144,6 +167,9 @@ struct Home {
                             Text(text = "地西泮", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 36h · F≈90% · 口服", size = 12, color = "onSurfaceVariant")
                         }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(6) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
                         Box(modifier = paddingH(8), visible = isSel(6)) {
                             Text(text = "✓", size = 16, bold = true, color = "primary")
                         }
@@ -153,6 +179,9 @@ struct Home {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "艾司唑仑", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 17h · F≈100% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(7) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
                         }
                         Box(modifier = paddingH(8), visible = isSel(7)) {
                             Text(text = "✓", size = 16, bold = true, color = "primary")
@@ -164,6 +193,9 @@ struct Home {
                             Text(text = "阿普唑仑", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 11h · F≈90% · 口服", size = 12, color = "onSurfaceVariant")
                         }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(8) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
                         Box(modifier = paddingH(8), visible = isSel(8)) {
                             Text(text = "✓", size = 16, bold = true, color = "primary")
                         }
@@ -173,6 +205,9 @@ struct Home {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "氯硝西泮", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 30h · F≈90% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(9) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
                         }
                         Box(modifier = paddingH(8), visible = isSel(9)) {
                             Text(text = "✓", size = 16, bold = true, color = "primary")
@@ -184,6 +219,9 @@ struct Home {
                             Text(text = "劳拉西泮", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 12h · F≈94% · 口服", size = 12, color = "onSurfaceVariant")
                         }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(10) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
                         Box(modifier = paddingH(8), visible = isSel(10)) {
                             Text(text = "✓", size = 16, bold = true, color = "primary")
                         }
@@ -193,6 +231,9 @@ struct Home {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "咪达唑仑", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 3h · F=44% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(11) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
                         }
                         Box(modifier = paddingH(8), visible = isSel(11)) {
                             Text(text = "✓", size = 16, bold = true, color = "primary")
@@ -204,6 +245,9 @@ struct Home {
                             Text(text = "吗啡", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 2h · F=34% · 口服", size = 12, color = "onSurfaceVariant")
                         }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(12) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
                         Box(modifier = paddingH(8), visible = isSel(12)) {
                             Text(text = "✓", size = 16, bold = true, color = "primary")
                         }
@@ -213,6 +257,9 @@ struct Home {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "羟考酮", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 4h · F≈87% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(13) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
                         }
                         Box(modifier = paddingH(8), visible = isSel(13)) {
                             Text(text = "✓", size = 16, bold = true, color = "primary")
@@ -224,6 +271,9 @@ struct Home {
                             Text(text = "芬太尼", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 17h · F≈92% · 透皮", size = 12, color = "onSurfaceVariant")
                         }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(14) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
                         Box(modifier = paddingH(8), visible = isSel(14)) {
                             Text(text = "✓", size = 16, bold = true, color = "primary")
                         }
@@ -233,6 +283,9 @@ struct Home {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "可待因", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 3h · F≈60% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(15) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
                         }
                         Box(modifier = paddingH(8), visible = isSel(15)) {
                             Text(text = "✓", size = 16, bold = true, color = "primary")
@@ -244,6 +297,9 @@ struct Home {
                             Text(text = "曲马多", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 6h · F=66% · 口服", size = 12, color = "onSurfaceVariant")
                         }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(16) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
                         Box(modifier = paddingH(8), visible = isSel(16)) {
                             Text(text = "✓", size = 16, bold = true, color = "primary")
                         }
@@ -253,6 +309,9 @@ struct Home {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "哌替啶", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 4h · F≈50% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(17) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
                         }
                         Box(modifier = paddingH(8), visible = isSel(17)) {
                             Text(text = "✓", size = 16, bold = true, color = "primary")
@@ -273,10 +332,185 @@ struct Home {
                 Text(text = "SfA（Sublimation for Android）@compose 通路演示\n按钮交互经 DshComposeHost.act 路由到 Kotlin 侧交互态。", color = "onSurfaceVariant", size = 12)
             }
         }
-        AlertDialog(visible = isDocOpen(), title = "药物说明", confirmText = "知道了", dismissText = "关闭", onConfirm = { unchecked closeDoc() }, onDismiss = { unchecked closeDoc() }) {
-            Box(modifier = fillWidth(), orientation = "vertical", spacing = 8) {
-                Text(text = "氟伏沙明 / 帕罗西汀", size = 16, bold = true, color = "onSurface")
-                Text(text = "演示子集：SSRI 联用，CYP2D6 抑制-底物相互作用；T½ 与 F 按演示资料。", color = "onSurfaceVariant", size = 12)
+        BottomSheet(visible = isListOpen(), onDismiss = { unchecked closeDrugList() }) {
+            Box(modifier = fillWidth().paddingHV(24, 16), orientation = "vertical", spacing = 8) {
+                Text(text = "药库名单", size = 22, bold = true, color = "onSurface")
+                Text(text = "糖手册：记录服药 → 估算血药浓度 → 联用预警。点击药名查看该药完整资料。", size = 12, color = "onSurfaceVariant")
+                Box(modifier = fillWidth().height(320), scrollable = true) {
+                    Box(modifier = fillWidth(), orientation = "vertical", spacing = 6) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(0) }) {
+                        Box(modifier = width(4).height(20).background("#FFC107")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "氟伏沙明", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 15h · F=50% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(1) }) {
+                        Box(modifier = width(4).height(20).background("#FFC107")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "帕罗西汀", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 24h · F=100% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(2) }) {
+                        Box(modifier = width(4).height(20).background("#FFC107")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "氟西汀", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 96h · F≈60% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(3) }) {
+                        Box(modifier = width(4).height(20).background("#FFC107")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "舍曲林", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 26h · F=44% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(4) }) {
+                        Box(modifier = width(4).height(20).background("#FFC107")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "西酞普兰", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 35h · F=80% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(5) }) {
+                        Box(modifier = width(4).height(20).background("#FFC107")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "艾司西酞普兰", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 30h · F=80% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(6) }) {
+                        Box(modifier = width(4).height(20).background("#1976D2")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "地西泮", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 36h · F≈90% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(7) }) {
+                        Box(modifier = width(4).height(20).background("#1976D2")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "艾司唑仑", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 17h · F≈100% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(8) }) {
+                        Box(modifier = width(4).height(20).background("#1976D2")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "阿普唑仑", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 11h · F≈90% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(9) }) {
+                        Box(modifier = width(4).height(20).background("#1976D2")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "氯硝西泮", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 30h · F≈90% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(10) }) {
+                        Box(modifier = width(4).height(20).background("#1976D2")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "劳拉西泮", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 12h · F≈94% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(11) }) {
+                        Box(modifier = width(4).height(20).background("#1976D2")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "咪达唑仑", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 3h · F=44% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(12) }) {
+                        Box(modifier = width(4).height(20).background("#6A1B9A")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "吗啡", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 2h · F=34% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(13) }) {
+                        Box(modifier = width(4).height(20).background("#6A1B9A")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "羟考酮", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 4h · F≈87% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(14) }) {
+                        Box(modifier = width(4).height(20).background("#6A1B9A")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "芬太尼", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 17h · F≈92% · 透皮", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(15) }) {
+                        Box(modifier = width(4).height(20).background("#6A1B9A")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "可待因", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 3h · F≈60% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(16) }) {
+                        Box(modifier = width(4).height(20).background("#6A1B9A")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "曲马多", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 6h · F=66% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(17) }) {
+                        Box(modifier = width(4).height(20).background("#6A1B9A")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "哌替啶", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 4h · F≈50% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+                    }
+                }
+            }
+        }
+        BottomSheet(visible = isDocOpen(), onDismiss = { unchecked closeDoc() }) {
+            Box(modifier = fillWidth().paddingHV(24, 16), orientation = "vertical", spacing = 8) {
+                Text(text = docName(), size = 22, bold = true, color = "onSurface")
+                Box(modifier = fillWidth().height(480), scrollable = true) {
+                    Text(text = docBody(), size = 12, color = "onSurfaceVariant")
+                }
+                Text(text = "资料来源：糖手册内置药物资料（与 .subl 同源；F≈ 为估算值）", size = 11, color = "onSurfaceVariant")
             }
         }
         FloatingButton(icon = "add", text = "＋服用药物", color = "primary", onClick = { unchecked toggleForm() })

@@ -9,7 +9,7 @@
   function __smA(name, cond, extra) {
     if (cond) { __smPass++; } else { __smFail++; __lines.push("FAIL " + name + (extra ? " :: " + extra : "")); }
   }
-  function __smWalk(node, out) { out.push(node); if (Array.isArray(node.children)) node.children.forEach((c) => __smWalk(c, out)); return out; }
+  function __smWalk(node, out) { out.push(node); if (Array.isArray(node.children)) node.children.forEach((c) => { if (c !== null && c !== undefined) __smWalk(c, out); }); return out; }
   function __smNodes(root) { return __smWalk(root, []); }
   function __smRoot(i) { return JSON.parse(__smLayouts[i === undefined ? __smLayouts.length - 1 : i]); }
   function __smBtnTexts(root) {
@@ -33,7 +33,7 @@
   // ---------- 首屏（空台账） ----------
   __smA("首次 layout", __smLayouts.length === 1);
   const root0 = __smRoot(0);
-  __smA("根 7 区（含 BottomSheet/AlertDialog 存根）", root0.children.length === 7, JSON.stringify(root0.children.map((c) => c.tag)));
+  __smA("根 8 区（表单/设置/药库名单/资料页四弹层存根）", root0.children.length === 8, JSON.stringify(root0.children.map((c) => c.tag)));
   const topNode = root0.children[0];
   __smA("顶栏 Box", topNode.tag === "Box", "got " + topNode.tag);
   __smA("顶栏横向", topNode.orientation === "horizontal");
@@ -76,7 +76,25 @@
   const drugPageBtn = __smNodes(root0).filter((n) => n.tag === "TextButton").find((b) => (b.children || []).some((c) => c.tag === "Icon" && c.name === "menu"));
   __smA("药物按钮存在", !!drugPageBtn);
   __smCall(drugPageBtn, "onClick");
-  __smA("药物按钮 toast", __smLastToast === "药物页：当前视图协议无多页导航", "got " + __smLastToast);
+  // menu/info 按钮打开药库名单抽屉（替代原无多页导航 toast）
+  const listRoot = __smRoot();
+  const dlistSheet = __smNodes(listRoot).find((n) => n.tag === "BottomSheet" && n.visible === true);
+  __smA("药库名单打开", !!dlistSheet && __smHasText(listRoot, "药库名单"));
+  const listRows = __smNodes(dlistSheet).filter((n) => n.tag === "Box" && typeof n.onClick === "string" && (n.children || []).length === 3 && (n.children[0].modifiers || []).some((m) => m.tag === "Width" && m["0"] === 4));
+  __smA("药库名单 18 行", listRows.length === 18, "got " + listRows.length + " " + listRows.map((b) => b.children[2].children[0].text).join(","));
+  // 点吗啡行开资料页并核验内容
+  const morphRow = listRows.find((b) => b.children[2].children[0].text === "吗啡");
+  __smCall(morphRow, "onClick");
+  const docRoot = __smRoot();
+  const docTexts = __smNodes(docRoot).map((n) => n.text).filter(Boolean);
+  __smA("资料页打开·吗啡", __smHasText(docRoot, "吗啡") && docTexts.some((s) => String(s).indexOf("M6G") >= 0), docTexts.slice(-8).join(","));
+  __smA("资料页药动学", docTexts.some((s) => String(s).indexOf("T½ 2h") >= 0 && String(s).indexOf("F=34%") >= 0), docTexts.slice(-6).join(","));
+  __smA("资料页相互作用链", docTexts.some((s) => String(s).indexOf("UGT2B7 链") === 0), docTexts.slice(-4).join(","));
+  __smA("资料页过量闪烁", __smNodes(docRoot).some((n) => n.tag === "Text" && n.flash === true && String(n.text).indexOf(">60mg") >= 0));
+  // 关闭资料页后继续表单流
+  const docSheet = __smNodes(docRoot).find((n) => n.tag === "BottomSheet" && n.visible === true);
+  __smCall(docSheet, "onDismiss");
+  __smA("资料页已关", !__smNodes(__smRoot()).some((n) => n.tag === "BottomSheet" && n.visible === true));
 
   // ---------- FAB 开表单 ----------
   const before = __smLayouts.length;
@@ -115,11 +133,11 @@
   __smA("未选药 toast", __smLastToast === "请先选择药物", "got " + __smLastToast);
   __smA("表单保持开", __smHasText(__smRoot(), "＋服用药物"));
 
-  const rowBtnsW = __smNodes(__smRoot()).filter((n) => n.tag === "Box" && typeof n.onClick === "string" && (n.children || [])[0] && n.children[0].tag === "Box");
+  const rowBtnsW = __smNodes(__smRoot()).filter((n) => n.tag === "Box" && typeof n.onClick === "string" && (n.children || [])[0] && n.children[0].tag === "Box" && (n.children[0].children || [])[0] && n.children[0].children[0].tag === "Text" && (n.children[0].children || [])[1] && n.children[0].children[1].tag === "Text");
   const row1Btn = rowBtnsW.find((b) => b.children[0].children[0].text === "帕罗西汀");
   __smA("选药回调执行", __smCall(row1Btn, "onClick"));
   const root2 = __smRoot();
-  const rowBtns2 = __smNodes(root2).filter((n) => n.tag === "Box" && typeof n.onClick === "string" && (n.children || [])[0] && n.children[0].tag === "Box");
+  const rowBtns2 = __smNodes(root2).filter((n) => n.tag === "Box" && typeof n.onClick === "string" && (n.children || [])[0] && n.children[0].tag === "Box" && (n.children[0].children || [])[0] && n.children[0].children[0].tag === "Text" && (n.children[0].children || [])[1] && n.children[0].children[1].tag === "Text");
   const selBtn = rowBtns2.find((b) => b.children[0].children[0].text === "帕罗西汀");
   __smA("选中 ✓ 前缀", __smRowChecked(selBtn) && selBtn.children.find((c) => c.tag === "Text").text.indexOf("✓") === 0, "got " + JSON.stringify((selBtn.children || []).filter((c) => c.tag === "Text").map((c) => c.text)));
   __smA("选中加粗", selBtn.children[0].children[0].bold === true);
@@ -172,7 +190,7 @@
   __smCall(fab3, "onClick");
   const root4 = __smRoot();
   __smA("再开表单", __smHasText(root4, "选择药物并填写剂量（mg）"));
-  __smA("再开默认未选药", __smNodes(root4).filter((n) => n.tag === "Box" && typeof n.onClick === "string" && (n.children || [])[0] && n.children[0].tag === "Box").every((b) => b.children[0].children[0].bold === false && !__smRowChecked(b)));
+  __smA("再开默认未选药", __smNodes(root4).filter((n) => n.tag === "Box" && typeof n.onClick === "string" && (n.children || [])[0] && n.children[0].tag === "Box" && (n.children[0].children || [])[0] && n.children[0].children[0].tag === "Text" && (n.children[0].children || [])[1] && n.children[0].children[1].tag === "Text").every((b) => b.children[0].children[0].bold === false && !__smRowChecked(b)));
   const cancelBtn = __smFindButton(root4, "取消");
   __smCall(cancelBtn, "onClick");
   const root5 = __smRoot();

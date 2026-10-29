@@ -87,7 +87,13 @@ fun isFormOpen(): Bool = storageGet(formKey()) == "1"
 @impure
 fun isSettingsOpen(): Bool = storageGet(settingsKey()) == "1"
 @impure
-fun isDocOpen(): Bool = storageGet(docKey()) == "1"
+fun docName(): Str = storageGet(docKey())
+@impure
+fun isDocOpen(): Bool = storageGet(docKey()) != ""
+@impure
+fun isListOpen(): Bool = storageGet(drugListKey()) == "1"
+@impure
+fun drugListKey(): Str = "sm_dlist"
 
 // 选中下标（未选时存空串：参考 selectedDrug = null 的「未选」语义）。
 @impure
@@ -126,8 +132,13 @@ fun setSettingsOpen(o: Bool): Null {
     return null
 }
 @impure
-fun setDocOpen(o: Bool): Null {
-    unchecked storagePut(docKey(), if (o) "1" else "0")
+fun setDocName(n: Str): Null {
+    unchecked storagePut(docKey(), n)
+    return null
+}
+@impure
+fun setListOpen(o: Bool): Null {
+    unchecked storagePut(drugListKey(), if (o) "1" else "0")
     return null
 }
 @impure
@@ -158,10 +169,10 @@ fun topBar(): Box = Box(modifier = fillWidth().height(48).background("primary"),
         Text(text = "V1.0", size = 11, color = "onPrimary")
     }
     Box(modifier = paddingH(12), orientation = "horizontal") {
-        TextButton(onClick = { unchecked openDocDialog() }) {
+        TextButton(onClick = { unchecked openDrugList() }) {
             Icon(name = "info", size = 22, tint = "onPrimary")
         }
-        TextButton(onClick = { unchecked noNavigation() }) {
+        TextButton(onClick = { unchecked openDrugList() }) {
             Icon(name = "menu", size = 22, tint = "onPrimary")
         }
         TextButton(onClick = { unchecked openSettingsDialog() }) {
@@ -310,7 +321,8 @@ fun doseEmpty(): Any = Box(modifier = fillWidth().paddingH(24).paddingV(12), con
 // 一张记录卡（≈ DoseCard：Card 圆角 12 + elevation 0 + surfaceVariant 底，无阴影）。
 // 行内：4×20dp 药色竖条（width(4).height(20) 链）+ Spacer(10) + 药名 weight(1) + 右侧剂量。
 @composable
-fun doseCard(c: MedCard): Any = Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = "surfaceVariant") {
+@composable
+fun doseCard(c: MedCard): Any = Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = "surfaceVariant", onClick = { unchecked openDocFor(c.name) }) {
     Box(modifier = fillWidth().paddingHV(16, 12)) {
         Box(modifier = fillWidth(), orientation = "horizontal", contentAlignment = CenterStart()) {
             Box(modifier = width(4).height(20).background(drugColor(c.name))) {}
@@ -526,6 +538,10 @@ fun drugRow(d: Drug, k: Nat, idx: Nat, sel: Bool): Any = Box(modifier = fillWidt
         Text(text = d.name, size = 16, bold = rowBold(k, idx, sel), color = rowNameColor(k, idx, sel))
         Text(text = drugDetail(d), size = 12, color = "onSurfaceVariant")
     }
+    // ⓘ 资料页入口（子节点独立响应点击，不触发选药）。
+    Box(modifier = clip(12).paddingHV(8, 6), onClick = { unchecked openDocFor(d.name) }) {
+        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+    }
     // ✓ 恒占位（未选透明 #00000000，等同参考的 if (isSelected) Text("✓") 布局位）。
     Text(text = "✓", size = 16, bold = true, color = rowCheckColor(k, idx, sel))
 }
@@ -537,15 +553,29 @@ fun rowBold(k: Nat, idx: Nat, sel: Bool): Bool = (sel == true) && (k == idx)
 
 // ---------- 设置/文档弹层（≈ SettingsDialog / DrugDocsDialog：AlertDialog） ----------
 
+// 药库名单（顶栏 info/menu 入口）：18 药索引 → 点药名开该药资料页。
 @impure
-fun openDocDialog(): Null {
-    unchecked setDocOpen(true)
+fun openDrugList(): Null {
+    unchecked setListOpen(true)
+    unchecked refreshHome()
+    return null
+}
+@impure
+fun closeDrugList(): Null {
+    unchecked setListOpen(false)
+    unchecked refreshHome()
+    return null
+}
+@impure
+fun openDocFor(n: Str): Null {
+    unchecked setDocName(n)
+    unchecked setListOpen(false)
     unchecked refreshHome()
     return null
 }
 @impure
 fun closeDoc(): Null {
-    unchecked setDocOpen(false)
+    unchecked setDocName("")
     unchecked refreshHome()
     return null
 }
@@ -574,9 +604,194 @@ fun settingsDialog(open: Bool): AlertDialog = AlertDialog(visible = open, title 
     Text(text = "语法糖手册 V1.0\nSfA（Sublimation for Android）视图协议 v2 渲染\n数据持久化：storage 键 ledger", size = 12, color = "onSurfaceVariant")
 }
 
+// ---------- 药库名单与药物资料页（替代原写死共用 docDialog） ----------
+
+// 按名取药（资料页与链路计算用）。
+fun drugByName(n: Str, xs: List[Drug]): Drug = when (xs) {
+    is Cons(d, rest) => if (d.name == n) d else drugByName(n, rest)
+    else => fluvoxamine()
+}
+
+// 药库名单行（Box > 药色竖条 + 名 + 副标题），点行开资料页。
 @composable
-fun docDialog(open: Bool): AlertDialog = AlertDialog(visible = open, title = "文档", confirmText = "", dismissText = "关闭", onDismiss = { unchecked closeDoc() }) {
-    Text(text = "糖手册：记录服药 → 估算血药浓度 → 联用预警。\n\n氟伏沙明（CYP2D6 底物）+ 帕罗西汀（CYP2D6 极强抑制）联用构成 CYP2D6 抑制-底物相互作用（见首页下方「CYP450 代谢相互作用」标签），并共享恶心/失眠/嗜睡等不良反应。\n\n源码：github.com/inline-function/Sugar-Manual", size = 12, color = "onSurfaceVariant")
+fun drugListRow(d: Drug): Any = Box(modifier = fillWidth().clip(12).background("surfaceVariant").paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(d.name) }) {
+    Box(modifier = width(4).height(20).background(drugColor(d.name))) {}
+    Box(modifier = width(10)) {}
+    Box(modifier = weight(1.0)) {
+        Text(text = d.name, size = 15, bold = true, color = "onSurface")
+        Text(text = drugDetail(d), size = 11, color = "onSurfaceVariant")
+    }
+}
+@composable
+fun drugListRows(xs: List[Drug]): List[Any] = when (xs) {
+    Nil => emptyList()
+    is Cons(d, rest) => cons(drugListRow(d), drugListRows(rest))
+    else => emptyList()
+}
+
+// 药库名单抽屉（纯说明放头部，不再有按药写死的共用文本）。
+@composable
+fun drugListSheet(open: Bool, drugs: List[Drug]): BottomSheet = BottomSheet(visible = open, onDismiss = { unchecked closeDrugList() }) {
+    Box(modifier = fillWidth().padding4(24, 0, 24, 24)) {
+        Text(text = "药库名单", size = 22, bold = true)
+        Box(modifier = height(4)) {}
+        Text(text = "糖手册：记录服药 → 估算血药浓度 → 联用预警。点击药名查看该药完整资料；相互作用链复用 metabAlert 匹配逻辑。\n源码：github.com/inline-function/Sugar-Manual", color = "onSurfaceVariant", size = 12)
+        Box(modifier = height(12)) {}
+        Box(modifier = fillWidth().height(320), scrollable = true, spacing = 6, children = drugListRows(drugs))
+    }
+}
+
+// ---- 资料页内容 ----
+
+// 标签条（含【超说明书】黄色标记）。
+fun inOffLabel(s: Str): Bool = strIndexOf(s, "超说明书") >= 0
+@composable
+fun tagChip(s: Str): Any = Box(modifier = clip(12).paddingHV(10, 4), backgroundColor = if (inOffLabel(s)) "primaryContainer" else "surfaceVariant") {
+    Text(text = s, size = 11, color = "onSurfaceVariant")
+}
+@composable
+fun tagChips(ts: List[Str]): List[Any] = when (ts) {
+    Nil => emptyList()
+    is Cons(s, rest) => cons(tagChip(s), tagChips(rest))
+    else => emptyList()
+}
+@composable
+fun docHeader(d: Drug): Any = Box(modifier = fillWidth(), orientation = "vertical", spacing = 6) {
+    Text(text = d.name, size = 22, bold = true, color = "onSurface")
+    Text(text = d.category, size = 12, color = "onSurfaceVariant")
+    Box(modifier = fillWidth(), wrap = true, spacing = 6, children = tagChips(d.tags))
+}
+
+// Rated 条目分级配色（复用 tagFg 调色板）。
+fun advFreqLevel(level: Str): Nat = if (level == "十分常见") 3 else if (level == "常见") 2 else if (level == "少见") 1 else 0
+fun therColor(level: Str): Str = if (level == "极强") "primary" else if (level == "强效") "primary" else if (level == "强") "primary" else if (level == "极弱") "onSurfaceVariant" else "onSurface"
+@composable
+fun ratedRow(r: Rated, kind: Nat): Any = when (kind) {
+    // 0=疗效/药效 1=不良反应(频次配色) 2=过量(红+闪烁) 3=酶抑制(强度配色)
+    0 => Text(text = concat(concat(r.level, " · "), r.name), size = 13, color = therColor(r.level))
+    1 => Text(text = concat(concat(r.level, " · "), r.name), size = 13, color = tagFg(advFreqLevel(r.level), false))
+    2 => Text(text = concat(concat(r.level, " · "), r.name), size = 13, bold = true, color = tagFg(0, true), flash = true)
+    else => Text(text = concat(concat(r.level, " · "), r.name), size = 13, color = therColor(r.level))
+    else => Text(text = concat(concat(r.level, " · "), r.name), size = 13, color = "onSurface")
+}
+@composable
+fun ratedRows(xs: List[Rated], kind: Nat): List[Any] = when (xs) {
+    Nil => emptyList()
+    is Cons(r, rest) => cons(ratedRow(r, kind), ratedRows(rest, kind))
+    else => emptyList()
+}
+@composable
+fun docSection(title: Str, xs: List[Rated], kind: Nat): Any = if (size(xs) == 0) Box(modifier = fillWidth()) {} else Box(modifier = fillWidth(), orientation = "vertical", spacing = 4) {
+    Text(text = title, size = 13, bold = true, color = "primary")
+    Box(modifier = fillWidth(), children = ratedRows(xs, kind))
+}
+@composable
+fun inhibTextNode(d: Drug): Any = Box(modifier = fillWidth()) {
+    if (inhibLine(d) != "") {
+        Text(text = inhibLine(d), size = 13, color = "onSurface")
+    }
+}
+
+// 药动学：途径 · 剂型 · T½ · Tmax · F（F≈ 估算标记）+ 代谢物。
+fun headProfile(pk: List[PkProfile]): PkProfile = when (pk) {
+    is Cons(p, _) => p
+    else => PkProfile(route = "口服", form = "常释", halfLife = 24, tmax = "-", clearance = "-", curve = "对数", bio = 1.0, metabolites = emptyList())
+}
+fun pkLine(d: Drug): Str = when (d.pk) {
+    is Cons(p, _) => joinTexts(pkParts(p, d), " · ")
+    else => "药动学缺失"
+}
+fun pkParts(p: PkProfile, d: Drug): List[Str] = cons(concat("途径 ", p.route),
+    cons(concat("剂型 ", p.form),
+    cons(concat("T½ ", concat(toStr(p.halfLife), "h")),
+    cons(concat("Tmax ", p.tmax),
+    cons(concat(bioMarkOf(d), bioPctOf(p, d)), emptyList())))))
+fun bioMarkOf(d: Drug): Str = if (estDrug(d.name)) "F≈" else "F="
+fun bioPctOf(p: PkProfile, d: Drug): Str = if (estDrug(d.name)) concat(toStr(p.bio * 100.0), "%（估算）") else concat(toStr(p.bio * 100.0), "%")
+@composable
+fun pkSection(d: Drug): Any = Box(modifier = fillWidth(), orientation = "vertical", spacing = 4) {
+    Text(text = "药动学", size = 13, bold = true, color = "primary")
+    Text(text = pkLine(d), size = 13, color = "onSurface")
+    Box(modifier = fillWidth(), children = ratedRows(headProfile(d.pk).metabolites, 3))
+}
+
+// 相互作用：抑制酶、经酶代谢、该药参与的 CYP 链（复用 warn 的 relatesTo 匹配）。
+fun inhibLine(d: Drug): Str = when (d.inhibitions) {
+    Nil => ""
+    is Cons(r, _) => concat("抑制：", joinRatedNames(d.inhibitions))
+    else => ""
+}
+fun joinRatedNames(xs: List[Rated]): Str = when (xs) {
+    Nil => ""
+    is Cons(r, Nil) => concat(concat(r.level, " "), r.name)
+    is Cons(r, rest) => concat(concat(concat(r.level, " "), r.name), concat("；", joinRatedNames(rest)))
+    else => ""
+}
+fun joinNames(xs: List[Str]): Str = when (xs) {
+    Nil => ""
+    is Cons(a, Nil) => a
+    is Cons(a, rest) => concat(a, concat("、", joinNames(rest)))
+    else => ""
+}
+// 该酶的联用伙伴（除自身）：抑制者（带级别）与底物。
+fun partnerName(d2: Drug, e: Str): Str = if (containsRated(d2.inhibitions, e)) concat(d2.name, concat("（", concat(inhibWeightText(d2.inhibitions, e), "抑制）"))) else if (contains(d2.enzymes, e)) concat(d2.name, "（底物）") else ""
+fun inhibWeightText(xs: List[Rated], e: Str): Str = when (xs) {
+    Nil => ""
+    is Cons(r, rest) => if (r.name == e) r.level else inhibWeightText(rest, e)
+    else => ""
+}
+@composable
+fun cypChainRow(e: Str, self: Drug, drugs: List[Drug]): Any = Text(text = concat(concat(e, " 链："), partnersText(drugs, e, self)), size = 12, color = "onSurfaceVariant")
+fun partnersText(drugs: List[Drug], e: Str, self: Drug): Str = joinTexts(partnerNames(drugs, e, self), " · ")
+fun partnerNames(drugs: List[Drug], e: Str, self: Drug): List[Str] = when (drugs) {
+    Nil => emptyList()
+    is Cons(d2, rest) => if (d2.name == self.name) partnerNames(rest, e, self) else if (relatesTo(d2, e)) cons(partnerName(d2, e), partnerNames(rest, e, self)) else partnerNames(rest, e, self)
+    else => emptyList()
+}
+fun joinTexts(xs: List[Str], sep: Str): Str = when (xs) {
+    Nil => ""
+    is Cons(a, rest) => if (size(rest) == 0) a else concat(a, concat(sep, joinTexts(rest, sep)))
+    else => ""
+}
+fun chainEnzymes(d: Drug): List[Str] = append(inhibNames(d.inhibitions), d.enzymes)
+@composable
+fun chainRows(es: List[Str], self: Drug, drugs: List[Drug]): List[Any] = when (es) {
+    Nil => emptyList()
+    is Cons(e, rest) => if (partnersText(drugs, e, self) == "") chainRows(rest, self, drugs) else cons(cypChainRow(e, self, drugs), chainRows(rest, self, drugs))
+    else => emptyList()
+}
+@composable
+fun interactSection(d: Drug, drugs: List[Drug]): Any = Box(modifier = fillWidth(), orientation = "vertical", spacing = 4) {
+    Text(text = "相互作用（CYP450 链）", size = 13, bold = true, color = "primary")
+    inhibTextNode(d)
+    Text(text = concat("经酶代谢：", joinNames(d.enzymes)), size = 13, color = "onSurface")
+    Box(modifier = fillWidth(), children = chainRows(chainEnzymes(d), d, drugs))
+}
+
+// 药物资料页抽屉：头部 + 描述 + 分段 Rated 清单 + 药动 + 相互作用链。
+@composable
+fun docSheetPage(name: Str, drugs: List[Drug]): BottomSheet = BottomSheet(visible = name != "", onDismiss = { unchecked closeDoc() }) {
+    Box(modifier = fillWidth().padding4(24, 0, 24, 24)) {
+        if (name != "") {
+            docPageBody(drugByName(name, drugs), drugs)
+        }
+    }
+}
+
+@composable
+fun docPageBody(d: Drug, drugs: List[Drug]): Any = Box(modifier = fillWidth().height(520), scrollable = true, orientation = "vertical", spacing = 10) {
+    docHeader(d)
+    Text(text = d.description, size = 12, color = "onSurfaceVariant")
+    docSection("药效", d.effects, 0)
+    docSection("酶抑制", d.inhibitions, 3)
+    docSection("急性期疗效", d.acuteTher, 0)
+    docSection("维持期疗效", d.chronicTher, 0)
+    docSection("急性不良反应", d.acuteAdv, 1)
+    docSection("慢性不良反应", d.chronicAdv, 1)
+    docSection("停药反应", d.withdraw, 1)
+    docSection("过量（危险剂量）", d.overdose, 2)
+    pkSection(d)
+    interactSection(d, drugs)
 }
 
 // ---------- 主界面（≈ Scaffold content） ----------
@@ -602,7 +817,8 @@ fun lowerBox(adr: Alert, rows: List[MedCard], drugs: List[Drug], met: Alert, sh:
 fun content(): Box {
     unchecked var open: Bool = isFormOpen()
     unchecked var setOp: Bool = isSettingsOpen()
-    unchecked var docOp: Bool = isDocOpen()
+    unchecked var docN: Str = docName()
+    unchecked var listOp: Bool = isListOpen()
     unchecked var idx: Nat = curPick()
     unchecked var sel: Bool = isPickSet()
     unchecked var dt: Str = curDose()
@@ -621,7 +837,8 @@ fun content(): Box {
     @mut var lower = lowerBox(adr, rows, drugs, met, sh, dpi)
     @mut var sheet = formPanel(open, drugs, idx, sel, dt, de)
     @mut var setDlg = settingsDialog(setOp)
-    @mut var docDlg = docDialog(docOp)
+    @mut var listSheet = drugListSheet(listOp, drugs)
+    @mut var docSheet = docSheetPage(docN, drugs)
     return Box(modifier = fillMaxSize()) {
         topBar()
         chart
@@ -629,6 +846,7 @@ fun content(): Box {
         FloatingButton(icon = "add", text = "＋服用药物", color = "primary", onClick = { unchecked toggleForm() })
         sheet
         setDlg
-        docDlg
+        listSheet
+        docSheet
     }
 }
