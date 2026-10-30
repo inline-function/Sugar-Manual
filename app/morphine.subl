@@ -13,12 +13,14 @@ fun morphine(): Drug = Drug(
     pk = cons(PkProfile(
         route = "口服", form = "常释", halfLife = 2, tmax = "1-2h",
         clearance = "一级（肝葡萄糖醛酸化）", curve = "对数", bio = 0.34,
-        metabolites = cons(Rated("强效", "M6G 吗啡-6-葡萄糖醛酸（活性 μ 激动）"), cons(Rated("极弱", "M3G 吗啡-3-葡萄糖醛酸（可能致神经毒性）"), emptyList()))
+        metabolites = cons(Rated("强效", "M6G 吗啡-6-葡萄糖醛酸（活性 μ 激动）"), cons(Rated("极弱", "M3G 吗啡-3-葡萄糖醛酸（可能致神经毒性）"), emptyList())),
+  // M6G（活性 μ 激动）T½ 约 4h；葡萄糖醛酸化生成量约 10%（frac 0.1；M3G 无镇痛活性不建模）。
+        activeForms = cons(MetaboForm("M6G", 4, 0.1), emptyList())
     ), emptyList()),
     acuteTher = ratedList("强效|镇痛（急性锐痛）;强效|镇静;中效|急性肺水肿呼吸困难缓解"),
     chronicTher = ratedList("强效|镇痛（癌痛）;强效|镇痛（慢性重度疼痛）"),
     acuteAdv = ratedList("常见|呼吸抑制;十分常见|镇静;常见|恶心呕吐;常见|欣快"),
     chronicAdv = ratedList("十分常见|嗜睡;常见|恶心;常见|呕吐;常见|呼吸抑制"),
-    withdraw = ratedList("十分常见|阿片戒断综合征（骤停）;常见|流泪流涕;常见|出汗;常见|肌痛;常见|瞳孔散大;常见|焦虑;常见|失眠"),
+    withdraw = ratedList("十分常见|骤停阿片戒断综合征;常见|流泪流涕;常见|出汗;常见|肌痛;常见|瞳孔散大;常见|焦虑;常见|失眠"),
     overdose = ratedList(">60mg|呼吸抑制")
 )

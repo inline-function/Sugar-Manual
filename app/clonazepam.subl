@@ -13,12 +13,14 @@ fun clonazepam(): Drug = Drug(
     pk = cons(PkProfile(
         route = "口服", form = "常释", halfLife = 30, tmax = "1-4h",
         clearance = "一级（CYP3A4 硝基还原）", curve = "对数", bio = 0.9,
-        metabolites = emptyList()
+        metabolites = emptyList(),
+  // 无临床意义可估算的活性代谢物（展示段 metabolites 仅供资料页说明，不建模）。
+        activeForms = emptyList()
     ), emptyList()),
     acuteTher = ratedList("强效|镇静;强效|抗焦虑"),
     chronicTher = ratedList("强效|抗癫痫;强效|抗焦虑;强效|抗惊恐（超说明书）;强效|躁狂辅助镇静（超说明书）"),
     acuteAdv = ratedList("少见|呼吸抑制;常见|嗜睡;常见|头晕"),
     chronicAdv = ratedList("十分常见|嗜睡;常见|头晕;常见|共济失调;常见|顺行性记忆损害;常见|疲劳;少见|呼吸抑制;少见|儿童行为脱抑制"),
-    withdraw = ratedList("常见|癫痫反跳（骤停）;常见|焦虑反跳;常见|失眠;常见|震颤;少见|戒断性谵妄"),
+    withdraw = ratedList("常见|骤停癫痫反跳;常见|焦虑反跳;常见|失眠;常见|震颤;少见|戒断性谵妄"),
     overdose = ratedList(">20mg|呼吸抑制")
 )

@@ -13,12 +13,14 @@ fun alprazolam(): Drug = Drug(
     pk = cons(PkProfile(
         route = "口服", form = "常释", halfLife = 11, tmax = "1-2h",
         clearance = "一级（CYP3A4 氧化）", curve = "对数", bio = 0.9,
-        metabolites = cons(Rated("极弱", "α-羟基阿普唑仑"), emptyList())
+        metabolites = cons(Rated("极弱", "α-羟基阿普唑仑"), emptyList()),
+  // 无临床意义可估算的活性代谢物（展示段 metabolites 仅供资料页说明，不建模）。
+        activeForms = emptyList()
     ), emptyList()),
     acuteTher = ratedList("强效|抗焦虑（快速起效）;强效|镇静"),
     chronicTher = ratedList("强效|抗焦虑;强效|抗惊恐;中效|催眠（焦虑性失眠）"),
     acuteAdv = ratedList("少见|呼吸抑制;常见|嗜睡;常见|头晕"),
     chronicAdv = ratedList("常见|嗜睡;常见|头晕;常见|疲劳;常见|共济失调;常见|顺行性记忆损害;少见|呼吸抑制;少见|反常兴奋"),
-    withdraw = ratedList("常见|焦虑反跳;常见|失眠反跳;常见|震颤;常见|出汗;少见|癫痫发作（骤停）;罕见|谵妄（骤停高剂量）"),
+    withdraw = ratedList("常见|焦虑反跳;常见|失眠反跳;常见|震颤;常见|出汗;少见|骤停癫痫发作;罕见|骤停高剂量谵妄"),
     overdose = ratedList(">10mg|呼吸抑制")
 )

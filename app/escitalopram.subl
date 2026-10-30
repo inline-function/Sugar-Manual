@@ -12,7 +12,9 @@ fun escitalopram(): Drug = Drug(
     pk = cons(PkProfile(
         route = "口服", form = "常释", halfLife = 30, tmax = "4h",
         clearance = "一级", curve = "对数", bio = 0.8,
-        metabolites = cons(Rated("极弱", "去甲基艾司西酞普兰"), emptyList())
+        metabolites = cons(Rated("极弱", "去甲基艾司西酞普兰"), emptyList()),
+  // 去甲西酞普兰 T½ 约 50h（左旋体去甲基，同西酞普兰，frac 估算 0.4）。
+        activeForms = cons(MetaboForm("去甲西酞普兰", 50, 0.4), emptyList())
     ), emptyList()),
     acuteTher = ratedList("弱效|镇静"),
     chronicTher = ratedList("极强|抗抑郁;强效|抗焦虑;强效|抗惊恐"),

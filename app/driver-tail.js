@@ -184,7 +184,8 @@
   __smA("记录区标题仍在", __smHasText(root3, "服药记录"));
   const chart3 = __smNodes(root3).find((n) => n.tag === "Chart");
   __smA("曲线 13 点", chart3.points.length === 13);
-  __smA("曲线末点=2×F×0.5^(48÷T½)", Math.abs(chart3.points[12] - 0.5) < 1e-3, "got " + chart3.points[12]);
+  // 一级吸收模型下末点 ≈ 解析消除值（吸收相残余项随 T_a 快速归零，偏差 <1%）。
+  __smA("曲线末点≈2×F×0.5^(48÷T½)（一级吸收尾段）", Math.abs(chart3.points[12] - 0.5) < 0.01, "got " + chart3.points[12]);
 
   // ---------- 取消 ----------
   const fab3 = __smNodes(root3).find((n) => n.tag === "FloatingButton");
@@ -259,7 +260,7 @@
   // 主观效应词条流（warn.subl effectTags：急性/慢性不良反应跨药聚合，三级配色，急性 flash）
   // t73 清洗：无括注修饰、无非主观词条、机制词不入流、呼吸抑制统一词条
   __smA("effectTags 单药：三级 + 无括注 + 无非主观/机制词", (function () {
-    const ts = effectTags(core_collection__cons(morphine(), core_collection__emptyList()));
+    const ts = effectTags(core_collection__cons(morphine(), core_collection__emptyList()), core_collection__emptyList());
     const f = n => ts.find(x => x.name === n);
     const nonSubj = ["依赖", "耐受", "跌倒", "便秘", "口干", "尿潴留", "出汗", "瘙痒", "瞳孔", "血压下降", "低血压", "QT间期", "低血钠", "性功能", "免疫抑制", "肌阵挛", "低血糖", "皮疹", "过敏", "腹泻"];
     const mech = ["受体", "CYP", "转运体", "酶"];
@@ -272,7 +273,7 @@
   })());
   // 呼吸抑制括注变体合并：吗啡+地西泮+可待因 → 单一「呼吸抑制」且聚合升红（不再被括注稀释）
   __smA("effectTags 呼吸抑制合并去稀释", (function () {
-    const ts = effectTags(core_collection__cons(morphine(), core_collection__cons(diazepam(), core_collection__cons(codeine(), core_collection__emptyList()))));
+    const ts = effectTags(core_collection__cons(morphine(), core_collection__cons(diazepam(), core_collection__cons(codeine(), core_collection__emptyList()))), core_collection__emptyList());
     const rs = ts.filter(x => x.name === "呼吸抑制");
     const f = n => ts.find(x => x.name === n);
     return rs.length === 1 && rs[0].level === 3 && rs[0].acute === true
@@ -285,27 +286,107 @@
       && isSubjective("顺行性记忆损害") && isSubjective("老年ICU谵妄") && isSubjective("呼吸抑制") && isSubjective("恶心");
   })());
   __smA("effectTags 跨药聚合升红 + 阿片类中毒包", (function () {
-    const ts = effectTags(core_collection__cons(morphine(), core_collection__cons(diazepam(), core_collection__emptyList())));
+    const ts = effectTags(core_collection__cons(morphine(), core_collection__cons(diazepam(), core_collection__emptyList())), core_collection__emptyList());
     const f = n => ts.find(x => x.name === n);
     const p2 = f("阿片类中毒");
     return p2 && p2.level === 3 && p2.acute === true && p2.pack === true
       && f("嗜睡").level === 3 && ts.length > 8;
   })());
   __smA("effectTags 血清素综合征包随药数加深", (function () {
-    const one = effectTags(core_collection__cons(fluvoxamine(), core_collection__emptyList())).find(x => x.name === "血清素综合征");
-    const trio = effectTags(core_collection__cons(fluvoxamine(), core_collection__cons(sertraline(), core_collection__cons(citalopram(), core_collection__emptyList())))).find(x => x.name === "血清素综合征");
+    const one = effectTags(core_collection__cons(fluvoxamine(), core_collection__emptyList()), core_collection__emptyList()).find(x => x.name === "血清素综合征");
+    const trio = effectTags(core_collection__cons(fluvoxamine(), core_collection__cons(sertraline(), core_collection__cons(citalopram(), core_collection__emptyList()))), core_collection__emptyList()).find(x => x.name === "血清素综合征");
     return one.level === 1 && one.pack === true && trio.level === 3 && trio.acute === true;
   })());
   __smA("effectTags 排序 红 > 黄 > 白", (function () {
-    const ts = effectTags(core_collection__cons(morphine(), core_collection__cons(fluvoxamine(), core_collection__emptyList())));
+    const ts = effectTags(core_collection__cons(morphine(), core_collection__cons(fluvoxamine(), core_collection__emptyList())), core_collection__emptyList());
     let ok = true;
     for (let i = 1; i < ts.length; i++) if (ts[i - 1].level < ts[i].level) ok = false;
     return ok && ts[0].level === 3 && ts[ts.length - 1].level === 1;
   })());
   __smA("resp字色随底色（>=7 白字）", respTextColor(6) === "#4E342E" && respTextColor(7) === "#FFFFFF" && respTextColor(9) === "#FFFFFF");
   __smA("routeOf 回退口服", routeOf("未知", core_collection__emptyList()) === "口服");
-  __smA("firstRoute", firstRoute(core_collection__cons(PkProfile("口服", "常释", 15, "不稳", "一级", "对数", 0.5, core_collection__emptyList()), core_collection__emptyList())) === "口服");
+  __smA("firstRoute", firstRoute(core_collection__cons(PkProfile("口服", "常释", 15, "不稳", "一级", "对数", 0.5, core_collection__emptyList(), core_collection__emptyList()), core_collection__emptyList())) === "口服");
   __smA("ledger 往返", (function () { saveLedger([DoseRec("测试药", 50.0, 123)]); const b = loadLedger(); return b.length === 1 && b[0].drug === "测试药" && b[0].amount === 50 && b[0].time === 123; })());
+
+
+  // ---------- t74 rev1：一级吸收一室模型 + 活性代谢物时序 + 维持骤降戒断 ----------
+  __smA("tmaxHours 区间中值/不稳定/回退", tmaxHours("1-2h") === 1.5 && tmaxHours("6-8h") === 7 && tmaxHours("不稳定") === 5 && tmaxHours("-") === 1);
+  __smA("absorbHalf 由 Tmax 反解（氟西汀）", (function () {
+    const ta = absorbHalf(7.0, 96.0);
+    return ta > 0.02 && Math.abs(peakTimeOf(ta, 96.0) - 7.0) < 0.05 && ta < 96.0;
+  })());
+  __smA("一级吸收：C(0)=0、Tmax 达峰、峰后衰减（氟西汀 20mg）", (function () {
+    const doses = [Dose(20.0, 0)];
+    const ta = absorbHalf(7.0, 96.0);
+    const sv = seriesValues(doses, 96.0, ta, 0.6, 0, 48, 4);
+    const mi = sv.indexOf(Math.max.apply(null, sv));
+    return sv[0] === 0 && sv[1] > sv[0] && sv[2] > sv[1] && mi === 2 && sv[12] < sv[2] && sv[12] > 0;
+  })());
+  __smA("去甲氟西汀 T½ 长于母药（数据级）", (function () {
+    const p0 = fluoxetine().pk[0];
+    return p0.halfLife === 96 && p0.activeForms.length === 1 && p0.activeForms[0].name === "去甲氟西汀" && p0.activeForms[0].thalf === 240 && p0.activeForms[0].frac === 1.0;
+  })());
+  __smA("代谢物峰后移（可待因→吗啡）", (function () {
+    const doses = [Dose(30.0, 0)];
+    const ta = absorbHalf(tmaxHours("1h"), 3.0);
+    const par = seriesValues(doses, 3.0, ta, 0.6, 0, 12, 1);
+    const met = metaSeriesValues(doses, 3.0, MetaboForm("吗啡", 4, 0.1), 0.6, 0, 12, 1);
+    const pi = par.indexOf(Math.max.apply(null, par));
+    const mi = met.indexOf(Math.max.apply(null, met));
+    return par[0] === 0 && met[0] === 0 && pi === 1 && mi >= 3 && mi <= 6 && mi > pi && Math.max.apply(null, met) > 0;
+  })());
+  __smA("代谢物尾段长于母药（氟西汀→去甲氟西汀 48h 内仍爬升）", (function () {
+    const doses = [Dose(20.0, 0)];
+    const met = metaSeriesValues(doses, 96.0, MetaboForm("去甲氟西汀", 240, 1.0), 0.6, 0, 48, 4);
+    return met[0] === 0 && met[12] > met[9] && met[9] > met[6] && met[6] > met[3];
+  })());
+  __smA("α-羟基咪达唑仑不建模 / M6G 建模", (function () {
+    const mz = midazolam().pk[0].activeForms;
+    const mo = morphine().pk[0].activeForms;
+    return mz.length === 0 && mo.length === 1 && mo[0].name === "M6G" && mo[0].thalf === 4 && mo[0].frac === 0.1;
+  })());
+  __smA("维持骤降触发戒断（吗啡 q8h×4 后停药）", (function () {
+    const doses = [Dose(10.0, 0), Dose(10.0, 8), Dose(10.0, 16), Dose(10.0, 24)];
+    const ta = absorbHalf(tmaxHours("1-2h"), 2.0);
+    return withdrawCrashed(doses, 2.0, ta, 0.34, 48.0) === true;
+  })());
+  __smA("漏服单次不触发（仅错过一个间隔）", (function () {
+    const doses = [Dose(10.0, 0), Dose(10.0, 8), Dose(10.0, 16), Dose(10.0, 24)];
+    const ta = absorbHalf(tmaxHours("1-2h"), 2.0);
+    return withdrawCrashed(doses, 2.0, ta, 0.34, 28.0) === false;
+  })());
+  __smA("不足 3 次给药不触发", (function () {
+    const doses = [Dose(10.0, 0), Dose(10.0, 8)];
+    const ta = absorbHalf(tmaxHours("1-2h"), 2.0);
+    return withdrawCrashed(doses, 2.0, ta, 0.34, 48.0) === false;
+  })());
+  __smA("长 T½ 维持不误触发（氟西汀 q12h×4）", (function () {
+    const doses = [Dose(20.0, 0), Dose(20.0, 12), Dose(20.0, 24), Dose(20.0, 36)];
+    const ta = absorbHalf(7.0, 96.0);
+    return withdrawCrashed(doses, 96.0, ta, 0.6, 84.0) === false;
+  })());
+  __smA("戒断词条：主观项 + 综合征 ◆ 包（吗啡）", (function () {
+    const ts = withdrawTagsOf(morphine());
+    const pk = ts.find(x => x.name === "骤停阿片戒断综合征");
+    return ts.length === 3 && pk && pk.level === 3 && pk.acute === true && pk.pack === true
+      && ts.some(x => x.name === "焦虑" && x.acute === true) && ts.some(x => x.name === "失眠")
+      && !ts.some(x => ["流泪流涕", "出汗", "肌痛", "瞳孔散大"].indexOf(x.name) >= 0);
+  })());
+  __smA("effectTags 注入戒断词条", (function () {
+    const one = effectTags(core_collection__cons(morphine(), core_collection__emptyList()), core_collection__emptyList());
+    const two = effectTags(core_collection__cons(morphine(), core_collection__emptyList()), core_collection__cons(morphine(), core_collection__emptyList()));
+    const wd = two.find(x => x.name === "骤停阿片戒断综合征");
+    return !one.some(x => x.name === "骤停阿片戒断综合征")
+      && wd && wd.level === 3 && wd.pack === true && wd.acute === true
+      && two.some(x => x.name === "焦虑") && two.some(x => x.name === "失眠");
+  })());
+  __smA("图表代谢物独立序列（去甲氟西汀 label）", (function () {
+    const now = 86400000;
+    const recs = [DoseRec("氟西汀", 20.0, now - 12 * 3600000), DoseRec("氟西汀", 20.0, now - 24 * 3600000)];
+    const ss = chartSeriesList(recs, [fluoxetine()], now);
+    const labels = ss.map(s => s.label);
+    return labels.indexOf("氟西汀") >= 0 && labels.indexOf("去甲氟西汀") >= 0 && ss.length === 2;
+  })());
 
   __fs.writeFileSync("sm-result.txt", "PASSES=" + __smPass + " FAILS=" + __smFail + "\n" + __lines.join("\n"), "utf-8");
   process.exit(__smFail > 0 ? 1 : 0);

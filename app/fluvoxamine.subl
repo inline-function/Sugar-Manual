@@ -23,7 +23,9 @@ fun fluvoxamine(): Drug = Drug(
     inhibitions = ratedList("强效|CYP1A2;强效|CYP2C19;弱效|CYP2C9;弱效|CYP3A4"),
     pk = cons(PkProfile(
         route = "口服", form = "常释", halfLife = 15, tmax = "不稳定",
-        clearance = "一级", curve = "对数", bio = 0.5, metabolites = emptyList()
+        clearance = "一级", curve = "对数", bio = 0.5, metabolites = emptyList(),
+  // 无临床意义可估算的活性代谢物（展示段 metabolites 仅供资料页说明，不建模）。
+        activeForms = emptyList()
     ), emptyList()),
     acuteTher = ratedList("强效|镇静"),
     chronicTher = ratedList("极强|抗强迫;强效|抗抑郁;中效|抗焦虑"),

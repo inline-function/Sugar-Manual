@@ -15,12 +15,14 @@ fun fluoxetine(): Drug = Drug(
     pk = cons(PkProfile(
         route = "口服", form = "常释", halfLife = 96, tmax = "6-8h",
         clearance = "一级（慢）", curve = "对数", bio = 0.6,
-        metabolites = cons(Rated("强效", "去甲氟西汀（半衰期约 7-15 天）"), emptyList())
+        metabolites = cons(Rated("强效", "去甲氟西汀（半衰期约 7-15 天）"), emptyList()),
+  // 去甲氟西汀 T½ 7-15 天取中值 10 天（240h）；母药几乎全部经 CYP2D6 N-去甲基转化（frac 1.0）。
+        activeForms = cons(MetaboForm("去甲氟西汀", 240, 1.0), emptyList())
     ), emptyList()),
     acuteTher = ratedList("弱效|激活（早期）"),
     chronicTher = ratedList("极强|抗抑郁;强效|抗强迫;强效|抗焦虑;强效|抗贪食"),
     acuteAdv = ratedList("罕见|血清素综合征"),
     chronicAdv = ratedList("十分常见|恶心;常见|失眠;常见|头痛;常见|厌食;少见|早期焦虑;少见|年轻成人自杀冲动;罕见|躁狂转换"),
-    withdraw = ratedList("少见|停药综合征（代谢物缓释）;常见|恶心;少见|头晕"),
+    withdraw = ratedList("少见|代谢物缓释停药综合征;常见|恶心;少见|头晕"),
     overdose = ratedList(">1500mg|恶心与躁动")
 )

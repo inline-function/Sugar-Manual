@@ -17,10 +17,17 @@
 // 极强；不良反应频率：罕见…十分常见；过量为剂量阈值串如 ">1000mg"），name 为条目名。
 struct Rated(level: Str, name: Str)
 
+
+// 活性代谢物（建模用，t74）：name 代谢物名 / thalf 自身消除半衰期（小时）/
+// frac 母药消除中转为该代谢物的分数（0-1）。仅补有真实临床意义且可估算的活性代谢物
+// （氟西汀→去甲氟西汀、西酞普兰/艾司西酞普兰→去甲西酞普兰、可待因→吗啡、吗啡→M6G）；
+// 药理意义不明或快速失活者（如 α-羟基咪达唑仑）只留在 metabolites 展示段、不建模。
+struct MetaboForm(name: Str, thalf: Nat, frac: Rat)
+
 // 单条药代资料（每个给药途径 × 药型一条；复数给药途径/药型时列表多条）。
 struct PkProfile(
     route: Str, form: Str, halfLife: Nat, tmax: Str, clearance: Str,
-    curve: Str, bio: Rat, metabolites: List[Rated]
+    curve: Str, bio: Rat, metabolites: List[Rated], activeForms: List[MetaboForm]
 )
 
 // 药物完整资料（一药一条）。
@@ -81,7 +88,15 @@ fun encPk(p: PkProfile): Str = joinFields(cons(
     jsonField("clearance", jsonLit(p.clearance)), cons(
     jsonField("curve", jsonLit(p.curve)), cons(
     jsonField("bio", toStr(p.bio)), cons(
-    jsonField("metabolites", encRatedList(p.metabolites)), emptyList())))))))))
+    jsonField("metabolites", encRatedList(p.metabolites)), cons(
+    jsonField("activeForms", encMetaboList(p.activeForms)), emptyList()))))))))))
+
+// 活性代谢物 JSON 编码（结构同 Rated：name/thalf/frac）。
+fun encMetaboList(xs: List[MetaboForm]): Str = joinJsonElems(map(xs) { m => encMetabo(m) })
+fun encMetabo(m: MetaboForm): Str = joinFields(cons(
+    jsonField("name", jsonLit(m.name)), cons(
+    jsonField("thalf", jsonLit(toStr(m.thalf))), cons(
+    jsonField("frac", toStr(m.frac)), emptyList()))))
 
 fun encDrug(d: Drug): Str = joinFields(cons(
     jsonField("name", jsonLit(d.name)), cons(
@@ -147,7 +162,16 @@ fun decPk(j: Json): PkProfile = PkProfile(
     clearance = jsonStrField(j, "clearance"),
     curve = jsonStrField(j, "curve"),
     bio = jsonRatField(j, "bio"),
-    metabolites = decRatedList(j, "metabolites")
+    metabolites = decRatedList(j, "metabolites"),
+    activeForms = decMetaboList(j, "activeForms")
+)
+
+// 活性代谢物 JSON 解码（缺字段 -> 空表，兼容旧入库数据）。
+fun decMetaboList(j: Json, k: Str): List[MetaboForm] = map(jsonListField(j, k)) { o => decMetabo(o) }
+fun decMetabo(j: Json): MetaboForm = MetaboForm(
+    name = jsonStrField(j, "name"),
+    thalf = jsonNatField(j, "thalf"),
+    frac = jsonRatField(j, "frac")
 )
 
 fun decPkList(j: Json, k: Str): List[PkProfile] = map(jsonListField(j, k)) { o => decPk(o) }

@@ -1,0 +1,6 @@
+1-2h=1.5
+6-8h=7
+unstable=5
+dash=1
+num2h=2
+num1=1

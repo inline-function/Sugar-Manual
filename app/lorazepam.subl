@@ -13,12 +13,14 @@ fun lorazepam(): Drug = Drug(
     pk = cons(PkProfile(
         route = "口服", form = "常释", halfLife = 12, tmax = "2h",
         clearance = "一级（UGT 葡萄糖醛酸化）", curve = "对数", bio = 0.94,
-        metabolites = cons(Rated("极弱", "劳拉西泮葡萄糖醛酸结合物（无活性）"), emptyList())
+        metabolites = cons(Rated("极弱", "劳拉西泮葡萄糖醛酸结合物（无活性）"), emptyList()),
+  // 无临床意义可估算的活性代谢物（展示段 metabolites 仅供资料页说明，不建模）。
+        activeForms = emptyList()
     ), emptyList()),
     acuteTher = ratedList("强效|抗焦虑（持续状态）;强效|镇静（起效较快）"),
     chronicTher = ratedList("强效|抗焦虑;强效|焦虑性失眠;中效|抗癫痫（持续状态首选静注）;中效|化疗止吐辅助（超说明书）"),
     acuteAdv = ratedList("少见|呼吸抑制;常见|嗜睡;常见|头晕"),
     chronicAdv = ratedList("十分常见|嗜睡;常见|头晕;常见|乏力;常见|共济失调;常见|顺行性记忆损害;少见|呼吸抑制;少见|脑损伤者矛盾攻击性"),
-    withdraw = ratedList("常见|焦虑反跳;常见|失眠反跳;常见|震颤;常见|出汗;少见|癫痫发作（骤停高剂量）"),
+    withdraw = ratedList("常见|焦虑反跳;常见|失眠反跳;常见|震颤;常见|出汗;少见|骤停高剂量癫痫发作"),
     overdose = ratedList(">10mg|呼吸抑制")
 )

@@ -178,7 +178,7 @@ fun effFreqBase(freq: Str): Nat = if (advFreqLevel(freq) == 0) 1 else advFreqLev
 // 瘙痒、瞳孔改变、血压下降/低血压、QT/心律、低血钠、性功能障碍、免疫抑制、肌阵挛、
 // 低血糖、皮疹、过敏、腹泻、癫痫、胸壁强直、去甲哌替啶神经毒性）一律剔除。
 // 呼吸抑制非纯主观但用户明令保留（核心预警价值，◆阿片类中毒包依赖它）。
-fun effNonSubjectiveRoots(): List[Str] = strList("依赖,耐受,跌倒,便秘,口干,尿潴留,出汗,瘙痒,瞳孔,血压下降,低血压,QT间期,心律失常,低血钠,性功能,免疫抑制,肌阵挛,低血糖,皮疹,过敏反应,腹泻,癫痫,胸壁强直,去甲哌替啶")
+fun effNonSubjectiveRoots(): List[Str] = strList("依赖,耐受,跌倒,便秘,口干,尿潴留,出汗,瘙痒,瞳孔,血压下降,低血压,QT间期,心律失常,低血钠,性功能,免疫抑制,肌阵挛,低血糖,皮疹,过敏反应,腹泻,癫痫,胸壁强直,去甲哌替啶,流泪流涕,肌痛,肌肉痛,哈欠,寒战")
 fun isSubjective(name: Str): Bool = noRootOf(name, effNonSubjectiveRoots())
 fun noRootOf(name: Str, roots: List[Str]): Bool = when (roots) {
     is Cons(h, rest) => if (tagHas(name, h)) false else noRootOf(name, rest)
@@ -209,7 +209,8 @@ fun effDrugCount(es: List[EffEnt]): Nat = size(distinct(map(es) { e => e.drug })
 fun effLevel(base: Nat, drugs: Nat): Nat = if (base + drugs >= 4) 3 else base + drugs - 1
 
 // 综合征包名表。
-fun effIsPack(n: Str): Bool = if (n == "血清素综合征") true else n == "阿片类中毒"
+// 包判定：综合征类词条（血清素综合征/阿片戒断综合征/停药综合征…）与引擎「阿片类中毒」。
+fun effIsPack(n: Str): Bool = if (tagHas(n, "综合征")) true else n == "阿片类中毒"
 
 // 一条聚合后的词条。
 fun effTagOf(es: List[EffEnt], n: Str): EffTag {
@@ -242,10 +243,54 @@ fun effSortTags(xs: List[EffTag]): List[EffTag] = when (xs) {
     else => emptyList()
 }
 
-// 预警区呈现契约：词条流（排序后）。与宿主 DshComposeHost.effectTags() 同表同规则。
-fun effectTags(drugs: List[Drug]): List[EffTag] {
+// ---------- 维持浓度骤降 → 戒断预警（t74 §2，纯函数） ----------
+//
+// 用户模型：「长期维持在某血药浓度的药突然跌下去 → 加该药戒断反应词条」。
+// 判定 = 长期维持（48h 窗口内 ≥3 次规律给药，形成维持带）+ 骤降（当前浓度跌破峰值 30%）。
+// 漏服保护：距末次给药不足 2 个给药间隔视为漏服单次（浓度可能跌破但会随下一剂恢复），不触发。
+// 浓度复用 pk.subl concentrationAt（一室一级消除，与图表同公式）。
+fun withdrawCrashed(doses: List[Dose], tHalf: Rat, tAbs: Rat, bio: Rat, now: Rat): Bool {
+    var recent: List[Dose] = filter(doses) { d => (now >= toRat(d.time)) && ((now - toRat(d.time)) <= 48.0) }
+    var last: Nat = recent.fold(0) { acc, d => if (d.time > acc) d.time else acc }
+    var first: Nat = recent.fold(999999) { acc, d => if (d.time < acc) d.time else acc }
+    var interval: Nat = (last - first) / (size(recent) - 1)
+    var grace: Rat = toRat(interval + interval)
+    // 峰值取各剂峰时近似采样（服药时刻 + T_a ≈ 峰时；累积曲线峰位略后，偏保守判定）。
+    var peak: Rat = recent.fold(0.0) { acc, d =>
+        var c: Rat = concentrationAt(doses, tHalf, tAbs, bio, toRat(d.time) + tAbs)
+        if (c > acc) c else acc }
+    var cur: Rat = concentrationAt(doses, tHalf, tAbs, bio, now)
+    return if (size(recent) < 3) false
+    else if (interval < 1) false
+    else if ((now - toRat(last)) < grace) false
+    else if (peak <= 0.0) false
+    else cur <= (peak * 0.3)
+}
+
+// 一药是否处于骤降戒断（按其台账剂量序列与药代参数在 now 时刻判定）。
+fun withdrawDrugOf(d: Drug, doses: List[Dose], now: Rat): Bool {
+    var h: Rat = toRat(halfNat(d.pk))
+    var a: Rat = absorbHalf(tmaxHours(tmaxOf(d.pk)), h)
+    var b: Rat = bioRat(d.pk)
+    return withdrawCrashed(doses, h, a, b, now)
+}
+fun tmaxOf(pk: List[PkProfile]): Str = when (pk) {
+    is Cons(p, _) => p.tmax
+    else => "-"
+}
+
+// 戒断词条：该药 withdraw 段的主观项（急性来源 → flash），综合征（如「阿片戒断综合征」）
+// 走 ◆ 包格式；级别按频率词映射（阿片戒断综合征十分常见 → 红 3）。
+fun withdrawTagsOf(d: Drug): List[EffTag] =
+    map(filter(d.withdraw) { r => isSubjective(r.name) }) { r => EffTag(r.name, advFreqLevel(r.level), true, effIsPack(r.name)) }
+
+// 预警区呈现契约：词条流（排序后）+ 骤降戒断词条（withdrawn = 已判定骤降的药）。
+// 与宿主 DshComposeHost.effectTags() 同表同规则（宿主侧下版同步）。
+fun effectTags(drugs: List[Drug], withdrawn: List[Drug]): List[EffTag] {
     var es: List[EffEnt] = effAll(drugs)
-    return effSortTags(append(map(effNames(es)) { n => effTagOf(es, n) }, effPoisoningPack(drugs)))
+    var adv: List[EffTag] = append(map(effNames(es)) { n => effTagOf(es, n) }, effPoisoningPack(drugs))
+    var wd: List[EffTag] = withdrawn.fold(emptyList()) { acc, d => append(acc, withdrawTagsOf(d)) }
+    return effSortTags(append(adv, wd))
 }
 
 // ---------- 代谢相互作用预警 ----------

@@ -13,12 +13,14 @@ fun tramadol(): Drug = Drug(
     pk = cons(PkProfile(
         route = "口服", form = "常释", halfLife = 6, tmax = "2h",
         clearance = "一级（CYP2D6/3A4）", curve = "对数", bio = 0.66,
-        metabolites = cons(Rated("强效", "O-去甲基曲马多（M1）"), emptyList())
+        metabolites = cons(Rated("强效", "O-去甲基曲马多（M1）"), emptyList()),
+  // 无临床意义可估算的活性代谢物（展示段 metabolites 仅供资料页说明，不建模）。
+        activeForms = emptyList()
     ), emptyList()),
     acuteTher = ratedList("中效|镇痛（中度）;弱效|镇静"),
     chronicTher = ratedList("强效|镇痛（中度疼痛）;中效|不宁腿综合征（超说明书）;中效|夜间下肢痛（超说明书）"),
     acuteAdv = ratedList("常见|恶心呕吐;常见|头晕;少见|呼吸抑制;常见|欣快"),
     chronicAdv = ratedList("十分常见|恶心;常见|头晕;常见|嗜睡;少见|呼吸抑制"),
-    withdraw = ratedList("常见|阿片样戒断综合征（骤停）;常见|焦虑;常见|出汗;常见|失眠;少见|血清素综合征（骤停）"),
+    withdraw = ratedList("常见|骤停阿片样戒断综合征;常见|焦虑;常见|出汗;常见|失眠;少见|骤停血清素综合征"),
     overdose = ratedList(">400mg|癫痫与血清素综合征")
 )

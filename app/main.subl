@@ -254,6 +254,35 @@ fun metabTagList(ts: List[Trigger]): List[Any] = when (ts) {
 fun metabTagCell(t: Trigger): Any = Box(modifier = clip(12).background(tagBg(metabLevel(t.score), false)).paddingHV(12, 5)) {
     Text(text = concat(t.name, concat(" 抑制 ×", toStr(t.score))), color = tagFg(metabLevel(t.score), false), size = 14, bold = true)
 }
+// ---------- 戒断预警流（t74 §2：骤降药的 withdraw 主观项，与 ADR 流并列） ----------
+// 一格 = 一个药：药名小标 + 该药 withdraw 段主观词条（急性 → flash）；综合征
+// （如「骤停阿片戒断综合征」）走 ◆ 包格、红底加粗闪烁（overdose 通路）。
+@composable
+fun withdrawStream(wds: List[Drug]): Any = if (size(wds) == 0) {
+    Box(modifier = fillWidth()) {}
+} else {
+    Box(modifier = fillWidth().paddingHV(24, 8), orientation = "vertical", spacing = 6) {
+        withdrawRows(wds)
+    }
+}
+fun withdrawRows(wds: List[Drug]): List[Any] = when (wds) {
+    Nil => emptyList()
+    is Cons(d, rest) => cons(withdrawRowOf(d), withdrawRows(rest))
+    else => emptyList()
+}
+@composable
+fun withdrawRowOf(d: Drug): Any = Box(modifier = fillWidth(), orientation = "vertical", spacing = 4) {
+    Box(modifier = fillWidth(), wrap = true, spacing = 8, children = withdrawTagCells(withdrawTagsOf(d)))
+}
+fun withdrawTagCells(ts: List[EffTag]): List[Any] = when (ts) {
+    Nil => emptyList()
+    is Cons(tg, rest) => cons(withdrawTagCell(tg), withdrawTagCells(rest))
+    else => emptyList()
+}
+@composable
+fun withdrawTagCell(tg: EffTag): Any = Box(modifier = clip(12).background(tagBg(tg.level, tg.acute)).paddingHV(12, 5)) {
+    Text(text = concat(if (tg.pack) "◆ " else "", tg.name), color = tagFg(tg.level, tg.acute), size = 14, bold = true, flash = tg.acute)
+}
 // ---------- 服药记录（≈ DoseLogList：Card + 颜色竖条 + 四字段） ----------
 
 struct MedCard(name: Str, time: Str, route: Str, dose: Str)
@@ -341,12 +370,17 @@ fun doseCard(c: MedCard): Any = Card(modifier = fillWidth().paddingH(24).padding
 }
 
 // ---------- 图表数据（≈ ConcentrationChart + PkEngine：t=0 为当前时刻，0..48h 预测） ----------
+// 浓度公式（t74 rev1，一级吸收一室·空腹假设）：C(t) = Σ_i F·D_i·[T½/(T½−T_a)]·
+// (0.5^((t−t_i)/T½) − 0.5^((t−t_i)/T_a))，T_a 由 Tmax 反解——服药后浓度从 0 渐升、
+// 在 Tmax 达峰、随后按 T½ 衰减（旧版把服药时刻当峰值，已弃用）。V 归一化（相对浓度）。
 
 // 像素 → dp（桥返回 px 与 densityDpi）。
 fun toDp(px: Nat, dpi: Nat): Nat = (px * 160) / dpi
 
-// 距当前时刻的小时数（给药时间 - now；已给过的剂量为负，仍计入残量——与参考只排除未来剂量一致）。
-fun hourAhead(r: DoseRec, nowMs: Nat): Nat = (r.time - nowMs) / msPerHour()
+// 距当前时刻的【整】小时数（给药时间 - now；已给过的剂量为负，仍计入残量——与参考只排除
+// 未来剂量一致）。取整：一室吸收模型的时间轴为整小时采样，刚记录的剂量（秒级偏移）落在 t=0，
+// 避免浮点小时把「服药时刻浓度=0」的吸收相起点漂移成小正数。
+fun hourAhead(r: DoseRec, nowMs: Nat): Nat = ((r.time - nowMs) - ((r.time - nowMs) % msPerHour())) / msPerHour()
 
 // 某药的台账剂量序列。
 fun dosesOfName(n: Str, recs: List[DoseRec], nowMs: Nat): List[Dose] = when (recs) {
@@ -355,10 +389,22 @@ fun dosesOfName(n: Str, recs: List[DoseRec], nowMs: Nat): List[Dose] = when (rec
     else => emptyList()
 }
 
-fun halfOfName(n: Str, drugs: List[Drug]): Nat = when (drugs) {
-    Nil => 24
-    is Cons(d, rest) => if (d.name == n) halfNat(d.pk) else halfOfName(n, rest)
-    else => 24
+// T½（Rat，供引擎）：缺失兜 24h。
+fun halfRatOf(n: Str, drugs: List[Drug]): Rat = when (drugs) {
+    Nil => 24.0
+    is Cons(d, rest) => if (d.name == n) toRat(halfNat(d.pk)) else halfRatOf(n, rest)
+    else => 24.0
+}
+// 吸收半衰期（由 PkProfile.tmax 反解，t74 rev1 一级吸收一室模型；缺失兜 1h）。
+fun absorbOfName(n: Str, drugs: List[Drug]): Rat = when (drugs) {
+    Nil => 1.0
+    is Cons(d, rest) => if (d.name == n) absorbRat(d.pk) else absorbOfName(n, rest)
+    else => 1.0
+}
+fun absorbRat(pk: List[PkProfile]): Rat = absorbHalf(tmaxHours(tmaxStr(pk)), toRat(halfNat(pk)))
+fun tmaxStr(pk: List[PkProfile]): Str = when (pk) {
+    is Cons(p, _) => p.tmax
+    else => "-"
 }
 fun bioOfName(n: Str, drugs: List[Drug]): Rat = when (drugs) {
     Nil => 1.0
@@ -366,20 +412,49 @@ fun bioOfName(n: Str, drugs: List[Drug]): Rat = when (drugs) {
     else => 1.0
 }
 
-// 某药的分量序列（该药的 T½/F）。
+// 某药的分量序列（该药的 T½/T_a/F；一级吸收模型 → 服药后渐升至 Tmax 再衰减）。
 fun seriesOfDrug(n: Str, recs: List[DoseRec], drugs: List[Drug], nowMs: Nat): List[Rat] =
-    seriesValues(dosesOfName(n, recs, nowMs), halfOfName(n, drugs), bioOfName(n, drugs), 0, windowHours(), stepHours())
+    seriesValues(dosesOfName(n, recs, nowMs), halfRatOf(n, drugs), absorbOfName(n, drugs), bioOfName(n, drugs), 0, windowHours(), stepHours())
 
 fun seriesOfNames(names: List[Str], recs: List[DoseRec], drugs: List[Drug], nowMs: Nat): List[Series] = when (names) {
     Nil => emptyList()
-    is Cons(n, rest) => cons(Series(label = n, color = drugColor(n), points = seriesOfDrug(n, recs, drugs, nowMs)), seriesOfNames(rest, recs, drugs, nowMs))
+    is Cons(n, rest) => append(
+        cons(Series(label = n, color = drugColor(n), points = seriesOfDrug(n, recs, drugs, nowMs)), metaboSeriesOf(n, recs, drugs, nowMs)),
+        seriesOfNames(rest, recs, drugs, nowMs))
     else => emptyList()
 }
+
+// 活性代谢物序列（t74）：母药消除→代谢物生成，label 标代谢物名（如「去甲氟西汀」）、
+// 独立色系区分（与母线同图可叠加进总浓度线——活性部分计入暴露）。
+fun metaboSeriesOf(n: Str, recs: List[DoseRec], drugs: List[Drug], nowMs: Nat): List[Series] =
+    metaboSeriesAt(metaboFormsOf(n, drugs), n, recs, drugs, nowMs)
+fun metaboSeriesAt(forms: List[MetaboForm], n: Str, recs: List[DoseRec], drugs: List[Drug], nowMs: Nat): List[Series] = when (forms) {
+    is Cons(m, rest) => cons(Series(
+        label = m.name, color = metaColorOf(m.name),
+        points = metaSeriesValues(dosesOfName(n, recs, nowMs), halfRatOf(n, drugs), m, bioOfName(n, drugs), 0, windowHours(), stepHours())
+    ), metaboSeriesAt(rest, n, recs, drugs, nowMs))
+    else => emptyList()
+}
+fun metaboFormsOf(n: Str, drugs: List[Drug]): List[MetaboForm] = when (drugs) {
+    Nil => emptyList()
+    is Cons(d, rest) => if (d.name == n) activeFormsOf(d.pk) else metaboFormsOf(n, rest)
+    else => emptyList()
+}
+fun activeFormsOf(pk: List[PkProfile]): List[MetaboForm] = when (pk) {
+    is Cons(p, rest) => p.activeForms
+    else => emptyList()
+}
+// 代谢物线配色（与母线区分；与药色表无冲突）。
+fun metaColorOf(n: Str): Str = if (n == "去甲氟西汀") "#4FC3F7"
+    else if (n == "去甲西酞普兰") "#4DD0E1"
+    else if (n == "吗啡") "#BCAAA4"
+    else if (n == "M6G") "#A1887F"
+    else "#607D8B"
 
 // 图表全部序列（逐药分量线）。空台账 → 氟伏沙明演示序列（home 首启不空图）。
 fun chartSeriesList(recs: List[DoseRec], drugs: List[Drug], nowMs: Nat): List[Series] =
     if (size(recentDrugs(recs)) == 0) {
-        cons(Series(label = "氟伏沙明", color = "#FFC107", points = seriesValues(demoDoses(), halfNat(fluvoxamine().pk), bioRat(fluvoxamine().pk), 0, windowHours(), stepHours())), emptyList())
+        cons(Series(label = "氟伏沙明", color = "#FFC107", points = seriesValues(demoDoses(), halfRatOf("氟伏沙明", drugs), absorbOfName("氟伏沙明", drugs), bioRat(fluvoxamine().pk), 0, windowHours(), stepHours())), emptyList())
     } else {
         seriesOfNames(recentDrugs(recs), recs, drugs, nowMs)
     }
@@ -410,6 +485,14 @@ fun totalPoints(seriesXs: List[Series]): List[Rat] = sumAllSeries(pointsOf(serie
 // X 轴刻度：与参考一致每 12h 一个（0/12/24/36/48），其余采样点留空。
 fun chartLabels(): List[Str] = map(range(0, (windowHours() / stepHours()) + 1)) { i => tickLabel(i) }
 fun tickLabel(i: Nat): Str = if (i % 3 == 0) toStr(i * stepHours()) else ""
+
+// ---------- 维持-骤降戒断（t74 §2：warn.subl withdrawCrashed 的视图侧接入） ----------
+//
+// 逐药以其台账剂量（时间轴 now = 0）+ 药代参数判定骤降；返回需要注入戒断词条的药。
+// 长期维持（48h 内 ≥3 次规律给药）→ 骤降（跌破峰值 30% 且距末次给药 >1.5 间隔）才触发；
+// 漏服单次（仅错过一个间隔）由 withdrawCrashed 的 grace 保护拦截，不误报。
+fun crashedWithdrawn(drugsOf: List[Drug], recs: List[DoseRec], nowMs: Nat): List[Drug] =
+    filter(drugsOf) { d => withdrawDrugOf(d, dosesOfName(d.name, recs, nowMs), 0.0) }
 
 // ---------- FAB 与表单（≈ ExtendedFAB + ModalBottomSheet） ----------
 
@@ -703,7 +786,7 @@ fun inhibTextNode(d: Drug): Any = Box(modifier = fillWidth()) {
 // 药动学：途径 · 剂型 · T½ · Tmax · F（F≈ 估算标记）+ 代谢物。
 fun headProfile(pk: List[PkProfile]): PkProfile = when (pk) {
     is Cons(p, _) => p
-    else => PkProfile(route = "口服", form = "常释", halfLife = 24, tmax = "-", clearance = "-", curve = "对数", bio = 1.0, metabolites = emptyList())
+    else => PkProfile(route = "口服", form = "常释", halfLife = 24, tmax = "-", clearance = "-", curve = "对数", bio = 1.0, metabolites = emptyList(), activeForms = emptyList())
 }
 fun pkLine(d: Drug): Str = when (d.pk) {
     is Cons(p, _) => joinTexts(pkParts(p, d), " · ")
@@ -811,9 +894,10 @@ fun chartHeightDp(sh: Nat, dpi: Nat): Nat = (contentHeightDp(sh, dpi) * 45) / 10
 fun lowerHeightDp(sh: Nat, dpi: Nat): Nat = contentHeightDp(sh, dpi) - chartHeightDp(sh, dpi)
 
 @composable
-fun lowerBox(rs: Alert, rows: List[MedCard], drugs: List[Drug], met: Alert, sh: Nat, dpi: Nat): Box = Box(modifier = fillWidth().height(lowerHeightDp(sh, dpi)), scrollable = true) {
+fun lowerBox(rs: Alert, rows: List[MedCard], drugs: List[Drug], met: Alert, wds: List[Drug], sh: Nat, dpi: Nat): Box = Box(modifier = fillWidth().height(lowerHeightDp(sh, dpi)), scrollable = true) {
     respStream(rs)
     metabStream(met)
+    withdrawStream(wds)
     recordTitle()
     // 记录卡平铺为直接子级（children=），空台账给「暂无服药记录」占位。
     Box(modifier = fillWidth(), children = recordList(rows))
@@ -837,13 +921,14 @@ fun content(): Box {
     unchecked var drugsOf: List[Drug] = coadminOf(recs)
     var rs: Alert = respAlert(drugsOf)
     var met: Alert = metabAlert(drugs)
+    var wd: List[Drug] = crashedWithdrawn(drugsOf, recs, nowMs)
     unchecked var sh: Nat = screenHeight()
     unchecked var dpi: Nat = screenDensity()
     var seriesXs: List[Series] = chartSeriesList(recs, drugs, nowMs)
     var total: List[Rat] = totalPoints(seriesXs)
     @mut var chart = Chart(kind = "line", points = total, series = seriesXs, labels = chartLabels(), color = "primary", legend = true, badge = "估算", modifier = fillWidth().height(chartHeightDp(sh, dpi)))
     unchecked var rows: List[MedCard] = medRowsOf(recs, drugs)
-    @mut var lower = lowerBox(rs, rows, drugs, met, sh, dpi)
+    @mut var lower = lowerBox(rs, rows, drugs, met, wd, sh, dpi)
     @mut var sheet = formPanel(open, drugs, idx, sel, dt, de)
     @mut var setDlg = settingsDialog(setOp)
     @mut var listSheet = drugListSheet(listOp, drugs)

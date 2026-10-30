@@ -21,23 +21,97 @@ fun ln2(): Rat = 0.6931471805599453
 // 一级清除速率常数 k = ln 2 / T½。
 fun eliminationRate(tHalf: Nat): Rat = ln2() / toRat(tHalf)
 
-// 衰减因子 0.5^(Δt/T½)（等价于 e^(−kΔt)）。
-fun decay(tHalf: Nat, dt: Nat): Rat = pow(0.5, toRat(dt) / toRat(tHalf))
+// 衰减因子 0.5^(Δt/T½)（等价于 e^(−kΔt)；T½ 取 Rat 以兼容吸收相的亚小时精度）。
+fun decayR(tHalf: Rat, dt: Rat): Rat = pow(0.5, dt / tHalf)
 
-// t 时刻血药浓度估算（多次给药叠加：仅计入 t 之前已给的剂量）。
-fun concentrationAt(doses: List[Dose], tHalf: Nat, bio: Rat, t: Nat): Rat =
-    doses.fold(0.0) { acc, d => if (t >= d.time) acc + (d.amount * bio * decay(tHalf, t - d.time)) else acc }
+// log2：core 无 log 内建，用 pow 二分反解（2^y = x，x > 1 时 y ∈ (0,14)，50 次迭代）。
+fun log2(x: Rat): Rat = if (x <= 1.0) 0.0 else bisectLog2(x, 0.0, 14.0, 50)
+fun bisectLog2(x: Rat, lo: Rat, hi: Rat, n: Nat): Rat = if (n == 0) (lo + hi) / 2.0 else {
+    var mid: Rat = (lo + hi) / 2.0
+    if (pow(2.0, mid) > x) bisectLog2(x, lo, mid, n - 1) else bisectLog2(x, mid, hi, n - 1)
+}
+
+// Tmax（小时）解析：「a-bh」取区间中值（"1-2h"→1.5、"6-8h"→7）；「不稳定」按 5h
+// （氟伏沙明口服 Tmax 2-8h 波动大，资料段已标注，以中值近似）；解析失败兜 1h。
+fun tmaxHours(s: Str): Rat = if (startsWithUnstable(s)) 5.0 else tmaxMid(strSplit(strTrim(s), "-"))
+fun startsWithUnstable(s: Str): Bool = when (strIndexOf(s, "不稳")) { is Some(_) => true; else => false }
+fun tmaxMid(parts: List[Str]): Rat = when (parts) {
+    is Cons(a, rest) => when (rest) {
+        is Cons(b, _) => (tmaxNum(a) + tmaxNum(b)) / 2.0
+        else => tmaxNum(a)
+    }
+    else => 1.0
+}
+fun tmaxNum(s: Str): Rat = if (strTrim(s) == "") 1.0 else tnumOf(strTrim(s))
+fun tnumOf(s: Str): Rat = when (parseRat(strReplace(s, "h", ""))) { is Some(v) => v; else => 1.0 }
+
+// 吸收半衰期 T_a（空腹假设、一级吸收一室模型）：由 Tmax 反解。
+// 峰时方程 T_max = log2(T½_p/T_a) · (T_a·T½_p)/(T½_p − T_a)（对 T_a 单调增，二分
+// T_a ∈ (0.02, Tmax)；T_a < Tmax < T½ 临床恒成立——峰必在吸收相之后、消除相之内）。
+fun absorbHalf(tmax: Rat, tHalf: Rat): Rat = bisectTa(tmax, tHalf, 0.02, tmax * 0.99, 60)
+fun bisectTa(tmax: Rat, tHalf: Rat, lo: Rat, hi: Rat, n: Nat): Rat = if (n == 0) (lo + hi) / 2.0 else {
+    var mid: Rat = (lo + hi) / 2.0
+    if (peakTimeOf(mid, tHalf) > tmax) bisectTa(tmax, tHalf, lo, mid, n - 1) else bisectTa(tmax, tHalf, mid, hi, n - 1)
+}
+// 预测峰时（给定吸收半衰期 T_a 与消除半衰期 T½）：峰处 dm/dt...（= 吸收速率 = 消除速率）。
+fun peakTimeOf(ta: Rat, th: Rat): Rat = log2(th / ta) * (ta * th) / (th - ta)
+
+// 血药浓度（一级吸收一室模型，空腹假设）：
+//   C(t) = Σ_i F·D_i · [T½/(T½ − T_a)] · (0.5^((t−t_i)/T½) − 0.5^((t−t_i)/T_a))，t ≥ t_i
+// 系数 = k_a/(k_a−k_e)（k_x = ln2/T½_x）即为 e 译写；t = t_i 时为 0（无吸收无浓度），
+// 峰在 Tmax、峰后按 T½ 消除。V（表观分布容积）无数据：归一化呈现（V=1 假设），
+// 单位为相对浓度（F·D 量级），不回推 mg/L——UI 侧沿用「估算/估算」措辞标注。
+// 亚小时精度：参数与时间均取 Rat（Tmax 区间中值、T_a 反解值为小数）。
+fun concentrationAt(doses: List[Dose], tHalf: Rat, tAbs: Rat, bio: Rat, t: Rat): Rat =
+    doses.fold(0.0) { acc, d =>
+        if (t >= toRat(d.time)) {
+            var dt: Rat = t - toRat(d.time)
+            var conv: Rat = tHalf / (tHalf - tAbs)
+            acc + (d.amount * bio * (conv * (decayR(tHalf, dt) - decayR(tAbs, dt))))
+        } else acc
+    }
 
 // 折线数据序列（首页时间线折线图用）：[from, to] 每 step 小时采样一点（右闭含端点）。
-fun seriesValues(doses: List[Dose], tHalf: Nat, bio: Rat, from: Nat, to: Nat, step: Nat): List[Rat] {
+fun seriesValues(doses: List[Dose], tHalf: Rat, tAbs: Rat, bio: Rat, from: Nat, to: Nat, step: Nat): List[Rat] {
     var n: Nat = (to - from) / step
-    return map(range(0, n + 1)) { i => concentrationAt(doses, tHalf, bio, from + i * step) }
+    return map(range(0, n + 1)) { i => concentrationAt(doses, tHalf, tAbs, bio, toRat(from + i * step)) }
 }
 
 // 时间轴刻度（与 seriesValues 同采样点）。
 fun seriesLabels(from: Nat, to: Nat, step: Nat): List[Str] {
     var n: Nat = (to - from) / step
     return map(range(0, n + 1)) { i => concat(toStr(from + i * step), "h") }
+}
+
+// ---------- 活性代谢物浓度（t74：母药消除 → 代谢物生成，链式消除卷积） ----------
+//
+// 模型（一室链式，生成速率 ∝ 母药消除）：
+//   dm/dt = k_p·C_p − k_m·C_m，k_x = ln2/T½_x，初始 m(0)=0（给药后代谢物从 0 生成）
+//   ⟹ C_m(t) = Σ_i f·F·D_i · [T½_p/(T½_p − T½_m)] · (0.5^(t−t_i)/T½_p − 0.5^(t−t_i)/T½_m)
+// 假设存档：
+//   ① 吸收相忽略（同 concentrationAt 的保守简化）；
+//   ② 母药消除按分数 f 转为该代谢物（f<1 时为部分转化，如可待因 CYP2D6 ~10%→吗啡）；
+//   ③ 要求 T½_m ≠ T½_p（T½ 接近时该闭式数值不稳定；本表数据已避开）；
+//   ④ 单位为相对浓度（剂量 × F × f），与母线同坐标可叠加。
+// 性质：C_m(0)=0、上升后随 T½_m 缓慢下降 → 峰值晚于母药（峰后移）、尾段长于母药
+//      （停药后残留久——去甲氟西汀是临床漏服/停药综合征口径的来源）。
+// 生成模型假设（t74）：母药消除按 frac 转为代谢物、代谢物按自身 T½ 消除的链式
+// 卷积；**忽略母药吸收相**（T_a ≪ T½_m 时曲线误差 <1%，峰位无临床影响——对去甲氟西汀
+// 这类长 T½ 代谢物成立；M6G 等近母药 T½ 的代谢物上升段会被略微高估，已注释标注）。
+fun metaLevelAt(doses: List[Dose], tHalfP: Rat, meta: MetaboForm, bio: Rat, t: Rat): Rat =
+    doses.fold(0.0) { acc, d =>
+        if (t >= toRat(d.time)) {
+            var dt: Rat = t - toRat(d.time)
+            var conv: Rat = tHalfP / (tHalfP - toRat(meta.thalf))
+            var tail: Rat = decayR(tHalfP, dt) - decayR(toRat(meta.thalf), dt)
+            acc + ((d.amount * bio) * meta.frac * (conv * tail))
+        } else acc
+    }
+
+// 代谢物折线序列（与 seriesValues 同采样：[from, to] 每 step 小时）。
+fun metaSeriesValues(doses: List[Dose], tHalfP: Rat, meta: MetaboForm, bio: Rat, from: Nat, to: Nat, step: Nat): List[Rat] {
+    var n: Nat = (to - from) / step
+    return map(range(0, n + 1)) { i => metaLevelAt(doses, tHalfP, meta, bio, toRat(from + i * step)) }
 }
 
 // 对数剂量-效应曲线（Emax 模型）：E(d) = d / (d + ED50)。

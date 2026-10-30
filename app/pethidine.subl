@@ -14,12 +14,14 @@ fun pethidine(): Drug = Drug(
     pk = cons(PkProfile(
         route = "口服", form = "常释", halfLife = 4, tmax = "1-2h",
         clearance = "一级（CYP3A4 氧化）", curve = "对数", bio = 0.5,
-        metabolites = cons(Rated("中效", "去甲哌替啶（致神经兴奋与癫痫）"), emptyList())
+        metabolites = cons(Rated("中效", "去甲哌替啶（致神经兴奋与癫痫）"), emptyList()),
+  // 无临床意义可估算的活性代谢物（展示段 metabolites 仅供资料页说明，不建模）。
+        activeForms = emptyList()
     ), emptyList()),
     acuteTher = ratedList("强效|镇痛（急性）;弱效|寒战治疗（麻醉后，超说明书）"),
     chronicTher = ratedList("中效|镇痛（急性疼痛，少用）;弱效|分娩镇痛（现已少用）"),
     acuteAdv = ratedList("常见|呼吸抑制;常见|恶心呕吐;常见|头晕;常见|欣快"),
     chronicAdv = ratedList("十分常见|恶心;常见|嗜睡;常见|呼吸抑制;罕见|血清素综合征"),
-    withdraw = ratedList("常见|阿片戒断综合征（骤停）;常见|焦虑;常见|出汗;常见|失眠"),
+    withdraw = ratedList("常见|骤停阿片戒断综合征;常见|焦虑;常见|出汗;常见|失眠"),
     overdose = ratedList(">200mg|癫痫（去甲哌替啶蓄积）")
 )

@@ -13,7 +13,9 @@ fun sertraline(): Drug = Drug(
     pk = cons(PkProfile(
         route = "口服", form = "常释", halfLife = 26, tmax = "4.5-8.4h",
         clearance = "一级", curve = "对数", bio = 0.44,
-        metabolites = cons(Rated("弱效", "去甲舍曲林"), emptyList())
+        metabolites = cons(Rated("弱效", "去甲舍曲林"), emptyList()),
+  // 无临床意义可估算的活性代谢物（展示段 metabolites 仅供资料页说明，不建模）。
+        activeForms = emptyList()
     ), emptyList()),
     acuteTher = ratedList("弱效|激活（早期）"),
     chronicTher = ratedList("极强|抗强迫;强效|抗抑郁;强效|抗焦虑;强效|抗创伤"),

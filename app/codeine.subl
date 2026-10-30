@@ -14,12 +14,14 @@ fun codeine(): Drug = Drug(
     pk = cons(PkProfile(
         route = "口服", form = "常释", halfLife = 3, tmax = "1h",
         clearance = "一级（CYP2D6 与 UGT）", curve = "对数", bio = 0.6,
-        metabolites = cons(Rated("强效", "吗啡（CYP2D6 转化，量约 10%）"), cons(Rated("极弱", "去甲可待因"), emptyList()))
+        metabolites = cons(Rated("强效", "吗啡（CYP2D6 转化，量约 10%）"), cons(Rated("极弱", "去甲可待因"), emptyList())),
+  // 吗啡 T½ 约 4h；CYP2D6 O-去甲基转化量约 10%（frac 0.1，可待因镇痛的活性来源）。
+        activeForms = cons(MetaboForm("吗啡", 4, 0.1), emptyList())
     ), emptyList()),
     acuteTher = ratedList("中效|镇痛（轻中度）;强效|镇咳（干咳）"),
     chronicTher = ratedList("中效|镇痛（轻中度疼痛）;中效|镇咳（限无痰干咳）"),
     acuteAdv = ratedList("少见|呼吸抑制;常见|嗜睡;常见|恶心呕吐;常见|欣快"),
     chronicAdv = ratedList("常见|嗜睡;常见|恶心;少见|呼吸抑制"),
-    withdraw = ratedList("常见|阿片戒断综合征（骤停）;常见|焦虑;常见|出汗;常见|失眠"),
+    withdraw = ratedList("常见|骤停阿片戒断综合征;常见|焦虑;常见|出汗;常见|失眠"),
     overdose = ratedList(">120mg|呼吸抑制")
 )

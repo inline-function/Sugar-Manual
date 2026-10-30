@@ -14,12 +14,14 @@ fun estazolam(): Drug = Drug(
     pk = cons(PkProfile(
         route = "口服", form = "常释", halfLife = 17, tmax = "2-3h",
         clearance = "一级（CYP3A4 氧化）", curve = "对数", bio = 1.0,
-        metabolites = emptyList()
+        metabolites = emptyList(),
+  // 无临床意义可估算的活性代谢物（展示段 metabolites 仅供资料页说明，不建模）。
+        activeForms = emptyList()
     ), emptyList()),
     acuteTher = ratedList("强效|催眠（入睡）;强效|镇静"),
     chronicTher = ratedList("强效|入睡困难;强效|睡眠维持"),
     acuteAdv = ratedList("少见|呼吸抑制;常见|次日残余嗜睡;常见|头晕"),
     chronicAdv = ratedList("常见|嗜睡;常见|头晕;常见|顺行性记忆损害;少见|呼吸抑制;罕见|幻觉"),
-    withdraw = ratedList("常见|反跳性失眠（骤停）;常见|焦虑反跳;少见|癫痫发作（骤停高剂量）"),
+    withdraw = ratedList("常见|骤停反跳性失眠;常见|焦虑反跳;少见|骤停高剂量癫痫发作"),
     overdose = ratedList(">8mg|呼吸抑制")
 )

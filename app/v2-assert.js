@@ -120,8 +120,11 @@ check("13 个采样点（0..48h 步长 4）", pts.length === 13, "n=" + pts.leng
 check("刻度恰为 0/12/24/36/48（每 12h 一个）",
   eq(chartN.labels.filter(x => x !== ""), ["0", "12", "24", "36", "48"]) && chartN.labels.length === 13,
   JSON.stringify(chartN.labels));
-check("演示主线 pt0 = F·D = 50（单药 100mg F=0.5）", Math.abs(pts[0] - 50) < 0.01, pts[0]);
-check("pt24 = 残量 + 24h 剂量 = 66.49", Math.abs(pts[6] - (50 * Math.pow(0.5, 24 / 15) + 50)) < 0.01, pts[6]);
+// 一级吸收一室模型（t74 rev1）：t=0 处吸收相起点浓度=0；24h 第二剂在其吸收起点贡献 0，
+// 只剩首剂残量（T½=15h, F=0.5, Tmax=5h：50·(15/13.71)·0.5^24/15 ≈ 18.05）。
+check("演示主线 pt0 = 0（一级吸收：服药时刻无吸收）", pts[0] === 0, pts[0]);
+check("pt24 = 首剂残量 ≈ 18.05（第二剂吸收起点贡献 0）", Math.abs(pts[6] - 18.05) < 0.05, pts[6]);
+check("pt24 后进入第二剂吸收相（pt28 > pt24 且 pt28 > 首剂峰 pt8）", pts[7] > pts[6] && pts[7] > pts[2], pts[7] + " vs " + pts[6] + "/" + pts[2]);
 check("series 平铺且逐药（演示=氟伏沙明金色线）",
   chartN.series.length === 1 && chartN.series[0].label === "氟伏沙明" && chartN.series[0].color === "#FFC107" && chartN.series[0].points.length === 13,
   JSON.stringify(chartN.series.map(s => [s.label, s.color, s.points.length])));
@@ -148,10 +151,10 @@ tagLevels.forEach((exp, i) => {
 
 console.log("== F 记录卡 ==");
 check("空台账 → 「暂无服药记录」占位", findByTag(tree, "Text").some(t => t.text === "暂无服药记录"));
-const titleBox = lowerN.children[2];
+const titleBox = lowerN.children[3];
 check("记录标题链 [FillWidth, Padding4(24,16,24,8)]",
   eq(mods(titleBox), ["FillWidth", "Padding4(24,16,24,8)"]) && titleBox.children[0].text === "服药记录", mods(titleBox).join(","));
-const tailBox = lowerN.children[4];
+const tailBox = lowerN.children[5];
 check("底部留白 Height(96)（LazyColumn contentPadding bottom=96）", eq(mods(tailBox), ["Height(96)"]), mods(tailBox).join(","));
 
 console.log("== G FAB ==");
@@ -204,7 +207,8 @@ const chart2 = findByTag(tree, "Chart")[0];
 check("曲线刷新为台账序列（帕罗西汀 1 条线）",
   chart2.series.length === 1 && chart2.series[0].label === "帕罗西汀" && chart2.series[0].color === "#FFC107",
   JSON.stringify(chart2.series.map(s => s.label)));
-check("分量线 pt0 = F·D = 200（帕罗西汀 F=1）", Math.abs(Number(chart2.series[0].points[0]) - 200) < 0.01, chart2.series[0].points[0]);
+check("分量线 pt0 = 0（一级吸收起点，帕罗西汀 F=1）", Number(chart2.series[0].points[0]) === 0, chart2.series[0].points[0]);
+check("分量线进入吸收相上升（pt4 > 0）", Number(chart2.series[0].points[1]) > 0, chart2.series[0].points[1]);
 check("总线 = 分量线", eq(chart2.points.map(Number), chart2.series[0].points.map(Number)));
 const cards = findByTag(tree, "Card");
 check("记录卡渲染 1 张（Card 组件）", cards.length === 1, "n=" + cards.length);
