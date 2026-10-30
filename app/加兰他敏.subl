@@ -1,0 +1,23 @@
+// app/加兰他敏.subl —— 加兰他敏完整资料（t75 药库扩充）
+// 数值来源：Razadyne 标签/综述（F 85-100% 取 0.9；T½ 6-8h 取 7；Tmax 约 1h；CYP2D6/3A4 代谢）。
+fun galantamine(): Drug = Drug(
+    name = "加兰他敏",
+    category = "处方药",
+    tags = strList("乙酰胆碱酯酶抑制剂，抗痴呆药，阿尔茨海默病药"),
+    description = "加兰他敏是可逆性乙酰胆碱酯酶抑制剂兼烟碱受体变构调节，用于阿尔茨海默病（轻中度）。口服生物利用度约 90%，经 CYP2D6/3A4 代谢（弱 2D6 抑制剂），CYP2D6 弱代谢者浓度升高。",
+    effects = ratedList("极强|乙酰胆碱酯酶抑制;弱效|烟碱受体变构调节"),
+    enzymes = strList("CYP2D6,CYP3A4"),
+    inhibitions = ratedList("弱效|CYP2D6"),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 7, tmax = "1h",
+        clearance = "一级", curve = "对数", bio = 0.9,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("缓效|改善认知"),
+    chronicTher = ratedList("强效|改善阿尔茨海默病认知"),
+    acuteAdv = ratedList("常见|恶心;常见|呕吐;常见|腹泻"),
+    chronicAdv = ratedList("常见|恶心;常见|呕吐;常见|腹泻;少见|体重下降;少见|头晕"),
+    withdraw = ratedList("少见|停药认知下降"),
+    overdose = ratedList(">40mg单次|胆碱能危象")
+)

@@ -1,0 +1,23 @@
+// app/苏沃瑞生.subl —— 苏沃瑞生完整资料（t75 药库扩充）
+// 数值来源：Belsomra 标签/综述（T½ 约 12h；Tmax 约 2h；F 波动大取估算 0.7 标 F≈；CYP3A4 代谢为说明书条目）。
+fun suvorexant(): Drug = Drug(
+    name = "苏沃瑞生",
+    category = "处方药",
+    tags = strList("食欲素受体拮抗剂，催眠药，失眠治疗药"),
+    description = "苏沃瑞生是双食欲素受体（OX1/OX2）拮抗剂，治疗入睡与睡眠维持困难的失眠。经 CYP3A4 代谢；CYP3A4 抑制剂（本库如氟伏沙明）升高其浓度。可致次日残余嗜睡、睡眠麻痹与入睡前幻觉；与中枢兴奋剂（本库如哌甲酯）药理上相互拮抗；管制类（美国 IV 类）。",
+    effects = ratedList("强效|食欲素OX1与OX2受体拮抗"),
+    enzymes = strList("CYP3A4"),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 12, tmax = "2h",
+        clearance = "一级", curve = "对数", bio = 0.7,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|缩短入睡时间"),
+    chronicTher = ratedList("极强|治疗失眠（入睡与睡眠维持）"),
+    acuteAdv = ratedList("常见|次日残余嗜睡;少见|睡眠麻痹;少见|入睡前幻觉"),
+    chronicAdv = ratedList("常见|嗜睡;少见|睡眠麻痹;少见|复杂睡眠行为"),
+    withdraw = ratedList("少见|停药反跳失眠"),
+    overdose = ratedList(">最大推荐剂量|嗜睡与次日损害")
+)

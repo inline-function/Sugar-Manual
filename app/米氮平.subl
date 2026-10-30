@@ -1,0 +1,23 @@
+// app/米氮平.subl —— 米氮平完整资料（t75 药库扩充）
+// 数值来源：Remeron 标签（T½ 20-40h 取 30；Tmax 约 2h；F 约 50% 标 F≈；CYP1A2/2D6/3A4 代谢）。
+fun mirtazapine(): Drug = Drug(
+    name = "米氮平",
+    category = "处方药",
+    tags = strList("抗抑郁药，非典型抗抑郁药，去甲肾上腺素能特异性血清素能抗抑郁药"),
+    description = "米氮平是去甲肾上腺素能/特异性血清素能抗抑郁药（NaSSA），经突触前 α2 自受体阻断增强单胺释放，并阻断 5-HT2/3 与 H1 受体——镇静、刺激食欲、体重增加、性功能障碍少。经 CYP1A2/2D6/3A4 代谢；酶抑制剂（如氟伏沙明经 1A2）升高其浓度。",
+    effects = ratedList("强效|α2自身受体阻断;强效|5-HT2受体阻断;强效|5-HT3受体阻断;强效|组胺H1受体阻断"),
+    enzymes = strList("CYP1A2,CYP2D6,CYP3A4"),
+    inhibitions = ratedList("弱效|CYP3A4;弱效|CYP2D6"),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 30, tmax = "1-3h",
+        clearance = "一级", curve = "对数", bio = 0.5,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|镇静催眠"),
+    chronicTher = ratedList("极强|抗抑郁;强效|抗焦虑;中效|改善食欲"),
+    acuteAdv = ratedList("十分常见|嗜睡;常见|食欲增加;常见|体重增加"),
+    chronicAdv = ratedList("十分常见|嗜睡;常见|体重增加;常见|食欲增加;少见|血脂升高"),
+    withdraw = ratedList("常见|停药综合征;少见|焦虑反跳"),
+    overdose = ratedList(">500mg单次|镇静与QT间期延长")
+)

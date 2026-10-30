@@ -1,0 +1,23 @@
+// app/氯胺酮.subl —— 氯胺酮完整资料（t75 药库扩充）
+// 数值来源：Ketalar 标签与综述（T½ 2-3h 取 2.5；口服 F 约 20% 标 F≈；CYP3A4/2B6 代谢）。
+fun ketamine(): Drug = Drug(
+    name = "氯胺酮",
+    category = "精神药品（一类）",
+    tags = strList("解离麻醉药，NMDA受体拮抗剂，镇痛药，超说明书（难治性抑郁）"),
+    description = "氯胺酮是解离性静脉麻醉药（NMDA 拮抗），亚麻醉剂量用于难治性疼痛与难治性抑郁（国内常见超说明书静脉/口服 off-label；鼻喷艾司氯胺酮已获批准用于难治性抑郁）。口服首过代谢大（F 约 20%），经 CYP3A4/2B6 生成活性弱代谢物去甲氯胺酮。苏醒期精神症状（分离/谵妄）常见；与抗胆碱能药（本库如苯海索）联用易致谵妄（本库联用演示）；升高血压与颅内压；管制精神药品（一类）。",
+    effects = ratedList("强效|NMDA受体拮抗;中效|阿片μ受体作用;中效|电压门控钠通道阻断"),
+    enzymes = strList("CYP3A4,CYP2B6"),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 2.5, tmax = "0.5-1h",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.2,
+        metabolites = cons(Rated("弱效", "去甲氯胺酮（活性弱，不建模）"), emptyList()),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|麻醉诱导（静脉，秒级）"),
+    chronicTher = ratedList("强效|难治性抑郁（常见超说明书）;强效|镇痛（亚麻醉）;中效|慢性疼痛管理"),
+    acuteAdv = ratedList("常见|分离感;常见|幻觉;常见|谵妄;少见|血压升高"),
+    chronicAdv = ratedList("常见|分离感;少见|认知损害;少见|膀胱间质炎（长期使用）"),
+    withdraw = ratedList("少见|停药渴求（管制性）;少见|停药反跳疼痛"),
+    overdose = ratedList(">2mg/kg静注|呼吸抑制与高血压")
+)

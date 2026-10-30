@@ -1,0 +1,23 @@
+// app/卡马西平.subl —— 卡马西平完整资料（t75 药库扩充）
+// 数值来源：Tegretol 说明书（T½ 初始 12-17h、自诱导后缩短，取 12h；F 75-85% 取中值 0.8 标 F≈）；CYP3A4 诱导与避孕药失效为说明书相互作用。
+fun carbamazepine(): Drug = Drug(
+    name = "卡马西平",
+    category = "处方药",
+    tags = strList("心境稳定剂，抗癫痫药，钠通道阻滞剂"),
+    description = "卡马西平是钠通道阻滞类心境稳定剂与抗癫痫药，用于躁狂、癫痫与三叉神经痛。是强效 CYP3A4/2C9/1A2 及 UGT 诱导剂（并有自身诱导），降低口服避孕药、奥氮平、部分抗抑郁药等经其代谢药物的血药浓度；与锂盐联用神经毒性风险增加；HLA-B*1502 阳性者 SJS/TEN 风险显著升高（中国人群建议筛查）。慢加量起始。",
+    effects = ratedList("强效|电压门控钠通道阻断;中效|T型钙通道阻断;中效|腺苷受体调节"),
+    enzymes = strList("CYP3A4,CYP2C8"),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 12, tmax = "4-8h",
+        clearance = "一级（自诱导）", curve = "对数", bio = 0.8,
+        metabolites = cons(Rated("弱效", "环氧化物（活性，经水解失活）"), emptyList()),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("中效|急性躁狂（缓慢起效）"),
+    chronicTher = ratedList("极强|心境稳定（躁狂）;强效|抗癫痫;中效|三叉神经痛"),
+    acuteAdv = ratedList("十分常见|头晕;常见|嗜睡;常见|恶心"),
+    chronicAdv = ratedList("常见|头晕;常见|嗜睡;少见|低血钠;少见|皮疹;少见|白细胞减少"),
+    withdraw = ratedList("常见|停药复发风险"),
+    overdose = ratedList(">1200mg单次|神经毒性（共济失调与抽搐）")
+)

@@ -1,0 +1,23 @@
+// app/苯扎托品.subl —— 苯扎托品完整资料（t75 药库扩充）
+// 数值来源：Cogentin 标签/综述（T½ 文献报告不一、取保守中值 8h 标 F≈；Tmax 约 1-2h；F 数据有限取 0.5 标 F≈；代谢途径不明留空）。
+fun benztropine(): Drug = Drug(
+    name = "苯扎托品",
+    category = "处方药",
+    tags = strList("抗胆碱能药，抗帕金森药，抗锥体外系反应药"),
+    description = "苯扎托品是中枢抗胆碱能药（兼弱多巴胺再摄取抑制），用于帕金森病与抗精神病药所致锥体外系反应。与苯海索同类同风险：老年谵妄/认知下降、与 AChE 抑制剂药理拮抗、与解离麻醉药联用易致谵妄；停药反跳肌强直。",
+    effects = ratedList("极强|毒蕈碱受体阻断（中枢）;弱效|多巴胺再摄取抑制"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 8, tmax = "1-2h",
+        clearance = "肝代谢（T½ 文献报告不一）", curve = "对数", bio = 0.5,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("中效|控制震颤"),
+    chronicTher = ratedList("强效|帕金森病;强效|抗锥体外系反应"),
+    acuteAdv = ratedList("常见|口干;常见|视物模糊;常见|便秘"),
+    chronicAdv = ratedList("常见|口干;常见|便秘;常见|认知下降;少见|谵妄;少见|幻觉"),
+    withdraw = ratedList("少见|停药反跳肌强直"),
+    overdose = ratedList(">6mg单次|抗胆碱能谵妄")
+)

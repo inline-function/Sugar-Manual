@@ -1,0 +1,23 @@
+// app/阿托莫西汀.subl —— 阿托莫西汀完整资料（t75 药库扩充）
+// 数值来源：Strattera 标签/综述（强代谢 T½ 4-5h 取 5、PM 约 19h；Tmax 1-2h；F 63-94% 取中值标 F≈；首过代谢强）。
+fun atomoxetine(): Drug = Drug(
+    name = "阿托莫西汀",
+    category = "处方药",
+    tags = strList("抗多动药，ADHD治疗药，去甲肾上腺素再摄取抑制剂"),
+    description = "阿托莫西汀是非兴奋剂类 ADHD 一线药（正肾素再摄取抑制，选择性作用于前额叶）。主要经 CYP2D6 代谢——CYP2D6 强抑制剂（本库如氟西汀、安非他酮）显著升高其浓度，弱代谢者 T½ 延长约 4 倍。起效需数周；罕见肝损伤。",
+    effects = ratedList("强效|正肾素再摄取抑制（前额叶）"),
+    enzymes = strList("CYP2D6"),
+    inhibitions = ratedList("弱效|CYP2D6"),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 5, tmax = "1-2h",
+        clearance = "一级（CYP2D6 多态）", curve = "对数", bio = 0.7,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("缓效|改善注意（数周起效）"),
+    chronicTher = ratedList("极强|改善ADHD注意缺陷;强效|控制多动冲动"),
+    acuteAdv = ratedList("常见|食欲下降;常见|上腹痛;常见|嗜睡"),
+    chronicAdv = ratedList("常见|食欲下降;常见|体重下降;少见|心率血压升高;少见|性功能障碍;罕见|肝损伤"),
+    withdraw = ratedList("少见|停药反跳症状"),
+    overdose = ratedList(">300mg单次|嗜睡与交感兴奋")
+)

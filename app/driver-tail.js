@@ -82,7 +82,7 @@
   const dlistSheet = __smNodes(listRoot).find((n) => n.tag === "BottomSheet" && n.visible === true);
   __smA("药库名单打开", !!dlistSheet && __smHasText(listRoot, "药库名单"));
   const listRows = __smNodes(dlistSheet).filter((n) => n.tag === "Box" && typeof n.onClick === "string" && (n.children || []).length === 3 && (n.children[0].modifiers || []).some((m) => m.tag === "Width" && m["0"] === 4));
-  __smA("药库名单 18 行", listRows.length === 18, "got " + listRows.length + " " + listRows.map((b) => b.children[2].children[0].text).join(","));
+  __smA("药库名单 41 行（t75 全精神科扩充）", listRows.length === 41, "got " + listRows.length + " " + listRows.map((b) => b.children[2].children[0].text).join(","));
   // 点吗啡行开资料页并核验内容
   const morphRow = listRows.find((b) => b.children[2].children[0].text === "吗啡");
   __smCall(morphRow, "onClick");
@@ -113,7 +113,7 @@
   function __smRowName(b) { return b.children[0].children[0]; }
   function __smRowSub(b) { return b.children[0].children[1]; }
   function __smRowChecked(b) { return (b.children || []).some((c) => c.tag === "Text" && c.text.indexOf("✓") === 0 && c.color !== "#00000000"); } // v2：✓ 常驻，未选为透明 #00000000
-  __smA("药物行 18 行", rowBtns.length === 18, "got " + rowBtns.map((b) => __smRowName(b).text).join(","));
+  __smA("药物行 41 行（t75 全精神科扩充）", rowBtns.length === 41, "got " + rowBtns.map((b) => __smRowName(b).text).join(","));
   __smA("行 0 氟伏沙明未选", rowBtns.some((b) => __smRowName(b).text === "氟伏沙明" && __smRowName(b).bold === false), "got " + JSON.stringify(rowBtns.map((b) => __smRowName(b).text)));
   __smA("行 1 帕罗西汀", rowBtns.some((b) => __smRowName(b).text === "帕罗西汀"));
   __smA("行副标题：氟伏沙明", rowBtns.some((b) => __smRowSub(b).text === "处方药 · T½ 15h · F=50% · 口服"), "got " + JSON.stringify(rowBtns.map((b) => __smRowSub(b).text)));
@@ -387,6 +387,79 @@
     const labels = ss.map(s => s.label);
     return labels.indexOf("氟西汀") >= 0 && labels.indexOf("去甲氟西汀") >= 0 && ss.length === 2;
   })());
+
+
+  // ================= t75 药库扩充断言 =================
+  __smA("t75 新药 23 个全部可构造", (function () {
+    const news = [lithium(), valproate(), carbamazepine(), lamotrigine(), venlafaxine(), duloxetine(), amitriptyline(), mirtazapine(), bupropion(), trazodone(), clomipramine(), methylphenidate(), atomoxetine(), donepezil(), rivastigmine(), galantamine(), buspirone(), suvorexant(), lemborexant(), ketamine(), psilocybin(), trihexyphenidyl(), benztropine()];
+    return news.length === 23 && news.every(d => typeof d.name === "string" && d.pk[0].halfLife > 0 && d.pk[0].bio > 0);
+  })());
+  __smA("12 分类全覆盖（每类 ≥2 主力）", (function () {
+    const all = [fluvoxamine(), paroxetine(), fluoxetine(), sertraline(), citalopram(), escitalopram(), diazepam(), estazolam(), alprazolam(), clonazepam(), lorazepam(), midazolam(), morphine(), oxycodone(), fentanyl(), codeine(), tramadol(), pethidine(), lithium(), valproate(), carbamazepine(), lamotrigine(), venlafaxine(), duloxetine(), amitriptyline(), mirtazapine(), bupropion(), trazodone(), clomipramine(), methylphenidate(), atomoxetine(), donepezil(), rivastigmine(), galantamine(), buspirone(), suvorexant(), lemborexant(), ketamine(), psilocybin(), trihexyphenidyl(), benztropine()];
+    const cats = [["乙酰胆碱酯酶抑制剂", ["多奈哌齐", "卡巴拉汀", "加兰他敏"]], ["抗抑郁（SNRI/非典型）", ["文拉法辛", "度洛西汀", "米氮平", "安非他酮", "曲唑酮"]], ["TCA 抗抑郁", ["阿米替林", "氯米帕明"]], ["抗焦虑", ["丁螺环酮", "地西泮"]], ["抗强迫", ["氯米帕明", "氟伏沙明"]], ["ADHD", ["哌甲酯", "阿托莫西汀"]], ["心境稳定", ["碳酸锂", "丙戊酸", "卡马西平", "拉莫三嗪"]], ["阿片类", ["吗啡", "羟考酮", "芬太尼", "可待因", "曲马多", "哌替啶"]], ["苯二氮卓类", ["地西泮", "艾司唑仑", "阿普唑仑", "氯硝西泮", "劳拉西泮", "咪达唑仑"]], ["食欲素拮抗", ["苏沃瑞生", "莱博瑞生"]], ["解离剂", ["氯胺酮"]], ["迷幻剂", ["裸盖菇素"]], ["抗胆碱能剂", ["苯海索", "苯扎托品"]]];
+    const byName = {}; all.forEach(d => byName[d.name] = true);
+    return all.length === 41 && cats.every(c => c[1].every(n => byName[n] === true));
+  })());
+  __smA("新药按一级吸收模型（文拉法辛 C(0)=0、峰近 Tmax）", (function () {
+    const ta = absorbHalf(2.0, 5.0);
+    const doses = [Dose(75.0, 0)];
+    const at = t => concentrationAt(doses, 5.0, ta, 0.45, t);
+    let pk = 0, pkT = 0;
+    for (let t = 0.25; t <= 6; t += 0.25) { const v = at(t); if (v > pk) { pk = v; pkT = t; } }
+    return at(0) === 0 && pkT >= 1.4 && pkT <= 3.0 && at(6) < pk;
+  })());
+  __smA("活性代谢物按 t74 双曲线（文拉法辛→O-去甲基文拉法辛 T½ 11h 拖尾）", (function () {
+    const p = venlafaxine().pk[0];
+    const af = p.activeForms[0];
+    const ta = absorbHalf(2.0, 5.0);
+    const doses = [Dose(75.0, 0)];
+    const m = t => metaLevelAt(doses, 5.0, af, 0.45, t);
+    const ratio = m(60) / m(36);
+    return af.name === "O-去甲基文拉法辛" && af.thalf === 11 && Math.abs(af.frac - 0.9) < 1e-9
+      && m(0) === 0 && m(8) > 0 && ratio > 0.12 && ratio < 0.35; // 0.5^(24/11)≈0.220（多级形成略偏）
+  })());
+  __smA("联用风险：丙戊酸×拉莫三嗪 → UGT1A4 抑制（教科书级相互作用）", (function () {
+    const ts = metabTriggers(core_collection__cons(lamotrigine(), core_collection__cons(valproate(), core_collection__emptyList())));
+    const u = ts.find(x => x.name === "UGT1A4");
+    return !!u && u.score > 0;
+  })());
+  __smA("联用风险：氟伏沙明×度洛西汀 → CYP1A2 抑制（说明书禁忌）", (function () {
+    const ts = metabTriggers(core_collection__cons(duloxetine(), core_collection__cons(fluvoxamine(), core_collection__emptyList())));
+    const u = ts.find(x => x.name === "CYP1A2");
+    return !!u && u.score > 0;
+  })());
+  __smA("联用风险：安非他酮×阿托莫西汀 → CYP2D6 强抑制", (function () {
+    const ts = metabTriggers(core_collection__cons(atomoxetine(), core_collection__cons(bupropion(), core_collection__emptyList())));
+    const u = ts.find(x => x.name === "CYP2D6");
+    return !!u && u.score > 0;
+  })());
+  __smA("联用风险：碳酸锂×氟伏沙明 → 血清素综合征联用词条生效", (function () {
+    const ts = effectTags(core_collection__cons(lithium(), core_collection__cons(fluvoxamine(), core_collection__emptyList())), core_collection__emptyList());
+    const s = ts.find(x => x.name === "血清素综合征");
+    return !!s && s.level >= 2;
+  })());
+  __smA("联用风险：氯胺酮×苯海索 → 谵妄联用聚合", (function () {
+    const ts = effectTags(core_collection__cons(ketamine(), core_collection__cons(trihexyphenidyl(), core_collection__emptyList())), core_collection__emptyList());
+    const s = ts.find(x => x.name === "谵妄");
+    return !!s && s.level >= 2;
+  })());
+  __smA("超说明书按中国临床实际标注（哌甲酯成人ADHD / 氯胺酮难治性抑郁）", (function () {
+    return methylphenidate().tags[0].indexOf("超说明书（成人ADHD）") >= 0 && ketamine().tags[0].indexOf("超说明书（难治性抑郁）") >= 0;
+  })());
+  __smA("F≈ 规则沿用（模糊生物利用度中值取整、确证值直填）", (function () {
+    return venlafaxine().pk[0].bio === 0.45 && buspirone().pk[0].bio === 0.05 && methylphenidate().pk[0].bio === 0.3
+      && lithium().pk[0].bio === 1.0 && lamotrigine().pk[0].bio === 0.98;
+  })());
+  __smA("药理诚信：未查实项留空不编（卡马西平只诱导不假写抑制、裸盖菇素代谢酶留空）", (function () {
+    return carbamazepine().inhibitions.length === 0 && psilocybin().enzymes.length === 0 && benztropine().enzymes.length === 0;
+  })());
+  __smA("骤降戒断引擎适配新药（卡巴拉汀 q4h×4 维持后骤降触发）", (function () {
+    const ta = absorbHalf(1.0, 2.0);
+    const doses = [Dose(3.0, 0), Dose(3.0, 4), Dose(3.0, 8), Dose(3.0, 12)];
+    return withdrawCrashed(doses, 2.0, ta, 0.4, 24.0) === true;
+  })());
+
+
 
   __fs.writeFileSync("sm-result.txt", "PASSES=" + __smPass + " FAILS=" + __smFail + "\n" + __lines.join("\n"), "utf-8");
   process.exit(__smFail > 0 ? 1 : 0);

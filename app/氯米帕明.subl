@@ -1,0 +1,23 @@
+// app/氯米帕明.subl —— 氯米帕明完整资料（t75 药库扩充）
+// 数值来源：Anafranil 标签/综述（T½ 19-37h 取 26；Tmax 2-6h；F 40-60% 取中值标 F≈）。
+fun clomipramine(): Drug = Drug(
+    name = "氯米帕明",
+    category = "处方药",
+    tags = strList("抗强迫药，TCA，三环类抗抑郁药"),
+    description = "氯米帕明是三环类抗抑郁药、抗强迫治疗金标准（强迫症一线）。经 CYP2D6 N-去甲基化为活性代谢物去甲氯米帕明（T½ 报告不一、接近或长于母药，本库不建双曲线）。抗胆碱能与心脏毒性与 TCA 类同；CYP2D6 强抑制剂升高其浓度；MAOI 禁忌联用。",
+    effects = ratedList("极强|血清素再摄取抑制;中效|毒蕈碱受体阻断;中效|组胺H1受体阻断"),
+    enzymes = strList("CYP2D6"),
+    inhibitions = ratedList("强效|CYP2D6;中效|CYP2C19"),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 26, tmax = "2-6h",
+        clearance = "一级", curve = "对数", bio = 0.5,
+        metabolites = cons(Rated("强效", "去甲氯米帕明（活性代谢物）"), emptyList()),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("中效|镇静"),
+    chronicTher = ratedList("极强|抗强迫;强效|抗抑郁;强效|抗焦虑;强效|惊恐障碍"),
+    acuteAdv = ratedList("十分常见|嗜睡;常见|口干;常见|便秘;少见|抗胆碱能谵妄"),
+    chronicAdv = ratedList("十分常见|嗜睡;常见|口干;常见|便秘;常见|性功能障碍;少见|QT间期延长;少见|体重增加"),
+    withdraw = ratedList("常见|停药综合征;常见|焦虑反跳"),
+    overdose = ratedList(">500mg单次|心脏毒性")
+)

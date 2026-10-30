@@ -1,0 +1,23 @@
+// app/哌甲酯.subl —— 哌甲酯完整资料（t75 药库扩充）
+// 数值来源：Ritalin 标签/综述（速释 T½ 2-3h 取 3；Tmax 2h；速释 F 22-30% 取中值标 F≈；主经 CES1 去酯化）。
+fun methylphenidate(): Drug = Drug(
+    name = "哌甲酯",
+    category = "精神药品（一类）",
+    tags = strList("抗多动药，ADHD治疗药，中枢兴奋剂，超说明书（成人ADHD）"),
+    description = "哌甲酯是哌啶类中枢兴奋剂，一线治疗 ADHD 与发作性睡病；管制精神药品（一类）。成人 ADHD 在国内常见超说明书使用。主要经羧酸酯酶（CES1）去酯化代谢（无明显 CYP450 参与）。与 MAOI 禁忌联用；与食欲素拮抗剂等催眠药药理上相互拮抗（兴奋 vs 促眠）；升高血压心率。",
+    effects = ratedList("强效|多巴胺与正肾素再摄取抑制（中枢）"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 3, tmax = "2h",
+        clearance = "一级（去酯化）", curve = "对数", bio = 0.3,
+        metabolites = cons(Rated("极弱", "利他林酸（无活性去酯化产物）"), emptyList()),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|改善注意（快起效）"),
+    chronicTher = ratedList("极强|改善ADHD注意缺陷;强效|控制多动冲动;中效|改善发作性睡病日间嗜睡"),
+    acuteAdv = ratedList("常见|食欲下降;常见|失眠;少见|抽动加重"),
+    chronicAdv = ratedList("常见|食欲下降;常见|失眠;常见|体重下降;少见|儿童生长减速;少见|心率血压升高"),
+    withdraw = ratedList("常见|停药反跳嗜睡;常见|停药反跳食欲"),
+    overdose = ratedList(">60mg单次|交感兴奋（心悸与血压升高）")
+)

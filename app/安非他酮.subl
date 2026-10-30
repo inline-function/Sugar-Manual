@@ -1,0 +1,23 @@
+// app/安非他酮.subl —— 安非他酮完整资料（t75 药库扩充）
+// 数值来源：Wellbutrin SR 标签/综述（T½ 约 21h；Tmax 3h；F 60-80% 取中值标 F≈；CYP2D6 强抑制剂为说明书条目；活性代谢物 T½ 接近母药故不建双曲线）。
+fun bupropion(): Drug = Drug(
+    name = "安非他酮",
+    category = "处方药",
+    tags = strList("抗抑郁药，NDRI，戒烟辅助药"),
+    description = "安非他酮是去甲肾上腺素-多巴胺再摄取抑制剂（NDRI），用于抑郁症、戒烟辅助与成人 ADHD（国内常见超说明书）。经 CYP2B6 代谢为活性羟基安非他酮等（T½ 与母药接近，本库不建模）；是 CYP2D6 强抑制剂，显著升高经 2D6 代谢药物（本库如度洛西汀、阿托莫西汀、TCA）浓度。降低癫痫发作阈值（厌食症/癫痫史禁用）；MAOI 禁忌联用。",
+    effects = ratedList("强效|多巴胺与正肾素再摄取抑制"),
+    enzymes = strList("CYP2B6"),
+    inhibitions = ratedList("强效|CYP2D6"),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 21, tmax = "3h",
+        clearance = "一级", curve = "对数", bio = 0.7,
+        metabolites = cons(Rated("中效", "羟基安非他酮（活性，T½ 近母药，不建模）"), cons(Rated("弱效", "苏/赤藓氢安非他酮"), emptyList())),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("中效|激活"),
+    chronicTher = ratedList("极强|抗抑郁;强效|戒烟（辅助）;中效|成人ADHD（常见超说明书）"),
+    acuteAdv = ratedList("十分常见|失眠;常见|焦虑;常见|震颤;少见|癫痫发作"),
+    chronicAdv = ratedList("常见|失眠;常见|焦虑;常见|口干;少见|体重下降"),
+    withdraw = ratedList("少见|停药综合征;少见|情绪不稳"),
+    overdose = ratedList(">450mg/日|癫痫发作风险")
+)

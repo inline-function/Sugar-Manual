@@ -1,0 +1,23 @@
+// app/碳酸锂.subl —— 碳酸锂完整资料（t75 药库扩充）
+// 数值来源：DailyMed 说明书（Eskalith/Lithium carbonate 标签）：吸收近完全、T½ 约 24h；治疗窗与 NSAIDs/SSRI 相互作用同说明书。
+fun lithium(): Drug = Drug(
+    name = "碳酸锂",
+    category = "处方药",
+    tags = strList("心境稳定剂，锂盐，抗躁狂药"),
+    description = "碳酸锂是经典心境稳定剂，用于双相障碍躁狂发作与维持治疗，并降低自杀风险。口服几乎完全吸收、不经肝脏代谢、全部经肾排泄（近端小管重吸收与钠竞争），治疗窗窄（0.6-1.2 mmol/L）。与 SSRI 联用可增加血清素综合征风险并可能升高锂浓度；与 NSAIDs、ACE 抑制剂、噻嗪类利尿剂联用升高锂血药浓度；快速减量可诱发反跳躁狂。",
+    effects = ratedList("极强|抑制第二信使系统（肌醇通路）;强效|五羟色胺能增强;中效|多巴胺能活动调节"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 24, tmax = "1-2h",
+        clearance = "肾清除（不经代谢）", curve = "对数", bio = 1,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("中效|急性躁狂（数日起效）"),
+    chronicTher = ratedList("极强|心境稳定（躁狂预防）;强效|自杀风险降低;中效|增效抗抑郁"),
+    acuteAdv = ratedList("常见|手抖;常见|口渴;常见|恶心;少见|血清素综合征"),
+    chronicAdv = ratedList("常见|手抖;常见|烦渴多尿;少见|甲状腺功能减退;少见|肾功能下降;罕见|锂中毒"),
+    withdraw = ratedList("常见|停药复发风险;少见|停药反跳躁狂"),
+    overdose = ratedList(">1.5mmol/L|锂中毒（震颤与意识模糊）")
+)

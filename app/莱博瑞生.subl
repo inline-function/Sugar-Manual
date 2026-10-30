@@ -1,0 +1,23 @@
+// app/莱博瑞生.subl —— 莱博瑞生完整资料（t75 药库扩充）
+// 数值来源：Dayvigo 标签/综述（T½ 约 17h；Tmax 1-3h；F 数据有限取估算 0.65 标 F≈；CYP3A4 代谢为说明书条目）。
+fun lemborexant(): Drug = Drug(
+    name = "莱博瑞生",
+    category = "处方药",
+    tags = strList("食欲素受体拮抗剂，催眠药，失眠治疗药"),
+    description = "莱博瑞生是双食欲素受体拮抗剂，治疗失眠（入睡与睡眠维持），对睡眠维持的结构改善证据较强。经 CYP3A4 代谢；T½ 约 17h（次日残余风险个体化评估）；与中枢兴奋剂药理拮抗。",
+    effects = ratedList("强效|食欲素OX1与OX2受体拮抗"),
+    enzymes = strList("CYP3A4"),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 17, tmax = "1-3h",
+        clearance = "一级", curve = "对数", bio = 0.65,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|缩短入睡时间"),
+    chronicTher = ratedList("极强|治疗失眠（入睡与睡眠维持）"),
+    acuteAdv = ratedList("常见|次日残余嗜睡;少见|睡眠麻痹;少见|入睡前幻觉"),
+    chronicAdv = ratedList("常见|嗜睡;少见|睡眠麻痹"),
+    withdraw = ratedList("少见|停药反跳失眠"),
+    overdose = ratedList(">最大推荐剂量|嗜睡")
+)

@@ -1,0 +1,23 @@
+// app/苯海索.subl —— 苯海索完整资料（t75 药库扩充）
+// 数值来源：苯海索说明书/综述（T½ 3-5h 取 4；Tmax 1-3h；F 文献不做确切报告，按保守取 0.7 标 F≈；代谢酶系不明留空）。
+fun trihexyphenidyl(): Drug = Drug(
+    name = "苯海索",
+    category = "处方药",
+    tags = strList("抗胆碱能药，抗帕金森药，抗锥体外系反应药"),
+    description = "苯海索（安坦）是中枢抗胆碱能药，用于帕金森病（轻症）与抗精神病药所致锥体外系反应（国内常用）。老年患者中长期使用显著增加谵妄与认知下降风险；与 AChE 抑制剂（本库如多奈哌齐）药理上相互拮抗；与解离麻醉药（本库如氯胺酮）联用易致谵妄（本库联用演示）。外周抗胆碱能副作用经典（口干/便秘/视物模糊）。",
+    effects = ratedList("极强|毒蕈碱受体阻断（中枢）;中效|改善多巴胺与乙酰胆碱平衡"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 4, tmax = "1-3h",
+        clearance = "肝代谢（酶系不明）", curve = "对数", bio = 0.7,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("中效|控制震颤"),
+    chronicTher = ratedList("强效|帕金森病（轻症）;强效|抗锥体外系反应;中效|肌张力障碍"),
+    acuteAdv = ratedList("常见|口干;常见|视物模糊;常见|便秘"),
+    chronicAdv = ratedList("常见|口干;常见|便秘;常见|认知下降;少见|谵妄;少见|幻觉"),
+    withdraw = ratedList("少见|停药反跳肌强直"),
+    overdose = ratedList(">30mg单次|抗胆碱能谵妄")
+)

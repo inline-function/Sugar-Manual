@@ -53,6 +53,29 @@ fun drugColor(name: Str): Str = if (name == "氟伏沙明") "#FFC107"
     else if (name == "可待因") "#8D6E63"
     else if (name == "曲马多") "#00897B"
     else if (name == "哌替啶") "#AD1457"
+    else if (name == "文拉法辛") "#F9A825"
+    else if (name == "度洛西汀") "#F9A825"
+    else if (name == "阿米替林") "#6D4C41"
+    else if (name == "氯米帕明") "#6D4C41"
+    else if (name == "米氮平") "#FF8F00"
+    else if (name == "安非他酮") "#FB8C00"
+    else if (name == "曲唑酮") "#FDD835"
+    else if (name == "碳酸锂") "#3949AB"
+    else if (name == "丙戊酸") "#3949AB"
+    else if (name == "卡马西平") "#3949AB"
+    else if (name == "拉莫三嗪") "#3949AB"
+    else if (name == "哌甲酯") "#43A047"
+    else if (name == "阿托莫西汀") "#43A047"
+    else if (name == "多奈哌齐") "#5E35B1"
+    else if (name == "卡巴拉汀") "#5E35B1"
+    else if (name == "加兰他敏") "#5E35B1"
+    else if (name == "丁螺环酮") "#1E88E5"
+    else if (name == "苏沃瑞生") "#546E7A"
+    else if (name == "莱博瑞生") "#546E7A"
+    else if (name == "氯胺酮") "#E91E63"
+    else if (name == "裸盖菇素") "#7986CB"
+    else if (name == "苯海索") "#757575"
+    else if (name == "苯扎托品") "#757575"
     else "#00695C"
 
 // ---------- 演示剂量（空台账回退：home 首启不空图） ----------
@@ -62,7 +85,7 @@ fun demoDoses(): List[Dose] = cons(Dose(100.0, 0), cons(Dose(100.0, 24), emptyLi
 // ---------- 示例联用集（引擎评估用） ----------
 
 @impure
-fun coadmin(): List[Drug] = append(loadDrugs(), cons(fluvoxamine(), cons(paroxetine(), cons(fluoxetine(), cons(sertraline(), cons(citalopram(), cons(escitalopram(), cons(diazepam(), cons(estazolam(), cons(alprazolam(), cons(clonazepam(), cons(lorazepam(), cons(midazolam(), cons(morphine(), cons(oxycodone(), cons(fentanyl(), cons(codeine(), cons(tramadol(), cons(pethidine(), emptyList())))))))))))))))))))
+fun coadmin(): List[Drug] = append(loadDrugs(), cons(fluvoxamine(), cons(paroxetine(), cons(fluoxetine(), cons(sertraline(), cons(citalopram(), cons(escitalopram(), cons(diazepam(), cons(estazolam(), cons(alprazolam(), cons(clonazepam(), cons(lorazepam(), cons(midazolam(), cons(morphine(), cons(oxycodone(), cons(fentanyl(), cons(codeine(), cons(tramadol(), cons(pethidine(), cons(lithium(), cons(valproate(), cons(carbamazepine(), cons(lamotrigine(), cons(venlafaxine(), cons(duloxetine(), cons(amitriptyline(), cons(mirtazapine(), cons(bupropion(), cons(trazodone(), cons(clomipramine(), cons(methylphenidate(), cons(atomoxetine(), cons(donepezil(), cons(rivastigmine(), cons(galantamine(), cons(buspirone(), cons(suvorexant(), cons(lemborexant(), cons(ketamine(), cons(psilocybin(), cons(trihexyphenidyl(), cons(benztropine(), emptyList()))))))))))))))))))))))))))))))))))))))))))
 
 // 台账联用集（呼吸抑制风险引擎输入：以实际服药药名为准，非全库演示集）。
 @impure
@@ -641,7 +664,7 @@ fun rowBold(k: Nat, idx: Nat, sel: Bool): Bool = (sel == true) && (k == idx)
 
 // ---------- 设置/文档弹层（≈ SettingsDialog / DrugDocsDialog：AlertDialog） ----------
 
-// 药库名单（顶栏 info/menu 入口）：18 药索引 → 点药名开该药资料页。
+// 药库名单（顶栏 info/menu 入口）：41 药索引 → 点药名开该药资料页（t75 扩充至全精神科分类）。
 @impure
 fun openDrugList(): Null {
     unchecked setListOpen(true)

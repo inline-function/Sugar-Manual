@@ -1,0 +1,23 @@
+// app/拉莫三嗪.subl —— 拉莫三嗪完整资料（t75 药库扩充）
+// 数值来源：Lamictal 说明书（单药 T½ 24-35h 取 25；F≈98%；Tmax 1.4-4.8h）；丙戊酸-拉莫三嗪相互作用（浓度约翻倍）为说明书与教科书经典条目。
+fun lamotrigine(): Drug = Drug(
+    name = "拉莫三嗪",
+    category = "处方药",
+    tags = strList("心境稳定剂，抗癫痫药，双相抑郁维持"),
+    description = "拉莫三嗪是钠通道阻滞类抗癫痫/心境稳定剂，主要用于双相障碍抑郁发作维持期预防。不依赖 CYP450，主要经 UGT1A4 葡萄糖醛酸化代谢——丙戊酸抑制该途径使其血药浓度约升高 2 倍（联用须减量半、加倍缓慢加量）；与含雌激素避孕药合用浓度下降。皮疹需缓慢加量观察（含 SJS/TEN 风险）。",
+    effects = ratedList("强效|电压门控钠通道阻断;中效|抑制谷氨酸释放;中效|P型钙通道阻断"),
+    enzymes = strList("UGT1A4"),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 25, tmax = "1.4-4.8h",
+        clearance = "一级（葡萄糖醛酸化）", curve = "对数", bio = 0.98,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("缓效|双相抑郁维持"),
+    chronicTher = ratedList("极强|双相抑郁维持;强效|抗癫痫;强效|躁狂预防"),
+    acuteAdv = ratedList("常见|头晕;常见|头痛;常见|嗜睡"),
+    chronicAdv = ratedList("常见|失眠;少见|皮疹;少见|视力模糊;少见|震颤"),
+    withdraw = ratedList("少见|停药复发风险;少见|癫痫样发作反跳"),
+    overdose = ratedList(">1000mg单次|共济失调与眼震")
+)

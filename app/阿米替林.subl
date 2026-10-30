@@ -1,0 +1,23 @@
+// app/阿米替林.subl —— 阿米替林完整资料（t75 药库扩充）
+// 数值来源：Elavil 标签/综述（T½ 10-28h 取中值 19；Tmax 2-5h；F 30-60% 取中值标 F≈）；去甲替林 T½ 18-44h 取 31h。
+fun amitriptyline(): Drug = Drug(
+    name = "阿米替林",
+    category = "处方药",
+    tags = strList("抗抑郁药，TCA，三环类抗抑郁药"),
+    description = "阿米替林是三环类抗抑郁药，用于抑郁症、焦虑与慢性神经病理性疼痛（小剂量）。经 CYP2D6 等多酶 N-去甲基化为活性代谢物去甲替林。有明显的抗胆碱能、抗组胺与 α1 阻断效应（口干、便秘、嗜睡、体位性低血压），过量致死性高（QRS 增宽/心脏毒性）；CYP2D6 抑制剂（本库如安非他酮、氟西汀）升高其浓度。",
+    effects = ratedList("极强|血清素与正肾素再摄取抑制;中效|毒蕈碱受体阻断;中效|组胺H1受体阻断;中效|α1受体阻断"),
+    enzymes = strList("CYP2D6,CYP2C19,CYP1A2,CYP3A4"),
+    inhibitions = ratedList("中效|CYP2D6"),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 19, tmax = "2-5h",
+        clearance = "一级（多酶）", curve = "对数", bio = 0.45,
+        metabolites = cons(Rated("强效", "去甲替林（活性 TCTA）"), emptyList()),
+        activeForms = cons(MetaboForm("去甲替林", 31, 0.9), emptyList())
+    ), emptyList()),
+    acuteTher = ratedList("强效|镇静催眠"),
+    chronicTher = ratedList("极强|抗抑郁;强效|抗焦虑;中效|镇痛（神经病理性疼痛）"),
+    acuteAdv = ratedList("常见|嗜睡;常见|口干;常见|便秘;少见|抗胆碱能谵妄"),
+    chronicAdv = ratedList("十分常见|嗜睡;常见|口干;常见|便秘;常见|体重增加;少见|QT间期延长;少见|体位性低血压;少见|谵妄"),
+    withdraw = ratedList("常见|停药综合征;常见|焦虑反跳"),
+    overdose = ratedList(">500mg单次|心脏毒性（QRS增宽）")
+)

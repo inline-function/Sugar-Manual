@@ -139,8 +139,8 @@ check("CYP 流标题", findByTag(metabBox, "Text").some(t => t.text === "CYP450 
 const flowBox = metabBox.children[1];
 check("CYP 流容器 wrap=true spacing=8", flowBox.wrap === true && flowBox.spacing === 8, JSON.stringify({w: flowBox.wrap, s: flowBox.spacing}));
 const tags = flowBox.children;
-check("CYP 标签平铺为直接子级（4 个，非嵌套链）", tags.length === 4 && tags.every(t => t.tag === "Box"), "n=" + tags.length + " " + tags.map(b => b.children[0].text).join(","));
-const tagLevels = [["CYP2D6 抑制 ×11", "#33D32F2F", "#C62828"], ["CYP2C19 抑制 ×5", "#33D32F2F", "#C62828"], ["CYP2C9 抑制 ×2", "#334CAF50", "#2E7D32"], ["CYP3A4 抑制 ×2", "#334CAF50", "#2E7D32"]];
+check("CYP 标签平铺为直接子级（6 个，非嵌套链；含 t75 新酶 UGT1A4/CYP1A2）", tags.length === 6 && tags.every(t => t.tag === "Box"), "n=" + tags.length + " " + tags.map(b => b.children[0].text).join(","));
+const tagLevels = [["CYP2D6 抑制 ×27", "#33D32F2F", "#C62828"], ["CYP2C19 抑制 ×9", "#33D32F2F", "#C62828"], ["CYP2C9 抑制 ×7", "#33D32F2F", "#C62828"], ["UGT1A4 抑制 ×3", "#33F9A825", "#E65100"], ["CYP1A2 抑制 ×3", "#33F9A825", "#E65100"], ["CYP3A4 抑制 ×3", "#33F9A825", "#E65100"]];
 tagLevels.forEach((exp, i) => {
   const t = tags.find(b => b.children[0].text === exp[0]) || tags[i], tx = t.children[0];
   check("CYP 标签 " + exp[0] + "：链 [Clip(12), Background(" + exp[1] + "), PaddingH(12), PaddingV(5)]",
@@ -172,9 +172,9 @@ check("FAB 点击 → 表单 visible=true（BottomSheet 显隐是数据字段）
 const rowsBox = findByTag(sheet, "Box").find(b => b.scrollable === true && (b.modifiers || []).some(m => m.tag === "Height" && m[0] === 168));
 check("药物列表高 168dp + spacing=6 + scrollable", rowsBox !== undefined && rowsBox.spacing === 6, JSON.stringify({h: !!rowsBox, s: rowsBox && rowsBox.spacing}));
 const rows = rowsBox.children;
-check("十药选药行平铺为直接子级", rows.length === 18 && rows.every(r => r.tag === "Box"), "n=" + rows.length);
+check("十药选药行平铺为直接子级", rows.length === 41 && rows.every(r => r.tag === "Box"), "n=" + rows.length);
 const rowKeys = rows.map(r => r.onClick);
-check("选药行实例键互异（__dshCb 每行独立槽位）", new Set(rowKeys).size === 18, rowKeys.join(","));
+check("选药行实例键互异（__dshCb 每行独立槽位）", new Set(rowKeys).size === 41, rowKeys.join(","));
 check("选药行整行可点 + 圆角 12 链", rows.every(r => (r.modifiers || []).some(m => m.tag === "Clip" && m[0] === 12) && typeof r.onClick === "string"));
 // 串点击回归：点第 2 行只选第 2 行
 callKey(rowKeys[1]);
@@ -268,7 +268,7 @@ tree = latestTree();
 const dlist = findByTag(tree, "BottomSheet").find(s => s.visible === true);
 check("药库名单抽屉打开", dlist && findByTag(dlist, "Text").some(x => x.text === "药库名单"), JSON.stringify(dlist && dlist.visible));
 const drows = findByTag(dlist, "Box").filter(b => b.onClick && (b.children || []).length === 3 && (b.children[0].modifiers || []).some(m => m.tag === "Width" && m["0"] === 4));
-check("药库名单 18 行", drows.length === 18, "n=" + drows.length + " " + drows.map(b => b.children[2].children[0].text).join(","));
+check("药库名单 41 行", drows.length === 41, "n=" + drows.length + " " + drows.map(b => b.children[2].children[0].text).join(","));
 const morphRow = drows.find(b => b.children[2].children[0].text === "吗啡");
 callKey(morphRow.onClick);
 tree = latestTree();

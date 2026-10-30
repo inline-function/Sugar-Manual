@@ -1,0 +1,23 @@
+// app/丁螺环酮.subl —— 丁螺环酮完整资料（t75 药库扩充）
+// 数值来源：Buspar 标签/综述（F 约 5% 标 F≈；T½ 约 2.5h；Tmax 约 1h；CYP3A4 首过代谢）。
+fun buspirone(): Drug = Drug(
+    name = "丁螺环酮",
+    category = "处方药",
+    tags = strList("抗焦虑药，5-HT1A部分激动剂，非苯二氮卓类"),
+    description = "丁螺环酮是非苯二氮卓类抗焦虑药（5-HT1A 受体部分激动），用于广泛性焦虑障碍。无依赖性、无停药综合征、不影响呼吸（与苯二氮卓/阿片类的安全性优势）。口服首过代谢极大（生物利用度约 5%）；起效慢（2-4 周）；CYP3A4 强抑制剂（如氟伏沙明）升高、诱导剂（如卡马西平）降低其浓度；MAOI 禁忌联用。",
+    effects = ratedList("中效|5-HT1A受体部分激动"),
+    enzymes = strList("CYP3A4"),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 2.5, tmax = "1h",
+        clearance = "一级（首过大）", curve = "对数", bio = 0.05,
+        metabolites = cons(Rated("弱效", "1-嘧啶哌嗪（活性极弱）"), emptyList()),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("缓效|抗焦虑（2-4周起效）"),
+    chronicTher = ratedList("强效|抗广泛性焦虑"),
+    acuteAdv = ratedList("常见|头晕;常见|恶心;常见|头痛"),
+    chronicAdv = ratedList("常见|头晕;少见|烦躁不安"),
+    withdraw = ratedList("罕见|停药反跳焦虑"),
+    overdose = ratedList(">150mg单次|恶心与头晕")
+)

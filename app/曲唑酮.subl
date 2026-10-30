@@ -1,0 +1,23 @@
+// app/曲唑酮.subl —— 曲唑酮完整资料（t75 药库扩充）
+// 数值来源：Desyrel 标签/综述（T½ 5-9h 取 7；Tmax 1-2h；进食下 F 约 65% 标 F≈）。
+fun trazodone(): Drug = Drug(
+    name = "曲唑酮",
+    category = "处方药",
+    tags = strList("抗抑郁药，SARI，血清素拮抗再摄取抑制剂，催眠药"),
+    description = "曲唑酮是血清素拮抗/再摄取抑制剂（SARI），小剂量广泛用于失眠（国内常见用法）。有 α1 阻断（体位性低血压）与 H1 阻断（镇静）；经 CYP3A4/2D6 代谢为 mCPP（致焦虑性代谢物）。罕见异常勃起（需急诊）；MAOI 禁忌联用；与降压药联用注意低血压。",
+    effects = ratedList("中效|血清素再摄取抑制;中效|5-HT2A受体阻断;中效|α1受体阻断;强效|组胺H1受体阻断"),
+    enzymes = strList("CYP3A4,CYP2D6"),
+    inhibitions = ratedList("弱效|CYP2D6"),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 7, tmax = "1-2h",
+        clearance = "一级", curve = "对数", bio = 0.65,
+        metabolites = cons(Rated("弱效", "m-氯苯哌嗪（致焦虑性代谢物，不建模）"), emptyList()),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|镇静催眠"),
+    chronicTher = ratedList("强效|抗抑郁;强效|改善睡眠"),
+    acuteAdv = ratedList("十分常见|嗜睡;常见|头晕;少见|体位性低血压"),
+    chronicAdv = ratedList("十分常见|嗜睡;常见|头晕;常见|口干;罕见|异常勃起"),
+    withdraw = ratedList("少见|停药综合征"),
+    overdose = ratedList(">600mg单次|嗜睡与低血压")
+)

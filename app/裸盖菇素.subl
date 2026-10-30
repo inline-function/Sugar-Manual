@@ -1,0 +1,23 @@
+// app/裸盖菇素.subl —— 裸盖菇素完整资料（t75 药库扩充）
+// 数值来源：研究文献（psilocin T½ 约 2h；Tmax 1-2h；F 数据有限按活性代谢物口径取估算 0.5 标 F≈）。
+fun psilocybin(): Drug = Drug(
+    name = "裸盖菇素",
+    category = "研究性物质",
+    tags = strList("迷幻药，5-HT2A受体激动剂，研究性治疗药"),
+    description = "裸盖菇素是经典迷幻药（5-HT2A 激动），口服后快速去磷酸化为活性代谢物裸盖菇新碱（psilocin，T½ 约 2h）。在研究性语境用于难治性抑郁与终末期焦虑（国内未批准临床使用）。SSRI 长期联用降低其迷幻效应（受体脱敏）；MAOI 联用升压风险；急性期需陪伴监测（恐慌反应/急性精神病样反应）。",
+    effects = ratedList("强效|5-HT2A受体激动;中效|5-HT1A受体激动"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 1, tmax = "1-2h",
+        clearance = "一级（去磷酸化快）", curve = "对数", bio = 0.5,
+        metabolites = cons(Rated("极弱", "4-羟基吲哚乙酸（无活性）"), emptyList()),
+        activeForms = cons(MetaboForm("裸盖菇新碱", 2, 1), emptyList())
+    ), emptyList()),
+    acuteTher = ratedList("强效|迷幻效应（30分钟内起效）"),
+    chronicTher = ratedList("强效|抑郁（研究性辅助治疗）;中效|焦虑（终末期，研究性）"),
+    acuteAdv = ratedList("常见|幻觉;常见|焦虑;常见|恶心"),
+    chronicAdv = ratedList("少见|持久知觉障碍;少见|闪回"),
+    withdraw = ratedList("罕见|停药情绪波动"),
+    overdose = ratedList(">30mg单次|急性恐慌与精神病样反应")
+)

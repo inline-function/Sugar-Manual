@@ -1,0 +1,23 @@
+// app/卡巴拉汀.subl —— 卡巴拉汀完整资料（t75 药库扩充）
+// 数值来源：Exelon 标签/综述（F 约 40% 标 F≈；T½ 约 1.5h 取 2；Tmax 约 1h；经酯酶水解不经 CYP）。
+fun rivastigmine(): Drug = Drug(
+    name = "卡巴拉汀",
+    category = "处方药",
+    tags = strList("乙酰胆碱酯酶抑制剂，抗痴呆药，阿尔茨海默病药，帕金森病痴呆药"),
+    description = "卡巴拉汀是伪不可逆性胆碱酯酶抑制剂（同时抑制乙酰与丁酰胆碱酯酶），用于阿尔茨海默病与帕金森病痴呆。口服生物利用度低（约 40%，首过被酯酶水解；透皮贴剂可规避）；T½ 极短（约 1.5h）但有靶酶再占据效应，一日两次/透皮给药。",
+    effects = ratedList("极强|乙酰胆碱酯酶抑制;中效|丁酰胆碱酯酶抑制"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 2, tmax = "1h",
+        clearance = "酯酶水解（快）", curve = "对数", bio = 0.4,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("缓效|改善认知"),
+    chronicTher = ratedList("强效|改善阿尔茨海默病认知;中效|帕金森病痴呆认知"),
+    acuteAdv = ratedList("十分常见|恶心;常见|呕吐;常见|腹泻"),
+    chronicAdv = ratedList("十分常见|恶心;常见|呕吐;常见|腹泻;少见|体重下降;少见|震颤"),
+    withdraw = ratedList("少见|停药认知下降"),
+    overdose = ratedList(">12mg/日|胆碱能过度兴奋")
+)

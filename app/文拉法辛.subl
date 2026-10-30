@@ -1,0 +1,23 @@
+// app/文拉法辛.subl —— 文拉法辛完整资料（t75 药库扩充）
+// 数值来源：DailyMed Effexor XR 标签（T½ 5±2h，ODV 11±2h，Tmax 1.5-2.5h；CYP2D6→ODV）；口服绝对生物利用度文献 40-50% 取中值标 F≈。
+fun venlafaxine(): Drug = Drug(
+    name = "文拉法辛",
+    category = "处方药",
+    tags = strList("抗抑郁药，SNRIs，血清素去甲肾上腺素再摄取抑制剂"),
+    description = "文拉法辛是 SNRI 类抗抑郁药，用于抑郁症、焦虑障碍与神经病理性疼痛。经 CYP2D6 代谢为活性产物 O-去甲基文拉法辛（ODV），母药 T½ 约 5h 而 ODV 约 11h，联用或停药时代谢物尾段拉长浓度曲线（本库代谢物双曲线即演示该时序）。MAOI 禁忌联用；与 SSRI 联用增加血清素综合征风险；高剂量升高血压。",
+    effects = ratedList("强效|血清素转运体抑制;中效|正肾素转运体抑制;极弱|多巴胺转运体抑制"),
+    enzymes = strList("CYP2D6"),
+    inhibitions = ratedList("弱效|CYP2D6"),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 5, tmax = "1.5-2.5h",
+        clearance = "一级", curve = "对数", bio = 0.45,
+        metabolites = cons(Rated("强效", "O-去甲基文拉法辛（活性，T½ 约 11h）"), emptyList()),
+        activeForms = cons(MetaboForm("O-去甲基文拉法辛", 11, 0.9), emptyList())
+    ), emptyList()),
+    acuteTher = ratedList("中效|抗抑郁起效"),
+    chronicTher = ratedList("极强|抗抑郁;强效|抗焦虑;中效|镇痛（神经病理性）"),
+    acuteAdv = ratedList("常见|恶心;常见|失眠;少见|血清素综合征"),
+    chronicAdv = ratedList("常见|恶心;常见|头痛;常见|失眠;常见|性功能障碍;少见|血压升高;少见|低血钠"),
+    withdraw = ratedList("常见|停药综合征;常见|头晕;常见|脑内电击感"),
+    overdose = ratedList(">750mg单次|5-HT毒性反应")
+)
