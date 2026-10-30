@@ -3,7 +3,7 @@
 fun valproate(): Drug = Drug(
     name = "丙戊酸",
     category = "处方药",
-    tags = strList("心境稳定剂，抗癫痫药，广谱抗痫"),
+    tags = strList("心境稳定剂，抗癫痫药，广谱抗痫，GABA能"),
     description = "丙戊酸是广谱抗癫痫与心境稳定剂，用于双相障碍、癫痫与偏头痛预防。主要经 CYP2C9/2C19 与葡萄糖醛酸化代谢。为 CYP2C9 强抑制剂并抑制 UGT 葡萄糖醛酸化——显著升高拉莫三嗪血药浓度（联用时拉莫三嗪需减量半、加倍缓慢加量，否则皮疹/SJS 风险显著升高）；竞争血浆蛋白结合。",
     effects = ratedList("强效|电压门控钠通道阻断;强效|GABA能增强;中效|T型钙通道阻断"),
     enzymes = strList("CYP2C9,CYP2C19,UGT1A4"),
@@ -19,5 +19,6 @@ fun valproate(): Drug = Drug(
     acuteAdv = ratedList("十分常见|恶心;常见|嗜睡;常见|震颤"),
     chronicAdv = ratedList("常见|体重增加;常见|震颤;常见|脱发;少见|肝毒性;少见|血小板减少;少见|高氨血症"),
     withdraw = ratedList("常见|停药复发风险"),
-    overdose = ratedList(">1500mg单次|嗜睡与高氨血症")
+    overdose = ratedList(">1500mg单次|嗜睡与高氨血症"),
+    admin = "口服"
 )

@@ -8,7 +8,7 @@
 fun paroxetine(): Drug = Drug(
     name = "帕罗西汀",
     category = "处方药",
-    tags = strList("SSRIs,抗抑郁药"),
+    tags = strList("SSRIs,抗抑郁药,血清素能"),
     description = "演示用最小资料（预警引擎联用示例），非完整药物资料。",
     effects = ratedList("强效|血清素转运体抑制"),
     enzymes = strList("CYP2D6"),
@@ -19,5 +19,6 @@ fun paroxetine(): Drug = Drug(
     acuteAdv = ratedList("常见|恶心"),
     chronicAdv = ratedList("少见|嗜睡;常见|失眠"),
     withdraw = emptyList(),
-    overdose = emptyList()
+    overdose = emptyList(),
+    admin = "口服"
 )

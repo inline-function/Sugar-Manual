@@ -3,7 +3,7 @@
 fun clomipramine(): Drug = Drug(
     name = "氯米帕明",
     category = "处方药",
-    tags = strList("抗强迫药，TCA，三环类抗抑郁药"),
+    tags = strList("抗强迫药，TCA，三环类抗抑郁药，血清素能，去甲肾上腺素能，抗胆碱能"),
     description = "氯米帕明是三环类抗抑郁药、抗强迫治疗金标准（强迫症一线）。经 CYP2D6 N-去甲基化为活性代谢物去甲氯米帕明（T½ 报告不一、接近或长于母药，本库不建双曲线）。抗胆碱能与心脏毒性与 TCA 类同；CYP2D6 强抑制剂升高其浓度；MAOI 禁忌联用。",
     effects = ratedList("极强|血清素再摄取抑制;中效|毒蕈碱受体阻断;中效|组胺H1受体阻断"),
     enzymes = strList("CYP2D6"),
@@ -19,5 +19,6 @@ fun clomipramine(): Drug = Drug(
     acuteAdv = ratedList("十分常见|嗜睡;常见|口干;常见|便秘;少见|抗胆碱能谵妄"),
     chronicAdv = ratedList("十分常见|嗜睡;常见|口干;常见|便秘;常见|性功能障碍;少见|QT间期延长;少见|体重增加"),
     withdraw = ratedList("常见|停药综合征;常见|焦虑反跳"),
-    overdose = ratedList(">500mg单次|心脏毒性")
+    overdose = ratedList(">500mg单次|心脏毒性"),
+    admin = "口服"
 )

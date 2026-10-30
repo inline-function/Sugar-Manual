@@ -85,7 +85,7 @@ fun demoDoses(): List[Dose] = cons(Dose(100.0, 0), cons(Dose(100.0, 24), emptyLi
 // ---------- 示例联用集（引擎评估用） ----------
 
 @impure
-fun coadmin(): List[Drug] = append(loadDrugs(), cons(fluvoxamine(), cons(paroxetine(), cons(fluoxetine(), cons(sertraline(), cons(citalopram(), cons(escitalopram(), cons(diazepam(), cons(estazolam(), cons(alprazolam(), cons(clonazepam(), cons(lorazepam(), cons(midazolam(), cons(morphine(), cons(oxycodone(), cons(fentanyl(), cons(codeine(), cons(tramadol(), cons(pethidine(), cons(lithium(), cons(valproate(), cons(carbamazepine(), cons(lamotrigine(), cons(venlafaxine(), cons(duloxetine(), cons(amitriptyline(), cons(mirtazapine(), cons(bupropion(), cons(trazodone(), cons(clomipramine(), cons(methylphenidate(), cons(atomoxetine(), cons(donepezil(), cons(rivastigmine(), cons(galantamine(), cons(buspirone(), cons(suvorexant(), cons(lemborexant(), cons(ketamine(), cons(psilocybin(), cons(trihexyphenidyl(), cons(benztropine(), emptyList()))))))))))))))))))))))))))))))))))))))))))
+fun coadmin(): List[Drug] = append(loadDrugs(), cons(fluvoxamine(), cons(paroxetine(), cons(fluoxetine(), cons(sertraline(), cons(citalopram(), cons(escitalopram(), cons(diazepam(), cons(estazolam(), cons(alprazolam(), cons(clonazepam(), cons(lorazepam(), cons(midazolam(), cons(morphine(), cons(oxycodone(), cons(fentanyl(), cons(codeine(), cons(tramadol(), cons(pethidine(), cons(lithium(), cons(valproate(), cons(carbamazepine(), cons(lamotrigine(), cons(venlafaxine(), cons(duloxetine(), cons(amitriptyline(), cons(mirtazapine(), cons(bupropion(), cons(trazodone(), cons(clomipramine(), cons(methylphenidate(), cons(atomoxetine(), cons(donepezil(), cons(rivastigmine(), cons(galantamine(), cons(buspirone(), cons(suvorexant(), cons(lemborexant(), cons(ketamine(), cons(psilocybin(), cons(trihexyphenidyl(), cons(benztropine(), cons(pramipexole(), cons(amantadine(), cons(memantine(), cons(pregabalin(), cons(ramelteon(), cons(olanzapine(), cons(quetiapine(), cons(ibuprofen(), cons(celecoxib(), cons(paracetamol(), cons(caffeine(), cons(ethanol(), cons(arecoline(), cons(nicotine(), cons(tobaccoSmoke(), cons(ciprofloxacin(), cons(clarithromycin(), cons(rifampicin(), cons(oralContraceptive(), cons(norfluoxetine(), cons(desvenlafaxine(), cons(descitalopram(), cons(m6g(), emptyList())))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
 
 // 台账联用集（呼吸抑制风险引擎输入：以实际服药药名为准，非全库演示集）。
 @impure
@@ -578,7 +578,7 @@ fun commitDose(): Null {
                     } else {
                         unchecked var recs: List[DoseRec] = loadLedger()
                         unchecked var nowMs: Nat = timeNow()
-                        unchecked var drugs: List[Drug] = coadmin()
+                        unchecked var drugs: List[Drug] = pickableDrugs(coadmin())
                         unchecked var idx: Nat = curPick()
                         var drug: Str = drugAt(drugs, idx)
                         var nr: List[DoseRec] = cons(DoseRec(drug, amt, nowMs), recs)
@@ -614,12 +614,12 @@ fun formPanel(open: Bool, drugs: List[Drug], idx: Nat, sel: Bool, dt: Str, de: S
     Box(modifier = fillWidth().padding4(24, 0, 24, 24)) {
         Text(text = "＋服用药物", size = 22, bold = true)
         Box(modifier = height(4)) {}
-        Text(text = "选择药物并填写剂量（mg）", color = "onSurfaceVariant", size = 12)
+        Text(text = "选择药物并填写剂量（mg）；代谢物条目仅资料页，不入选", color = "onSurfaceVariant", size = 12)
         Box(modifier = height(12)) {}
         Text(text = "药物", color = "onSurfaceVariant", size = 14)
         Box(modifier = height(6)) {}
         // 参考的药物列表高 168dp、条间距 6dp：height(168) + spacing，行平铺经 children。
-        Box(modifier = fillWidth().height(168), scrollable = true, spacing = 6, children = drugRowsFrom(drugs, 0, idx, sel))
+        Box(modifier = fillWidth().height(168), scrollable = true, spacing = 6, children = drugRowsFrom(pickableDrugs(drugs), 0, idx, sel))
         Box(modifier = height(12)) {}
         TextField(placeholder = "剂量 (mg)", label = "剂量 (mg)", text = dt, keyboard = "number", errText = de,
             onChange = { t => unchecked setDose(t) })
@@ -812,15 +812,28 @@ fun drugListRows(xs: List[Drug]): List[Any] = when (xs) {
     else => emptyList()
 }
 
+// t78：药库名单按主要分类分组（心境稳定剂/抗精神病药/抗抑郁药/抗焦虑药/安眠剂/镇静剂/
+// 促智药/抗帕金森药/镇痛药/精神活性物质/抗生素/代谢物（仅资料）），仅显示非空组。
+@composable
+fun groupHeader(k: Str): Any = Box(modifier = fillWidth().paddingHV(0, 4)) {
+    Text(text = classDisplay(k), size = 15, bold = true, color = "primary")
+}
+
+fun drugListSections(ds: List[Drug], classes: List[Str]): List[Any] = when (classes) {
+    Nil => emptyList()
+    is Cons(k, rest) => append(cons(groupHeader(k), drugListRows(drugsOfClass(ds, k))), drugListSections(ds, rest))
+    else => emptyList()
+}
+
 // 药库名单抽屉（纯说明放头部，不再有按药写死的共用文本）。
 @composable
 fun drugListSheet(open: Bool, drugs: List[Drug]): BottomSheet = BottomSheet(visible = open, onDismiss = { unchecked closeDrugList() }) {
     Box(modifier = fillWidth().padding4(24, 0, 24, 24)) {
         Text(text = "药库名单", size = 22, bold = true)
         Box(modifier = height(4)) {}
-        Text(text = "糖手册：记录服药 → 估算血药浓度 → 呼吸抑制风险预警。点击药名查看该药完整资料；相互作用链复用 metabAlert 匹配逻辑。\n源码：github.com/inline-function/Sugar-Manual", color = "onSurfaceVariant", size = 12)
+        Text(text = "按主要分类分组（效应系统标签见资料页）。点击药名查看完整资料；代谢物条目仅资料（不可口服），不出现在服表单选药列表。\n源码：github.com/inline-function/Sugar-Manual", color = "onSurfaceVariant", size = 12)
         Box(modifier = height(12)) {}
-        Box(modifier = fillWidth().height(320), scrollable = true, spacing = 6, children = drugListRows(drugs))
+        Box(modifier = fillWidth().height(320), scrollable = true, spacing = 6, children = drugListSections(drugs, usedClasses(drugs)))
     }
 }
 
@@ -1005,12 +1018,21 @@ fun profileTagCell(tg: EffTag): Any = Box(modifier = clip(12).background(tagBg(t
     Text(text = concat(if (tg.pack) "◆ " else "", tg.name), color = tagFg(tg.level, tg.acute), size = 14, bold = true, flash = tg.acute)
 }
 
+// t78 物质/药对相互作用流（首页预警区小节，与画像流并列；空集占位）。
+@composable
+fun interactionStream(drugs: List[Drug]): Any = if (size(substanceInteractions(drugs)) == 0) {
+    Box(modifier = fillWidth()) {}
+} else {
+    Box(modifier = fillWidth().paddingHV(24, 8), orientation = "vertical", spacing = 6, children = profileTagCells(substanceInteractions(drugs)))
+}
+
 @composable
 fun lowerBox(rs: Alert, rows: List[MedCard], drugs: List[Drug], met: Alert, wds: List[Drug], drugsUsed: List[Drug], prof: Profile, sh: Nat, dpi: Nat): Box = Box(modifier = fillWidth().height(lowerHeightDp(sh, dpi)), scrollable = true) {
     respStream(rs)
     metabStream(met)
     withdrawStream(wds)
     profileStream(prof, drugsUsed)
+    interactionStream(drugsUsed)
     recordTitle()
     // 记录卡平铺为直接子级（children=），空台账给「暂无服药记录」占位。
     Box(modifier = fillWidth(), children = recordList(rows))

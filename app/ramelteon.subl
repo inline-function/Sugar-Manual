@@ -1,0 +1,24 @@
+// app/雷美替胺 —— 完整资料（t78 药库扩展）
+
+fun ramelteon(): Drug = Drug(
+    name = "雷美替胺",
+    category = "处方药",
+    tags = strList("催眠药，褪黑素能，褪黑素受体激动剂，入睡困难药"),
+    description = "雷美替胺为高选择性褪黑素 MT1/MT2 受体激动剂，用于入睡困难型失眠（中国已上市）。不经 CYP2C9/CYP2C19/2D6 代谢；CYP1A2 强抑制剂（环丙沙星、氟伏沙明）可显著升高其血药浓度，需联用谨慎。口服生物利用度极低（约 1.8%，强首过）。",
+    effects = ratedList("强效|褪黑素MT1/MT2受体激动"),
+    enzymes = strList("CYP1A2,CYP3A4,CYP2C9"),
+    inhibitions = ratedList("口服"),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 1.6, tmax = "0.5-1.5h",
+        clearance = "一级", curve = "对数", bio = 0.02,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|缩短入睡潜伏期"),
+    chronicTher = ratedList("强效|催眠（入睡困难）"),
+    acuteAdv = ratedList("常见|嗜睡;常见|头晕"),
+    chronicAdv = ratedList("少见|疲劳;罕见|抑郁加重;罕见|睡眠行为异常"),
+    withdraw = emptyList(),
+    overdose = ratedList(">16mg|过度镇静与头晕"),
+    admin = "口服"
+)

@@ -1,0 +1,24 @@
+// app/环丙沙星 —— 完整资料（t78 药库扩展）
+
+fun ciprofloxacin(): Drug = Drug(
+    name = "环丙沙星",
+    category = "处方药",
+    tags = strList("抗生素，氟喹诺酮类，CYP1A2抑制剂"),
+    description = "环丙沙星为广谱氟喹诺酮类抗生素。为 CYP1A2 强抑制剂：显著升高咖啡因、茶碱、氯氮平、雷米替胺、环苯扎林、替扎尼定的血浓度/效应（与咖啡因合用可致失眠焦虑，与氯氮平合用可致过度镇静与癫痫阈值降低）。含钙/镁/铝的抗酸剂、铁剂、奶制品显著降低其吸收。整族有肌腱断裂、周围神经病与 QT 延长警示。",
+    effects = ratedList("强效|细菌DNA旋转酶抑制"),
+    enzymes = strList("CYP3A4（少量经肾为主）"),
+    inhibitions = ratedList("强效|CYP1A2"),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 4, tmax = "0.5-2h",
+        clearance = "一级", curve = "对数", bio = 0.7,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|抗革兰阴性/阳性菌（尿路/呼吸道）"),
+    chronicTher = ratedList("强效|抗菌（广谱）"),
+    acuteAdv = ratedList("常见|恶心;常见|腹泻;常见|头痛"),
+    chronicAdv = ratedList("少见|肌腱炎与肌腱断裂;少见|周围神经病;罕见|QT延长;罕见|中枢兴奋"),
+    withdraw = emptyList(),
+    overdose = ratedList(">1500mg单次|中枢与肾损伤"),
+    admin = "口服"
+)

@@ -3,7 +3,7 @@
 fun atomoxetine(): Drug = Drug(
     name = "阿托莫西汀",
     category = "处方药",
-    tags = strList("抗多动药，ADHD治疗药，去甲肾上腺素再摄取抑制剂"),
+    tags = strList("抗多动药，ADHD治疗药，去甲肾上腺素再摄取抑制剂，去甲肾上腺素能"),
     description = "阿托莫西汀是非兴奋剂类 ADHD 一线药（正肾素再摄取抑制，选择性作用于前额叶）。主要经 CYP2D6 代谢——CYP2D6 强抑制剂（本库如氟西汀、安非他酮）显著升高其浓度，弱代谢者 T½ 延长约 4 倍。起效需数周；罕见肝损伤。",
     effects = ratedList("强效|正肾素再摄取抑制（前额叶）"),
     enzymes = strList("CYP2D6"),
@@ -19,5 +19,6 @@ fun atomoxetine(): Drug = Drug(
     acuteAdv = ratedList("常见|食欲下降;常见|上腹痛;常见|嗜睡"),
     chronicAdv = ratedList("常见|食欲下降;常见|体重下降;少见|心率血压升高;少见|性功能障碍;罕见|肝损伤"),
     withdraw = ratedList("少见|停药反跳症状"),
-    overdose = ratedList(">300mg单次|嗜睡与交感兴奋")
+    overdose = ratedList(">300mg单次|嗜睡与交感兴奋"),
+    admin = "口服"
 )

@@ -1,0 +1,24 @@
+// app/普瑞巴林 —— 完整资料（t78 药库扩展）
+
+fun pregabalin(): Drug = Drug(
+    name = "普瑞巴林",
+    category = "处方药",
+    tags = strList("抗焦虑药，镇痛药，抗惊厥药，钙通道α2δ亚基配体"),
+    description = "普瑞巴林结合电压门控钙通道 α2δ 亚基，减少兴奋性神经递质释放，用于广泛性焦虑障碍、神经病理性疼痛与癫痫（在中国亦批广泛性焦虑）。虽以 GABA 类似物构型命名，但其本身不作用于 GABA 受体。几乎不经肝脏代谢，原形经肾排泄（肾功能不全需减量）。有滥用与依赖个案报告（物质使用障碍史者慎用）。与乙醇/苯二氮卓类合用加重镇静。",
+    effects = ratedList("强效|钙通道α2δ亚基结合（减少递质释放）"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 6.3, tmax = "1-3.5h",
+        clearance = "一级", curve = "对数", bio = 0.9,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("中效|快速抗焦虑;强效|缓解神经痛"),
+    chronicTher = ratedList("强效|抗焦虑（广泛性焦虑）;强效|抗惊厥;强效|缓解神经病理性疼痛"),
+    acuteAdv = ratedList("十分常见|头晕;十分常见|嗜睡"),
+    chronicAdv = ratedList("常见|体重增加;常见|外周水肿;少见|视力模糊;罕见|误用与依赖"),
+    withdraw = ratedList("常见|突然停药反跳（焦虑/失眠/震颤）"),
+    overdose = ratedList(">1200mg|中枢抑制与意识模糊"),
+    admin = "口服"
+)

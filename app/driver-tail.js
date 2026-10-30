@@ -6,7 +6,8 @@
   const __fs = require("fs");
   const __lines = [];
   let __smPass = 0, __smFail = 0;
-  function __smA(name, cond, extra) {
+  function ddrug(n) { return coadmin().find((d) => d.name === n); }
+function __smA(name, cond, extra) {
     if (cond) { __smPass++; } else { __smFail++; __lines.push("FAIL " + name + (extra ? " :: " + extra : "")); }
   }
   function __smWalk(node, out) { out.push(node); if (Array.isArray(node.children)) node.children.forEach((c) => { if (c !== null && c !== undefined) __smWalk(c, out); }); return out; }
@@ -82,7 +83,12 @@
   const dlistSheet = __smNodes(listRoot).find((n) => n.tag === "BottomSheet" && n.visible === true);
   __smA("药库名单打开", !!dlistSheet && __smHasText(listRoot, "药库名单"));
   const listRows = __smNodes(dlistSheet).filter((n) => n.tag === "Box" && typeof n.onClick === "string" && (n.children || []).length === 3 && (n.children[0].modifiers || []).some((m) => m.tag === "Width" && m["0"] === 4));
-  __smA("药库名单 41 行（t75 全精神科扩充）", listRows.length === 41, "got " + listRows.length + " " + listRows.map((b) => b.children[2].children[0].text).join(","));
+  __smA("药库名单 64 行（t78 扩展后全库，含物质/代谢物）", listRows.length === 64, "got " + listRows.length + " " + listRows.map((b) => b.children[2].children[0].text).join(","));
+  // t78：分组浏览 —— 主要分类大组头齐（心境稳定剂/抗精神病药/抗抑郁药/抗焦虑药/安眠剂/镇静剂/促智药/抗帕金森药/镇痛药/精神活性物质/抗生素/代谢物）
+  const groupHeads = __smNodes(dlistSheet).filter((n) => n.tag === "Text" && (n.size === 15) && n.bold === true && n.color === "primary").map((n) => n.text);
+  __smA("药库名单按主要分类分组（12 组头齐且仅含非空组）",
+    ["心境稳定剂", "抗精神病药", "促智药（抗痴呆）", "抗抑郁药", "抗焦虑药", "抗多动药（ADHD）", "安眠剂", "抗帕金森药", "镇痛药", "精神活性物质", "抗生素", "激素类（避孕药）", "代谢物（仅资料）"].every((t) => groupHeads.indexOf(t) >= 0) && groupHeads.length === 13 && groupHeads.indexOf("镇静剂") < 0,
+    JSON.stringify(groupHeads));
   // 点吗啡行开资料页并核验内容
   const morphRow = listRows.find((b) => b.children[2].children[0].text === "吗啡");
   __smCall(morphRow, "onClick");
@@ -103,7 +109,7 @@
   const root1 = __smRoot();
   __smA("FAB 后新 layout", __smLayouts.length === before + 1, "got " + __smLayouts.length + " vs " + (before + 1));
   __smA("表单标题 ＋服用药物", __smHasText(root1, "＋服用药物"));
-  __smA("表单副标题", __smHasText(root1, "选择药物并填写剂量（mg）"));
+  __smA("表单副标题", __smHasText(root1, "选择药物并填写剂量（mg）；代谢物条目仅资料页，不入选"));
   __smA("表单药物标签", __smHasText(root1, "药物"));
   __smA("空台账提示消失", !__smHasText(root1, "尚无服药记录"));
   const listHolder = __smNodes(root1).find((n) => n.tag === "Box" && n.scrollable === true && (n.modifiers || []).some((m) => m.tag === "Height" && m["0"] === 168));
@@ -113,7 +119,9 @@
   function __smRowName(b) { return b.children[0].children[0]; }
   function __smRowSub(b) { return b.children[0].children[1]; }
   function __smRowChecked(b) { return (b.children || []).some((c) => c.tag === "Text" && c.text.indexOf("✓") === 0 && c.color !== "#00000000"); } // v2：✓ 常驻，未选为透明 #00000000
-  __smA("药物行 41 行（t75 全精神科扩充）", rowBtns.length === 41, "got " + rowBtns.map((b) => __smRowName(b).text).join(","));
+  __smA("药物行 60 行（t78：64 库 - 4 代谢物，表单不可选）", rowBtns.length === 60, "got " + rowBtns.length + " " + rowBtns.map((b) => __smRowName(b).text).join(","));
+  __smA("表单选药列表过滤代谢物（去甲氟西汀/O-去甲基文拉法辛/去甲西酞普兰/M6G 不可见）",
+    ["去甲氟西汀", "O-去甲基文拉法辛", "去甲西酞普兰", "M6G（吗啡-6-葡萄糖醛酸）"].every((n) => !rowBtns.some((b) => __smRowName(b).text.indexOf(n) === 0)));
   __smA("行 0 氟伏沙明未选", rowBtns.some((b) => __smRowName(b).text === "氟伏沙明" && __smRowName(b).bold === false), "got " + JSON.stringify(rowBtns.map((b) => __smRowName(b).text)));
   __smA("行 1 帕罗西汀", rowBtns.some((b) => __smRowName(b).text === "帕罗西汀"));
   __smA("行副标题：氟伏沙明", rowBtns.some((b) => __smRowSub(b).text === "处方药 · T½ 15h · F=50% · 口服"), "got " + JSON.stringify(rowBtns.map((b) => __smRowSub(b).text)));
@@ -191,7 +199,7 @@
   const fab3 = __smNodes(root3).find((n) => n.tag === "FloatingButton");
   __smCall(fab3, "onClick");
   const root4 = __smRoot();
-  __smA("再开表单", __smHasText(root4, "选择药物并填写剂量（mg）"));
+  __smA("再开表单", __smHasText(root4, "选择药物并填写剂量（mg）；代谢物条目仅资料页，不入选"));
   __smA("再开默认未选药", __smNodes(root4).filter((n) => n.tag === "Box" && typeof n.onClick === "string" && (n.children || [])[0] && n.children[0].tag === "Box" && (n.children[0].children || [])[0] && n.children[0].children[0].tag === "Text" && (n.children[0].children || [])[1] && n.children[0].children[1].tag === "Text").every((b) => b.children[0].children[0].bold === false && !__smRowChecked(b)));
   const cancelBtn = __smFindButton(root4, "取消");
   __smCall(cancelBtn, "onClick");
@@ -470,7 +478,7 @@
       && ["蚕豆病（G6PD缺乏）", "青光眼", "孕期/哺乳期", "癫痫", "肾功能不全", "心律失常史", "高血压", "肝功能不全", "消化性溃疡", "物质使用障碍史", "痴呆/认知障碍", "糖尿病"].every(c => conds.indexOf(c) >= 0);
   })());
   __smA("蚕豆病×阿司匹林 → 溶血风险红条（G6PD 教科书级禁忌）", (function () {
-    const aspirin = Drug("阿司匹林", "处方药", ["解热镇痛药,NSAIDs,抗血小板药"], "合成水杨酸类", [], [], [], [], [], [], [], [], []);
+    const aspirin = Drug("阿司匹林", "处方药", ["解热镇痛药,NSAIDs,抗血小板药"], "合成水杨酸类", [], [], [], [], [], [], [], [], [], "口服");
     const ts = profileEffectTags(Profile(core_collection__cons("蚕豆病（G6PD缺乏）", core_collection__emptyList()), 30, "男"), core_collection__cons(aspirin, core_collection__emptyList()));
     const t = ts.find(x => x.name.indexOf("蚕豆病（G6PD缺乏）×阿司匹林：溶血风险") === 0);
     return t && t.level === 3 && t.acute === true && t.pack === true;
@@ -528,6 +536,81 @@
     const p = loadProfile();
     return p.age === 14 && p.sex === "女";
   })());
+
+
+  // ---------- t78：标签双层 / 代谢物不可口服 / 物质药对相互作用 / 短名清洗 ----------
+  // 【1】药库全量 64 = 41 既有 + 23 新增（药/物质/代谢物）
+  __smA("t78 药库 64 条（41 + 23 扩展）", coadmin().length === 64, "got " + coadmin().length);
+  // 【2】双层标签：每药 ≥1 神经递质系统标签 + ≥1 临床主要分类（碳酸锂为唯一无系统标签豁免，见其资料页说明）
+  (function () {
+    const sys = ["血清素能", "去甲肾上腺素能", "多巴胺能", "抗谷氨酸能", "胆碱能", "抗胆碱能", "抗食欲素能", "褪黑素能", "GABA能", "阿片能"];
+    // 非精神科药（镇痛/抗生素/激素类等）无递质系统归属，属合理豁免；碳酸锂为唯一精神科例外
+    const exemptSys = ["碳酸锂", "咖啡因", "吸烟（烟草烟雾）", "普瑞巴林", "布洛芬", "塞来昔布", "对乙酰氨基酚", "环丙沙星", "克拉霉素", "利福平", "口服避孕药（炔雌醇/去氧孕烯）"];
+    const noSys = coadmin().filter((x) => exemptSys.indexOf(x.name) < 0).filter((d) => !sys.some((t) => d.tags.some((x) => x.indexOf(t) >= 0)));
+    const noClass = coadmin().filter((d) => primaryClassOf(d) === "其他");
+    __smA("t78 效应系统标签齐（精神科/精神活性物质全覆盖；非精神科豁免、碳酸锂唯一例外）", noSys.length === 0, "缺系统标签: " + noSys.map((d) => d.name).join(","));
+    __smA("t78 临床主要分类均有归属组", noClass.length === 0, "无归属: " + noClass.map((d) => d.name).join(","));
+    __smA("t78 系统标签与新药对齐（咖啡因/普拉克索/美金刚/雷美替胺/OCP）",
+      ddrug("咖啡因").tags.some((t) => t.indexOf("精神活性物质") >= 0) && ddrug("普拉克索").tags.some((t) => t.indexOf("多巴胺能") >= 0)
+      && ddrug("美金刚").tags.some((t) => t.indexOf("抗谷氨酸能") >= 0) && ddrug("雷美替胺").tags.some((t) => t.indexOf("褪黑素能") >= 0)
+      && ddrug("环丙沙星").tags.some((t) => t.indexOf("CYP1A2抑制剂") >= 0) && ddrug("利福平").tags.some((t) => t.indexOf("抗结核药") >= 0));
+  })();
+  // 【3】代谢物二等公民：admin=仅代谢物、资料页可看、表单不可选
+  (function () {
+    const metas = ["去甲氟西汀", "O-去甲基文拉法辛", "去甲西酞普兰", "M6G（吗啡-6-葡萄糖醛酸）"];
+    const okMeta = metas.every((n) => { const x = ddrug(n); return x && x.admin === "仅代谢物" && x.description.indexOf("仅作资料") >= 0; });
+    const pick = pickableDrugs(coadmin()).map((d) => d.name);
+    __smA("t78 代谢物 admin=仅代谢物且资料页可看", okMeta, "");
+    __smA("t78 pickableDrugs 过滤代谢物（60 可选）", pick.length === 60 && metas.every((n) => pick.indexOf(n) < 0), "got " + pick.length);
+    __smA("t78 口服药 admin=口服（舍曲林/普瑞巴林/奥氮平）",
+      ddrug("舍曲林").admin === "口服" && ddrug("普瑞巴林").admin === "口服" && ddrug("奥氮平").admin === "口服");
+  })();
+  // 【4】尼古丁/吸烟 CYP1A2 归因准确（诱导归烟雾多环芳烃，尼古丁本身不诱导）
+  __smA("t78 尼古丁条目注明本身不诱导 1A2、吸烟条目注明多环芳烃诱导",
+    ddrug("尼古丁").description.indexOf("尼古丁本身不诱导 CYP1A2") >= 0 && ddrug("吸烟（烟草烟雾）").description.indexOf("多环芳烃") >= 0
+    && ddrug("吸烟（烟草烟雾）").admin === "吸入·记录");
+  // 【5】药对相互作用预警（真实 CYP/药效学）
+  (function () {
+    const L = core_collection__cons, E = core_collection__emptyList();
+    const pair = (a, b) => substanceInteractions(L(ddrug(a), L(ddrug(b), E)));
+    const cipCaf = pair("环丙沙星", "咖啡因").find((t) => t.name.indexOf("环丙沙星×咖啡因") === 0);
+    __smA("t78 环丙沙星×咖啡因（CYP1A2 抑制，2 级）", !!cipCaf && cipCaf.level === 2 && cipCaf.name.indexOf("CYP1A2 抑制") >= 0, JSON.stringify(cipCaf));
+    const rifOcp = pair("利福平", "口服避孕药（炔雌醇/去氧孕烯）").find((t) => t.name.indexOf("利福平×口服避孕药") === 0);
+    __smA("t78 利福平×口服避孕药（CYP3A4 强诱导，2 级）", !!rifOcp && rifOcp.level === 2, JSON.stringify(rifOcp));
+    const claBzd = pair("克拉霉素", "阿普唑仑").find((t) => t.name.indexOf("克拉霉素×苯二氮卓") === 0);
+    __smA("t78 克拉霉素×苯二氮卓（CYP3A4 抑制，急性）", !!claBzd && claBzd.acute === true && claBzd.level === 2, JSON.stringify(claBzd));
+    const ethBzd = pair("乙醇", "地西泮").find((t) => t.name.indexOf("乙醇×苯二氮卓") === 0);
+    __smA("t78 乙醇×苯二氮卓（呼吸抑制协同，3 级 ◆ 包）", !!ethBzd && ethBzd.level === 3 && ethBzd.pack === true, JSON.stringify(ethBzd));
+    const ethOpi = pair("乙醇", "吗啡").find((t) => t.name.indexOf("乙醇×阿片") === 0);
+    __smA("t78 乙醇×阿片（呼吸抑制协同，3 级 ◆ 包）", !!ethOpi && ethOpi.level === 3 && ethOpi.pack === true, JSON.stringify(ethOpi));
+    const smkCaf = pair("吸烟（烟草烟雾）", "咖啡因").find((t) => t.name.indexOf("吸烟×咖啡因") === 0);
+    __smA("t78 吸烟×咖啡因（诱导源烟雾多环芳烃而非尼古丁）", !!smkCaf && smkCaf.level === 1 && smkCaf.name.indexOf("多环芳烃而非尼古丁") >= 0, JSON.stringify(smkCaf));
+    const smkOlan = pair("吸烟（烟草烟雾）", "奥氮平").find((t) => t.name.indexOf("吸烟×抗精神病药") === 0);
+    __smA("t78 吸烟×抗精神病药（1A2 诱导降浓度）", !!smkOlan && smkOlan.name.indexOf("源于烟雾而非尼古丁") >= 0, JSON.stringify(smkOlan));
+    const areca = pair("槟榔碱", "奥氮平").find((t) => t.name.indexOf("槟榔碱×抗精神病药") === 0);
+    __smA("t78 槟榔碱×抗精神病药（锥体外系加重）", !!areca && areca.level === 2, JSON.stringify(areca));
+    const rifQue = pair("利福平", "喹硫平").find((t) => t.name.indexOf("利福平×喹硫平") === 0);
+    __smA("t78 利福平×喹硫平（CYP3A4 诱导降浓度）", !!rifQue && rifQue.level === 2, JSON.stringify(rifQue));
+    __smA("t78 安慰剂阴性：两药无相互作用时空集", substanceInteractions(L(ddrug("舍曲林"), L(ddrug("碳酸锂"), E))).length === 0, "");
+  })();
+  // 【6】效应流短名清洗（≤8 字、无括注/符号；资料页原文保留；包可长且带 ◆ 判定）
+  (function () {
+    const L = core_collection__cons, E = core_collection__emptyList();
+    const ts = effectTags(L(ddrug("喹硫平"), L(ddrug("舍曲林"), E)), E);
+    const bad = ts.filter((t) => !t.pack && (t.name.length > 8 || /[（）()\/、:：]/.test(t.name)));
+    const packs = ts.filter((t) => t.pack);
+    __smA("t78 效应词条短名（≤8 字、无括号/斜杠/顿号/冒号）", bad.length === 0, JSON.stringify(bad.map((t) => t.name)));
+    __smA("t78 效应包（◆ 综合征/中毒）不经短化（effIsPack 保持原名且 pack=true）",
+      packs.length > 0 && packs.every((t) => t.name.indexOf("综合征") >= 0 || t.name === "阿片类中毒"),
+      JSON.stringify(packs.map((t) => t.name)));
+    __smA("t78 资料页原文保留（数据源词条仍带完整括注，短化仅在效应流层）", ddrug("喹硫平").chronicAdv.some((r) => r.name.indexOf("（") >= 0) && ddrug("对乙酰氨基酚").acuteAdv.some((r) => r.name.indexOf("（") >= 0) && ddrug("槟榔碱").chronicAdv.some((r) => r.name.indexOf("（") >= 0), "");
+  })();
+  // 【7】effectTagsWithProfile 合流（物质交互进入排序流，字段不变）
+  __smA("t78 effectTagsWithProfile 合入物质交互（3 级乙醇×阿片居首）", (function () {
+    const L = core_collection__cons, E = core_collection__emptyList();
+    const ts = effectTagsWithProfile(L(ddrug("乙醇"), L(ddrug("吗啡"), E)), E, loadProfile());
+    return ts.length > 0 && ts[0].level === 3 && ts[0].pack === true;
+  })(), "");
 
   __fs.writeFileSync("sm-result.txt", "PASSES=" + __smPass + " FAILS=" + __smFail + "\n" + __lines.join("\n"), "utf-8");
   process.exit(__smFail > 0 ? 1 : 0);

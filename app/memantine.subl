@@ -1,0 +1,24 @@
+// app/美金刚 —— 完整资料（t78 药库扩展）
+
+fun memantine(): Drug = Drug(
+    name = "美金刚",
+    category = "处方药",
+    tags = strList("促智药，抗痴呆药，抗谷氨酸能，NMDA受体拮抗剂"),
+    description = "美金刚为非竞争性、低亲和力 NMDA 受体拮抗剂，用于中重度阿尔茨海默病痴呆。以原形经肾排泄（约 57-82%），血浆蛋白结合低。与多奈哌齐等胆碱酯酶抑制剂联用为常见组合。",
+    effects = ratedList("强效|NMDA受体拮抗"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 70, tmax = "3-8h",
+        clearance = "一级", curve = "对数", bio = 1,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("弱效|改善认知（中重度）"),
+    chronicTher = ratedList("强效|抗痴呆（中重度阿尔茨海默病）"),
+    acuteAdv = ratedList("少见|头晕;少见|头痛;少见|嗜睡"),
+    chronicAdv = ratedList("少见|混乱;少见|幻觉;罕见|惊厥"),
+    withdraw = emptyList(),
+    overdose = ratedList(">30mg|中枢兴奋与惊厥"),
+    admin = "口服"
+)

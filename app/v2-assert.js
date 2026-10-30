@@ -139,8 +139,8 @@ check("CYP 流标题", findByTag(metabBox, "Text").some(t => t.text === "CYP450 
 const flowBox = metabBox.children[1];
 check("CYP 流容器 wrap=true spacing=8", flowBox.wrap === true && flowBox.spacing === 8, JSON.stringify({w: flowBox.wrap, s: flowBox.spacing}));
 const tags = flowBox.children;
-check("CYP 标签平铺为直接子级（6 个，非嵌套链；含 t75 新酶 UGT1A4/CYP1A2）", tags.length === 6 && tags.every(t => t.tag === "Box"), "n=" + tags.length + " " + tags.map(b => b.children[0].text).join(","));
-const tagLevels = [["CYP2D6 抑制 ×27", "#33D32F2F", "#C62828"], ["CYP2C19 抑制 ×9", "#33D32F2F", "#C62828"], ["CYP2C9 抑制 ×7", "#33D32F2F", "#C62828"], ["UGT1A4 抑制 ×3", "#33F9A825", "#E65100"], ["CYP1A2 抑制 ×3", "#33F9A825", "#E65100"], ["CYP3A4 抑制 ×3", "#33F9A825", "#E65100"]];
+check("CYP 标签平铺为直接子级（6 个，非嵌套链；含 t75 新酶 UGT1A4/CYP1A2；t78 环丙沙星强抑制 1A2 升红）", tags.length === 6 && tags.every(t => t.tag === "Box"), "n=" + tags.length + " " + tags.map(b => b.children[0].text).join(","));
+const tagLevels = [["CYP2D6 抑制 ×27", "#33D32F2F", "#C62828"], ["CYP2C19 抑制 ×9", "#33D32F2F", "#C62828"], ["CYP2C9 抑制 ×7", "#33D32F2F", "#C62828"], ["UGT1A4 抑制 ×3", "#33F9A825", "#E65100"], ["CYP1A2 抑制 ×7", "#33D32F2F", "#C62828"], ["CYP3A4 抑制 ×6", "#33D32F2F", "#C62828"]];
 tagLevels.forEach((exp, i) => {
   const t = tags.find(b => b.children[0].text === exp[0]) || tags[i], tx = t.children[0];
   check("CYP 标签 " + exp[0] + "：链 [Clip(12), Background(" + exp[1] + "), PaddingH(12), PaddingV(5)]",
@@ -151,11 +151,11 @@ tagLevels.forEach((exp, i) => {
 
 console.log("== F 记录卡 ==");
 check("空台账 → 「暂无服药记录」占位", findByTag(tree, "Text").some(t => t.text === "暂无服药记录"));
-// t77：预警区新增 profileStream 占位（空画像 → 占位 Box），下标 +1
-const titleBox = lowerN.children[4];
+// t77 profileStream 占位 +1；t78 interactionStream 占位再 +1
+const titleBox = lowerN.children[5];
 check("记录标题链 [FillWidth, Padding4(24,16,24,8)]",
   eq(mods(titleBox), ["FillWidth", "Padding4(24,16,24,8)"]) && titleBox.children[0].text === "服药记录", mods(titleBox).join(","));
-const tailBox = lowerN.children[6];
+const tailBox = lowerN.children[7];
 check("底部留白 Height(96)（LazyColumn contentPadding bottom=96）", eq(mods(tailBox), ["Height(96)"]), mods(tailBox).join(","));
 
 console.log("== G FAB ==");
@@ -173,9 +173,9 @@ check("FAB 点击 → 表单 visible=true（BottomSheet 显隐是数据字段）
 const rowsBox = findByTag(sheet, "Box").find(b => b.scrollable === true && (b.modifiers || []).some(m => m.tag === "Height" && m[0] === 168));
 check("药物列表高 168dp + spacing=6 + scrollable", rowsBox !== undefined && rowsBox.spacing === 6, JSON.stringify({h: !!rowsBox, s: rowsBox && rowsBox.spacing}));
 const rows = rowsBox.children;
-check("十药选药行平铺为直接子级", rows.length === 41 && rows.every(r => r.tag === "Box"), "n=" + rows.length);
+check("t78 选药行平铺为直接子级（64 库 - 4 代谢物 = 60）", rows.length === 60 && rows.every(r => r.tag === "Box"), "n=" + rows.length);
 const rowKeys = rows.map(r => r.onClick);
-check("选药行实例键互异（__dshCb 每行独立槽位）", new Set(rowKeys).size === 41, rowKeys.join(","));
+check("选药行实例键互异（__dshCb 每行独立槽位）", new Set(rowKeys).size === 60, rowKeys.join(","));
 check("选药行整行可点 + 圆角 12 链", rows.every(r => (r.modifiers || []).some(m => m.tag === "Clip" && m[0] === 12) && typeof r.onClick === "string"));
 // 串点击回归：点第 2 行只选第 2 行
 callKey(rowKeys[1]);
@@ -287,7 +287,12 @@ tree = latestTree();
 const dlist = findByTag(tree, "BottomSheet").find(s => s.visible === true);
 check("药库名单抽屉打开", dlist && findByTag(dlist, "Text").some(x => x.text === "药库名单"), JSON.stringify(dlist && dlist.visible));
 const drows = findByTag(dlist, "Box").filter(b => b.onClick && (b.children || []).length === 3 && (b.children[0].modifiers || []).some(m => m.tag === "Width" && m["0"] === 4));
-check("药库名单 41 行", drows.length === 41, "n=" + drows.length + " " + drows.map(b => b.children[2].children[0].text).join(","));
+check("t78 药库名单 64 行（含物质与代谢物）", drows.length === 64, "n=" + drows.length + " " + drows.map(b => b.children[2].children[0].text).join(","));
+// t78：分组浏览 —— 主要分类大组头齐（药库名单按心境稳定/抗精神病/抗抑郁/抗焦虑/抗多动/安眠/抗帕金森/镇痛/精神活性物质/抗生素/激素类/代谢物分组）
+const groupHeads = findByTag(dlist, "Text").filter(t => t.size === 15 && t.bold === true && t.color === "primary").map(t => t.text);
+check("t78 药库名单按主要分类分组（13 组头齐，镇静组为空）",
+  ["心境稳定剂", "抗精神病药", "促智药（抗痴呆）", "抗抑郁药", "抗焦虑药", "抗多动药（ADHD）", "安眠剂", "抗帕金森药", "镇痛药", "精神活性物质", "抗生素", "激素类（避孕药）", "代谢物（仅资料）"].every(t => groupHeads.indexOf(t) >= 0) && groupHeads.length === 13,
+  JSON.stringify(groupHeads));
 const morphRow = drows.find(b => b.children[2].children[0].text === "吗啡");
 callKey(morphRow.onClick);
 tree = latestTree();
@@ -329,4 +334,50 @@ check("加权词条红底 flash（沿用 tagBg/tagFg 三级配色）",
 storage.set("sm_conds", "");
 
 console.log("\n" + "PASSES=" + pass + " FAILS=" + fail);
+
+// t78 端到端：代谢物不可选（表单）+ 物质条目入表单 + 乙醇×吗啡 物质交互词条流（◆ 3 级红条）
+callKey(findByTag(tree, "FloatingButton")[0].onClick);
+tree = latestTree();
+const sheet78 = findByTag(tree, "BottomSheet")[0];
+const rows78 = findByTag(sheet78, "Box").find(b => b.scrollable === true).children;
+check("t78 表单选药列表不含代谢物（去甲氟西汀/DV/去甲西酞普兰/M6G）",
+  !rows78.some(b => flatten(b, []).some(n => n.text && (n.text.indexOf("去甲氟西汀") === 0 || n.text.indexOf("O-去甲基文拉法辛") === 0 || n.text.indexOf("去甲西酞普兰") === 0 || n.text.indexOf("M6G") === 0))),
+  rows78.map(b => b.children[0].children[0].text).join(","));
+const morphRow78 = rows78.find(b => flatten(b, []).some(n => n.text === "吗啡"));
+const ethRow = rows78.find(b => flatten(b, []).some(n => n.text === "乙醇"));
+check("t78 物质条目（乙醇）入服表单可选", !!ethRow && !!morphRow78);
+callKey(morphRow78.onClick);
+callKey(findByTag(latestTree(), "TextField")[0].onChange, "10");
+const shA = findByTag(latestTree(), "BottomSheet")[0];
+callKey(findByTag(shA, "Box").find(b => b.arrangement === "End").children.find(c => c.tag === "Button").onClick);
+tree = latestTree();
+callKey(findByTag(tree, "FloatingButton")[0].onClick);
+tree = latestTree();
+const sheet78b = findByTag(tree, "BottomSheet")[0];
+const rows78b = findByTag(sheet78b, "Box").find(b => b.scrollable === true).children;
+callKey(rows78b.find(b => flatten(b, []).some(n => n.text === "乙醇")).onClick);
+callKey(findByTag(latestTree(), "TextField")[0].onChange, "30");
+const shB = findByTag(latestTree(), "BottomSheet")[0];
+callKey(findByTag(shB, "Box").find(b => b.arrangement === "End").children.find(c => c.tag === "Button").onClick);
+tree = latestTree();
+const ttexts = findByTag(tree, "Text").map(t => t.text);
+check("t78 物质交互词条流（◆ 乙醇×阿片类：呼吸抑制协同）",
+  ttexts.some(s => s.indexOf("◆ 乙醇×阿片类：呼吸抑制协同") >= 0), ttexts.filter(s => s.indexOf("乙醇×") >= 0).join(","));
+const icell = findByTag(tree, "Box").find(b => (b.children[0] || {}).text && String((b.children[0] || {}).text).indexOf("乙醇×阿片类") >= 0);
+check("t78 交互词条红底 flash（3 级急性 ◆ 包，tagBg 配色）",
+  icell && (icell.modifiers || []).some(m => m.tag === "Background" && m["0"] === "#40D32F2F") && (icell.children[0] || {}).flash === true && (icell.children[0] || {}).color === "#D32F2F",
+  icell && JSON.stringify({ bg: (icell.modifiers || []).find(m => m.tag === "Background") && (icell.modifiers || []).find(m => m.tag === "Background")["0"], fg: icell.children[0] && icell.children[0].color, flash: icell.children[0] && icell.children[0].flash }));
+// t78 资料页：代谢物仅资料可看（去甲氟西汀资料页）
+callKey(findByTag(tree, "TextButton").find(b => (b.children || []).some(c => c.tag === "Icon" && c.name === "info")).onClick);
+tree = latestTree();
+const dlist78 = findByTag(tree, "BottomSheet").find(s => s.visible === true);
+const drowAll = findByTag(dlist78, "Box").filter(b => b.onClick && (b.children || []).length === 3 && (b.children[0].modifiers || []).some(m => m.tag === "Width" && m["0"] === 4));
+const nfRow = drowAll.find(b => b.children[2].children[0].text === "去甲氟西汀");
+callKey(nfRow.onClick);
+tree = latestTree();
+const nfSheet = findByTag(tree, "BottomSheet").find(s => s.visible === true);
+check("t78 代谢物资料页可看（去甲氟西汀资料 + 不可口服标注）",
+  nfSheet && findByTag(nfSheet, "Text").some(x => x.text === "去甲氟西汀") && findByTag(nfSheet, "Text").some(x => String(x.text).indexOf("仅作资料") >= 0 || String(x.text).indexOf("不可直接口服") >= 0),
+  JSON.stringify(findByTag(nfSheet, "Text").slice(0, 4).map(x => x.text)));
+
 process.exit(fail === 0 ? 0 : 1);

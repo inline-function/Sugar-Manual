@@ -42,7 +42,9 @@ struct Drug(
     acuteAdv: List[Rated],
     chronicAdv: List[Rated],
     withdraw: List[Rated],
-    overdose: List[Rated]
+    overdose: List[Rated],
+    // t78：给药/资料地位。"口服"= 可入选药表单；"仅代谢物"= 仅资料页不可口服；"吸入·记录"= 物质类记录。
+    admin: Str
 )
 
 // ---------- JSON 文本拼装（写入侧，纯函数） ----------
@@ -112,7 +114,8 @@ fun encDrug(d: Drug): Str = joinFields(cons(
     jsonField("acuteAdv", encRatedList(d.acuteAdv)), cons(
     jsonField("chronicAdv", encRatedList(d.chronicAdv)), cons(
     jsonField("withdraw", encRatedList(d.withdraw)), cons(
-    jsonField("overdose", encRatedList(d.overdose)), emptyList())))))))))))))))
+    jsonField("overdose", encRatedList(d.overdose)), cons(
+    jsonField("admin", jsonLit(d.admin)), emptyList()))))))))))))))))
 
 // 药库 -> JSON 数组文本（写 storage 前的中间形态）。
 fun encDrugArray(xs: List[Drug]): Str = joinJsonElems(map(xs) { d => encDrug(d) })
@@ -190,7 +193,8 @@ fun decodeDrug(j: Json): Drug = Drug(
     acuteAdv = decRatedList(j, "acuteAdv"),
     chronicAdv = decRatedList(j, "chronicAdv"),
     withdraw = decRatedList(j, "withdraw"),
-    overdose = decRatedList(j, "overdose")
+    overdose = decRatedList(j, "overdose"),
+    admin = jsonStrField(j, "admin")
 )
 
 // ---------- 持久化（平台能力：storage 键值） ----------
@@ -230,3 +234,52 @@ fun loadDrugs(): List[Drug] {
 // 读药名表（轻量接口：UI 的药库名单）。
 @impure
 fun loadDrugNames(): List[Str] = map(loadDrugs()) { d => d.name }
+
+// ---------- t78：给药地位 / 标签双层化 / 主要分类分组 ----------
+
+// tags 折叠为单串（标签匹配以子串为准）。
+fun tagsJoinedOf(d: Drug): Str = d.tags.fold("") { acc, s => if (acc == "") s else concat(acc, concat(",", s)) }
+
+// 仅资料页（代谢物）：表单选药过滤用。
+fun isOralEntry(d: Drug): Bool = d.admin != "仅代谢物"
+
+// 可口服/可记录条目（表单选药列表 = 代谢物过滤后的库）。
+fun pickableDrugs(all: List[Drug]): List[Drug] = filter(all) { d => isOralEntry(d) }
+
+// 神经递质系统层（标签关键字）：血清素能 / 去甲肾上腺素能 / 多巴胺能 / 抗谷氨酸能 /
+// 胆碱能 / 抗胆碱能 / 抗食欲素能 / 褪黑素能 / GABA 能 / 阿片能。
+fun effectSystems(): List[Str] = cons("血清素能", cons("去甲肾上腺素能", cons("多巴胺能", cons("抗谷氨酸能", cons("胆碱能", cons("抗胆碱能", cons("抗食欲素能", cons("褪黑素能", cons("GABA能", cons("阿片能", emptyList()))))))))))
+
+// 主要分类大组（分组浏览顺序；匹配 tags 关键字，先命中者归属）。
+fun classKinds(): List[Str] = cons("心境稳定剂", cons("抗精神病药", cons("促智", cons("抗抑郁药", cons("抗焦虑药", cons("抗多动", cons("催眠", cons("镇静", cons("抗帕金森", cons("镇痛", cons("精神活性物质", cons("抗生素", cons("激素类", emptyList())))))))))))))
+
+// 组显示名（匹配关键字 → 用户叙事大组名）。
+fun classDisplay(k: Str): Str = if (k == "促智") "促智药（抗痴呆）" else if (k == "催眠") "安眠剂" else if (k == "镇静") "镇静剂" else if (k == "抗帕金森") "抗帕金森药" else if (k == "镇痛") "镇痛药" else if (k == "抗多动") "抗多动药（ADHD）" else if (k == "激素类") "激素类（避孕药）" else k
+
+fun primaryClassFrom(kinds: List[Str], ts: Str): Str = when (kinds) {
+    Nil => "其他"
+    is Cons(k, rest) => if (strIndexOf(ts, k) != None) k else primaryClassFrom(rest, ts)
+    else => "其他"
+}
+
+// 代谢物单列「代谢物（仅资料）」组，其余按主要分类归属。
+fun primaryClassOf(d: Drug): Str = if (isOralEntry(d) == false) "代谢物（仅资料）" else primaryClassFrom(classKinds(), tagsJoinedOf(d))
+
+// 分组浏览：组顺序（classKinds + 代谢物 + 其他），仅含非空组。
+fun usedClasses(ds: List[Drug]): List[Str] = orderedClasses(append(classKinds(), cons("代谢物（仅资料）", cons("其他", emptyList()))), ds)
+fun orderedClasses(kinds: List[Str], ds: List[Drug]): List[Str] = when (kinds) {
+    Nil => emptyList()
+    is Cons(k, rest) => if (size(filter(ds) { d => primaryClassOf(d) == k }) == 0) orderedClasses(rest, ds) else cons(k, orderedClasses(rest, ds))
+    else => emptyList()
+}
+
+// 某组下的药品（按库顺序）。
+fun drugsOfClass(ds: List[Drug], k: Str): List[Drug] = filter(ds) { d => primaryClassOf(d) == k }
+
+// 递质系统覆盖自查（驱动断言用）：某药 tags 命中任一系统词。
+fun hasAnySystemTag(d: Drug): Bool = hasAnySystemTagFrom(effectSystems(), tagsJoinedOf(d))
+fun hasAnySystemTagFrom(xs: List[Str], ts: Str): Bool = when (xs) {
+    Nil => false
+    is Cons(x, rest) => if (strIndexOf(ts, x) != None) true else hasAnySystemTagFrom(rest, ts)
+    else => false
+}

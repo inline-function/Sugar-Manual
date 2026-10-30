@@ -186,9 +186,26 @@ fun noRootOf(name: Str, roots: List[Str]): Bool = when (roots) {
 }
 
 // 单药全部词条（急性 + 慢性，仅主观效应），带药品下标供跨药去重计数。
+// t78：效应词条短名化（chip 显示用；资料页/数据源仍存完整药理表述）。
+// 规则：去括注（（…）/（…) /【…】）、去符号（/ 、 ： :）；个别超长词走改写表。
+// 综合征包名（◆）允许长名，不经短化。
+fun effShortName(s: Str): Str = if (effIsPack(s)) s else effShortRewrite(effStripSym(effStripParen(s)))
+fun effStripParen(s: Str): Str = headOf(headOf(headOf(s, "（"), "("), "【")
+fun effStripSym(s: Str): Str = strReplace(strReplace(strReplace(strReplace(s, "/", ""), "、", ""), "：", ""), ":", "")
+fun headOf(s: Str, sep: Str): Str = when (strSplit(s, sep)) {
+    is Cons(h, rest) => h
+    else => s
+}
+fun effShortRewrite(s: Str): Str =
+    if (s == "脑损伤者矛盾攻击性") "矛盾攻击性"
+    else if (s == "肾衰竭者蓄积致呼吸抑制延长") "蓄积致呼吸抑制"
+    else if (s == "半衰期超长致蓄积与换药洗脱困难") "超长半衰期蓄积"
+    else if (s == "骤停高剂量癫痫发作") "骤停癫痫发作"
+    else s
+
 fun effEntries(d: Drug, idx: Nat): List[EffEnt] = append(
-    map(filter(d.acuteAdv) { r => isSubjective(r.name) }) { r => EffEnt(r.name, idx, effFreqBase(r.level), true) },
-    map(filter(d.chronicAdv) { r => isSubjective(r.name) }) { r => EffEnt(r.name, idx, effFreqBase(r.level), false) }
+    map(filter(d.acuteAdv) { r => isSubjective(r.name) }) { r => EffEnt(effShortName(r.name), idx, effFreqBase(r.level), true) },
+    map(filter(d.chronicAdv) { r => isSubjective(r.name) }) { r => EffEnt(effShortName(r.name), idx, effFreqBase(r.level), false) }
 )
 
 // 联用集全部词条（按下标尾递归展开）。
@@ -282,7 +299,7 @@ fun tmaxOf(pk: List[PkProfile]): Str = when (pk) {
 // 戒断词条：该药 withdraw 段的主观项（急性来源 → flash），综合征（如「阿片戒断综合征」）
 // 走 ◆ 包格式；级别按频率词映射（阿片戒断综合征十分常见 → 红 3）。
 fun withdrawTagsOf(d: Drug): List[EffTag] =
-    map(filter(d.withdraw) { r => isSubjective(r.name) }) { r => EffTag(r.name, advFreqLevel(r.level), true, effIsPack(r.name)) }
+    map(filter(d.withdraw) { r => isSubjective(r.name) }) { r => EffTag(effShortName(r.name), advFreqLevel(r.level), true, effIsPack(r.name)) }
 
 // 预警区呈现契约：词条流（排序后）+ 骤降戒断词条（withdrawn = 已判定骤降的药）。
 // 与宿主 DshComposeHost.effectTags() 同表同规则（宿主侧下版同步）。
@@ -299,7 +316,24 @@ fun effectTags(drugs: List[Drug], withdrawn: List[Drug]): List[EffTag] {
 // 联用/戒断词条合并后统一 effSortTags 排序（级降序 → 急性 → ◆），UI 侧复用
 // withdrawStream 同款单元格渲染。
 fun effectTagsWithProfile(drugs: List[Drug], withdrawn: List[Drug], p: Profile): List[EffTag] =
-    effSortTags(append(effectTags(drugs, withdrawn), profileEffectTags(p, drugs)))
+    effSortTags(append(append(effectTags(drugs, withdrawn), profileEffectTags(p, drugs)), substanceInteractions(drugs)))
+
+// ---------- t78：物质/药对相互作用预警（真实联用药对 → EffTag；与宿主同表） ----------
+//
+// 建模说明：尼古丁/吸烟条目分开——“吸烟（烟草烟雾）”承载 CYP1A2 诱导（多环芳烃），
+// “尼古丁”仅表达受体激动与依赖（尼古丁本身不诱导 CYP1A2，文献均以“吸烟”表述）。
+fun nameIn(drugs: List[Drug], n: Str): Bool = drugs.fold(false) { acc, d => if (d.name == n) true else acc }
+
+fun substanceInteractions(drugs: List[Drug]): List[EffTag] = append(append(append(append(append(append(append(append(
+    if (nameIn(drugs, "环丙沙星") && nameIn(drugs, "咖啡因")) cons(EffTag("环丙沙星×咖啡因：咖啡因清除下降（CYP1A2 抑制）失眠焦虑风险", 2, false, false), emptyList()) else emptyList(),
+    if (anyTagged(drugs, "苯二氮卓") && nameIn(drugs, "克拉霉素")) cons(EffTag("克拉霉素×苯二氮卓类：过度镇静风险（CYP3A4 抑制）", 2, true, false), emptyList()) else emptyList()),
+    if (nameIn(drugs, "利福平") && nameIn(drugs, "口服避孕药（炔雌醇/去氧孕烯）")) cons(EffTag("利福平×口服避孕药：避孕失败风险（CYP3A4 强诱导）", 2, false, false), emptyList()) else emptyList()),
+    if (anyTagged(drugs, "苯二氮卓") && nameIn(drugs, "乙醇")) cons(EffTag("乙醇×苯二氮卓类：呼吸抑制协同（药效学，禁止配伍）", 3, true, true), emptyList()) else emptyList()),
+    if (anyTagged(drugs, "阿片") && nameIn(drugs, "乙醇")) cons(EffTag("乙醇×阿片类：呼吸抑制协同（药效学，禁止配伍）", 3, true, true), emptyList()) else emptyList()),
+    if (nameIn(drugs, "吸烟（烟草烟雾）") && nameIn(drugs, "咖啡因")) cons(EffTag("吸烟×咖啡因：咖啡因清除加快（CYP1A2 诱导源于烟雾多环芳烃而非尼古丁）", 1, false, false), emptyList()) else emptyList()),
+    if (nameIn(drugs, "吸烟（烟草烟雾）") && anyTagged(drugs, "抗精神病药")) cons(EffTag("吸烟×抗精神病药：CYP1A2 诱导降低血药浓度（源于烟雾而非尼古丁）", 1, false, false), emptyList()) else emptyList()),
+    if (nameIn(drugs, "槟榔碱") && anyTagged(drugs, "抗精神病药")) cons(EffTag("槟榔碱×抗精神病药：锥体外系症状加重风险", 2, false, false), emptyList()) else emptyList()),
+    if (nameIn(drugs, "利福平") && nameIn(drugs, "喹硫平")) cons(EffTag("利福平×喹硫平：血药浓度显著下降（CYP3A4 强诱导）", 2, false, false), emptyList()) else emptyList())
 
 // ---------- 代谢相互作用预警 ----------
 

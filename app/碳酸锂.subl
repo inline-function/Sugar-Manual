@@ -19,5 +19,6 @@ fun lithium(): Drug = Drug(
     acuteAdv = ratedList("常见|手抖;常见|口渴;常见|恶心;少见|血清素综合征"),
     chronicAdv = ratedList("常见|手抖;常见|烦渴多尿;少见|甲状腺功能减退;少见|肾功能下降;罕见|锂中毒"),
     withdraw = ratedList("常见|停药复发风险;少见|停药反跳躁狂"),
-    overdose = ratedList(">1.5mmol/L|锂中毒（震颤与意识模糊）")
+    overdose = ratedList(">1.5mmol/L|锂中毒（震颤与意识模糊）"),
+    admin = "口服"
 )

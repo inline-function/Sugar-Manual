@@ -1,0 +1,24 @@
+// app/对乙酰氨基酚 —— 完整资料（t78 药库扩展）
+
+fun paracetamol(): Drug = Drug(
+    name = "对乙酰氨基酚",
+    category = "非处方药",
+    tags = strList("镇痛药，解热镇痛药，非阿片类镇痛药"),
+    description = "对乙酰氨基酚解热镇痛而几乎无抗炎作用（外周 COX 抑制弱）。小部分 经 CYP2E1 代谢生成 NAPQI，过量或长期饮酒（诱导 CYP2E1）时 NAPQI 蓄积致肝小叶坏死；治疗量下安全，肝功能不全者需减量（每日上限 2-3g）。与华法林合用可延长 INR。",
+    effects = ratedList("中效|COX抑制（中枢为主）;弱效|COX2抑制"),
+    enzymes = strList("CYP2E1,UGT2B7"),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 2.5, tmax = "0.5-1h",
+        clearance = "一级", curve = "对数", bio = 0.7,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|解热;强效|镇痛"),
+    chronicTher = ratedList("强效|解热;强效|镇痛（轻中度）"),
+    acuteAdv = ratedList("罕见|肝损伤（过敏）"),
+    chronicAdv = ratedList("少见|肝损伤（过量/嗜酒）;罕见|皮疹"),
+    withdraw = emptyList(),
+    overdose = ratedList(">4000mg/日|肝毒性（NAPQI 蓄积，乙酰半胱氨酸解救）"),
+    admin = "口服"
+)

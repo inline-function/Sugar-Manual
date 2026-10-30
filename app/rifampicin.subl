@@ -1,0 +1,24 @@
+// app/利福平 —— 完整资料（t78 药库扩展）
+
+fun rifampicin(): Drug = Drug(
+    name = "利福平",
+    category = "处方药",
+    tags = strList("抗生素，利福霉素类，抗结核药，CYP3A4强诱导剂"),
+    description = "利福平为抗结核（及金葡菌）一线药。为 CYP3A4/2C9/2C19/1A2 与 P-糖蛋白的强诱导剂，约 1-2 周达诱导高峰，停药后持续数周：显著降低口服避孕药（炔雌醇）血浓度致避孕失败（用药期间需加用屏障避孕）；降低氯氮平、茶碱、华法林、环孢素、糖皮质激素、唑类抗真菌药浓度。体液（尿/泪）橘红色属正常。肝功能需监测。",
+    effects = ratedList("强效|细菌RNA聚合酶抑制"),
+    enzymes = strList("CYP3A4（自身经酯酶/3A4代谢）"),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 3.5, tmax = "1-3h",
+        clearance = "一级", curve = "对数", bio = 0.9,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|抗结核分枝杆菌"),
+    chronicTher = ratedList("强效|抗结核（联合方案）;强效|抗革兰阳性菌"),
+    acuteAdv = ratedList("常见|恶心;常见|肝酶升高;常见|橘红色体液"),
+    chronicAdv = ratedList("少见|肝损伤;少见|血小板减少;罕见|间质性肾炎"),
+    withdraw = emptyList(),
+    overdose = ratedList(">1200mg单次|肝损伤与呕吐"),
+    admin = "口服"
+)

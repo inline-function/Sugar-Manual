@@ -19,5 +19,6 @@ fun benztropine(): Drug = Drug(
     acuteAdv = ratedList("常见|口干;常见|视物模糊;常见|便秘"),
     chronicAdv = ratedList("常见|口干;常见|便秘;常见|认知下降;少见|谵妄;少见|幻觉"),
     withdraw = ratedList("少见|停药反跳肌强直"),
-    overdose = ratedList(">6mg单次|抗胆碱能谵妄")
+    overdose = ratedList(">6mg单次|抗胆碱能谵妄"),
+    admin = "口服"
 )

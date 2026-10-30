@@ -1,0 +1,24 @@
+// app/克拉霉素 —— 完整资料（t78 药库扩展）
+
+fun clarithromycin(): Drug = Drug(
+    name = "克拉霉素",
+    category = "处方药",
+    tags = strList("抗生素，大环内酯类，CYP3A4抑制剂"),
+    description = "克拉霉素为大环内酯类抗生素。为 CYP3A4 强抑制剂（竞争性）：与经 3A4 代谢的苯二氮卓类（咪达唑仑、阿普唑仑、三唑仑）合用可致过度镇静与呼吸抑制；亦升高他汀（辛伐他汀）、钙通道阻滞剂、秋水仙碱、某些抗精神病药浓度。同时延长 QT，与其他延长 QT 药（西酞普兰等 SSRI、昂丹司琼）合用需谨慎。",
+    effects = ratedList("强效|细菌50S核糖体抑制"),
+    enzymes = strList("CYP3A4"),
+    inhibitions = ratedList("强效|CYP3A4;弱效|CYP1A2"),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 3.5, tmax = "1.5-3h",
+        clearance = "一级", curve = "对数", bio = 0.55,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|抗革兰阳性/非典型菌（呼吸道）"),
+    chronicTher = ratedList("强效|抗菌（大环内酯）"),
+    acuteAdv = ratedList("常见|恶心;常见|腹泻;常见|味觉异常"),
+    chronicAdv = ratedList("少见|肝损伤;少见|QT延长;罕见|艰难梭菌结肠炎"),
+    withdraw = emptyList(),
+    overdose = ratedList(">2000mg单次|胃肠与肝损伤"),
+    admin = "口服"
+)

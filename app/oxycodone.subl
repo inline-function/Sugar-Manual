@@ -5,7 +5,7 @@
 fun oxycodone(): Drug = Drug(
     name = "羟考酮",
     category = "处方药",
-    tags = strList("阿片类,强阿片镇痛药,半合成阿片,麻醉药品（管制）"),
+    tags = strList("阿片类,强阿片镇痛药,半合成阿片,麻醉药品（管制）,阿片能"),
     description = "羟考酮是半合成蒂巴因衍生物、μ/κ 阿片受体激动剂，用于中重度急慢性疼痛与癌痛，常与对乙酰氨基酚或纳洛酮组成复方（中国主要为缓释片与复方制剂）。口服生物利用度较吗啡高（60-87%）；主要经 CYP3A4 N-去甲基化为无活性的去甲羟考酮，次要经 CYP2D6 O-去甲基化为活性低的羟吗啡酮，故与 CYP3A4 抑制剂（克拉霉素、伏立康唑、氟伏沙明）合用血药浓度明显升高；与 CYP2D6 强抑制剂（帕罗西汀、氟西汀）合用镇痛效应下降。与苯二氮卓类合用呼吸抑制风险（黑框警告）。",
     effects = ratedList("强效|μ-阿片受体激动;中效|κ-阿片受体激动"),
     enzymes = strList("CYP3A4,CYP2D6"),
@@ -22,5 +22,6 @@ fun oxycodone(): Drug = Drug(
     acuteAdv = ratedList("常见|呼吸抑制;十分常见|镇静;常见|恶心呕吐;常见|头晕;常见|欣快"),
     chronicAdv = ratedList("十分常见|嗜睡;常见|恶心;常见|呕吐;常见|呼吸抑制;常见|头晕"),
     withdraw = ratedList("十分常见|骤停阿片戒断综合征;常见|出汗;常见|肌痛;常见|焦虑;常见|失眠;常见|流泪流涕"),
-    overdose = ratedList(">40mg|呼吸抑制")
+    overdose = ratedList(">40mg|呼吸抑制"),
+    admin = "口服"
 )

@@ -1,0 +1,24 @@
+// app/尼古丁 —— 物质条目（t78 药库扩展）
+
+fun nicotine(): Drug = Drug(
+    name = "尼古丁",
+    category = "精神活性物质",
+    tags = strList("精神活性物质，烟碱型乙酰胆碱受体激动剂，烟草生物碱，胆碱能"),
+    description = "尼古丁为烟草中的生物碱，激动烟碱型乙酰胆碱受体（α4β2 等），产生强化/依赖效应与轻度唤醒。主要经 CYP2A6 代谢为可替宁。尼古丁本身不诱导 CYP1A2——所谓“吸烟降低氯氮平/咖啡因/茶碱浓度”来自烟雾中的多环芳烃（如苯并芘）对 CYP1A2 的诱导，与尼古丁无关（戒烟后 CYP1A2 活性数周内回落）。戒烟用尼古丁替代贴片/咀嚼胶不具该诱导作用。",
+    effects = ratedList("强效|烟碱型乙酰胆碱受体激动"),
+    enzymes = strList("CYP2A6"),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服（烟草/替代制剂）", form = "常释", halfLife = 2, tmax = "0.3-1h",
+        clearance = "一级", curve = "对数", bio = 0.4,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("弱效|提高警觉（急性）"),
+    chronicTher = ratedList("弱效|戒烟替代（逐渐减量）"),
+    acuteAdv = ratedList("常见|恶心;常见|心悸;常见|头晕"),
+    chronicAdv = ratedList("常见|依赖;常见|动脉血压升高（长期）;少见|糖代谢影响"),
+    withdraw = ratedList("常见|渴求;常见|易激惹;常见|焦虑"),
+    overdose = ratedList(">40mg|呕吐、抽搐与循环衰竭"),
+    admin = "口服"
+)

@@ -3,7 +3,7 @@
 fun donepezil(): Drug = Drug(
     name = "多奈哌齐",
     category = "处方药",
-    tags = strList("乙酰胆碱酯酶抑制剂，抗痴呆药，阿尔茨海默病药"),
+    tags = strList("乙酰胆碱酯酶抑制剂，抗痴呆药，阿尔茨海默病药，胆碱能，促智"),
     description = "多奈哌齐是中枢可逆性乙酰胆碱酯酶抑制剂，用于阿尔茨海默病与轻度认知损害（国内常见超说明书）。口服生物利用度约 100%（说明书），T½ 长（约 70h）可每日一次给药；经 CYP2D6/3A4 代谢，CYP2D6 强抑制剂（本库如氟西汀、安非他酮）升高其浓度。与抗胆碱能药（本库如苯海索）药理上相互拮抗。",
     effects = ratedList("极强|乙酰胆碱酯酶抑制（中枢）"),
     enzymes = strList("CYP2D6,CYP3A4"),
@@ -19,5 +19,6 @@ fun donepezil(): Drug = Drug(
     acuteAdv = ratedList("常见|恶心;常见|腹泻;常见|失眠"),
     chronicAdv = ratedList("常见|恶心;常见|腹泻;少见|心动过缓;少见|恶梦;少见|肌肉痉挛"),
     withdraw = ratedList("少见|停药认知下降"),
-    overdose = ratedList(">50mg单次|胆碱能危象")
+    overdose = ratedList(">50mg单次|胆碱能危象"),
+    admin = "口服"
 )

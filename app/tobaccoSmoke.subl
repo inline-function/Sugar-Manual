@@ -1,0 +1,24 @@
+// app/吸烟（烟草烟雾） —— 物质条目（t78 药库扩展）
+
+fun tobaccoSmoke(): Drug = Drug(
+    name = "吸烟（烟草烟雾）",
+    category = "精神活性物质",
+    tags = strList("精神活性物质，烟草烟雾，CYP1A2诱导剂（多环芳烃）"),
+    description = "此条目按“吸烟行为”建模（所记录的是吸烟暴露）：烟雾中的多环芳烃（苯并芘等）强诱导 CYP1A2，数周内降低经该酶代谢药物的血浓度——氯氮平（使其血浓度显著降低、疗效减弱）、咖啡因、茶碱、奥氮平（部分）、雷米替胺、环苯扎林。戒烟后诱导作用消退，相关药物需重新滴定。注意：诱导源于烟雾而非尼古丁本身，尼古丁替代制剂无此作用。",
+    effects = ratedList("强效|CYP1A2诱导（多环芳烃）;中效|烟碱受体激动（经尼古丁）"),
+    enzymes = strList("CYP2A6（尼古丁成分）"),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "吸入（烟雾）", form = "常释", halfLife = 2, tmax = "即刻",
+        clearance = "一级", curve = "对数", bio = 0.5,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("弱效|唤醒（经尼古丁）"),
+    chronicTher = ratedList("（无治疗用途）"),
+    acuteAdv = ratedList("常见|咳嗽;常见|刺激感"),
+    chronicAdv = ratedList("强证据|肺癌与COPD（长期）;常见|动脉粥样硬化;常见|勃起功能障碍"),
+    withdraw = ratedList("常见|渴求（尼古丁）"),
+    overdose = ratedList("（急性中毒由尼古丁条目表达）"),
+    admin = "吸入·记录"
+)

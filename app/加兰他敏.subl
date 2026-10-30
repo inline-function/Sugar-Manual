@@ -3,7 +3,7 @@
 fun galantamine(): Drug = Drug(
     name = "加兰他敏",
     category = "处方药",
-    tags = strList("乙酰胆碱酯酶抑制剂，抗痴呆药，阿尔茨海默病药"),
+    tags = strList("乙酰胆碱酯酶抑制剂，抗痴呆药，阿尔茨海默病药，胆碱能，促智"),
     description = "加兰他敏是可逆性乙酰胆碱酯酶抑制剂兼烟碱受体变构调节，用于阿尔茨海默病（轻中度）。口服生物利用度约 90%，经 CYP2D6/3A4 代谢（弱 2D6 抑制剂），CYP2D6 弱代谢者浓度升高。",
     effects = ratedList("极强|乙酰胆碱酯酶抑制;弱效|烟碱受体变构调节"),
     enzymes = strList("CYP2D6,CYP3A4"),
@@ -19,5 +19,6 @@ fun galantamine(): Drug = Drug(
     acuteAdv = ratedList("常见|恶心;常见|呕吐;常见|腹泻"),
     chronicAdv = ratedList("常见|恶心;常见|呕吐;常见|腹泻;少见|体重下降;少见|头晕"),
     withdraw = ratedList("少见|停药认知下降"),
-    overdose = ratedList(">40mg单次|胆碱能危象")
+    overdose = ratedList(">40mg单次|胆碱能危象"),
+    admin = "口服"
 )

@@ -6,7 +6,7 @@
 fun estazolam(): Drug = Drug(
     name = "艾司唑仑",
     category = "处方药",
-    tags = strList("苯二氮卓类,催眠药,镇静药,助眠药"),
+    tags = strList("苯二氮卓类,催眠药,镇静药,助眠药,GABA能"),
     description = "艾司唑仑是三唑并苯二氮卓类短-中效催眠药（中国临床常用），用于失眠的入睡困难与夜间易醒。口服吸收较快，主要经 CYP3A4 代谢（与 CYP3A4 抑制剂如氟伏沙明、克拉霉素、伊曲康唑合用血药浓度升高；与诱导剂如利福平、卡马西平合用疗效下降）；活性代谢物少、蓄积弱于地西泮。与阿片类或乙醇合用可致严重呼吸抑制（黑框警告），高龄与慢阻肺患者更敏感。",
     effects = ratedList("强效|GABA-A受体苯二氮卓位点变构调节"),
     enzymes = strList("CYP3A4"),
@@ -23,5 +23,6 @@ fun estazolam(): Drug = Drug(
     acuteAdv = ratedList("少见|呼吸抑制;常见|次日残余嗜睡;常见|头晕"),
     chronicAdv = ratedList("常见|嗜睡;常见|头晕;常见|顺行性记忆损害;少见|呼吸抑制;罕见|幻觉"),
     withdraw = ratedList("常见|骤停反跳性失眠;常见|焦虑反跳;少见|骤停高剂量癫痫发作"),
-    overdose = ratedList(">8mg|呼吸抑制")
+    overdose = ratedList(">8mg|呼吸抑制"),
+    admin = "口服"
 )

@@ -3,7 +3,7 @@
 fun methylphenidate(): Drug = Drug(
     name = "哌甲酯",
     category = "精神药品（一类）",
-    tags = strList("抗多动药，ADHD治疗药，中枢兴奋剂，超说明书（成人ADHD）"),
+    tags = strList("抗多动药，ADHD治疗药，中枢兴奋剂，超说明书（成人ADHD），多巴胺能，去甲肾上腺素能"),
     description = "哌甲酯是哌啶类中枢兴奋剂，一线治疗 ADHD 与发作性睡病；管制精神药品（一类）。成人 ADHD 在国内常见超说明书使用。主要经羧酸酯酶（CES1）去酯化代谢（无明显 CYP450 参与）。与 MAOI 禁忌联用；与食欲素拮抗剂等催眠药药理上相互拮抗（兴奋 vs 促眠）；升高血压心率。",
     effects = ratedList("强效|多巴胺与正肾素再摄取抑制（中枢）"),
     enzymes = emptyList(),
@@ -19,5 +19,6 @@ fun methylphenidate(): Drug = Drug(
     acuteAdv = ratedList("常见|食欲下降;常见|失眠;少见|抽动加重"),
     chronicAdv = ratedList("常见|食欲下降;常见|失眠;常见|体重下降;少见|儿童生长减速;少见|心率血压升高"),
     withdraw = ratedList("常见|停药反跳嗜睡;常见|停药反跳食欲"),
-    overdose = ratedList(">60mg单次|交感兴奋（心悸与血压升高）")
+    overdose = ratedList(">60mg单次|交感兴奋（心悸与血压升高）"),
+    admin = "口服"
 )

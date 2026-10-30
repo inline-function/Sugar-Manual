@@ -1,0 +1,24 @@
+// app/口服避孕药（炔雌醇/去氧孕烯） —— 完整资料（t78 药库扩展）
+
+fun oralContraceptive(): Drug = Drug(
+    name = "口服避孕药（炔雌醇/去氧孕烯）",
+    category = "处方药",
+    tags = strList("妇科用药，激素类避孕药，雌激素/孕激素"),
+    description = "复合口服避孕药（炔雌醇 + 去氧孕烯）。炔雌醇经 CYP3A4/2C9 并结合代谢：CYP3A4 强诱导剂（利福平、苯妥英、卡马西平、利托那韦、贯叶连翘）显著降低其浓度致避孕失败（用药期间需屏障避孕）；与拉莫三嗪相互降低对方浓度/疗效。吸烟（≥35 岁）显著增加静脉血栓与卒中风险，为 WHO 4 级禁忌。",
+    effects = ratedList("强效|抑制排卵（雌激素/孕激素）"),
+    enzymes = strList("CYP3A4,CYP2C9"),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 17, tmax = "1-2h",
+        clearance = "一级", curve = "对数", bio = 0.5,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|避孕"),
+    chronicTher = ratedList("强效|避孕;弱效|月经周期规律化"),
+    acuteAdv = ratedList("常见|恶心;常见|乳房胀痛;常见|情绪波动"),
+    chronicAdv = ratedList("少见|静脉血栓（吸烟者显著升高）;少见|血压升高;罕见|卒中（≥35岁吸烟者）"),
+    withdraw = emptyList(),
+    overdose = ratedList("（过量：恶心/撤退性出血）"),
+    admin = "口服"
+)

@@ -1,0 +1,24 @@
+// app/去甲氟西汀 —— 完整资料（t78 药库扩展）
+
+fun norfluoxetine(): Drug = Drug(
+    name = "去甲氟西汀",
+    category = "处方药（代谢物）",
+    tags = strList("代谢物（仅资料），血清素能，SSRIs，氟西汀活性代谢物"),
+    description = "去甲氟西汀为氟西汀的 N-去甲基活性代谢物：对血清素转运体的抑制强度与母药相当甚至更强，是氟西汀长半衰期（数天至 1-2 周）的实质来源。本条目仅作资料参考——不可作为药品直接口服：体内浓度由氟西汀代谢生成决定，剂量不可控。氟西汀停药后其清除需 1-2 周以上（7-15 天半衰期），换 MAOI 需间隔 5 周。",
+    effects = ratedList("强效|血清素转运体抑制"),
+    enzymes = strList("CYP2D6,CYP3A4"),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "代谢物（不可直接口服）", form = "常释", halfLife = 260, tmax = "（取决于氟西汀代谢）",
+        clearance = "一级", curve = "对数", bio = 0,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("（由氟西汀代谢生成）"),
+    chronicTher = ratedList("（与氟西汀效应合并表达）"),
+    acuteAdv = ratedList("（参见氟西汀）"),
+    chronicAdv = ratedList("少见|半衰期超长致蓄积与换药洗脱困难"),
+    withdraw = emptyList(),
+    overdose = ratedList("（不可直接给药）"),
+    admin = "仅代谢物"
+)

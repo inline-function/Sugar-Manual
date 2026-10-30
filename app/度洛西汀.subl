@@ -3,7 +3,7 @@
 fun duloxetine(): Drug = Drug(
     name = "度洛西汀",
     category = "处方药",
-    tags = strList("抗抑郁药，SNRIs，镇痛药"),
+    tags = strList("抗抑郁药，SNRIs，镇痛药，血清素能，去甲肾上腺素能"),
     description = "度洛西汀是 SNRI 类抗抑郁药，用于抑郁症、广泛性焦虑、神经病理性疼痛与纤维肌痛。经 CYP2D6 与 CYP1A2 代谢——CYP1A2 强抑制剂（如 Fluvoxamine 氟伏沙明）为其联用禁忌，CYP2D6 强抑制剂（如 Bupropion 安非他酮、Fluoxetine 氟西汀）显著升高其浓度；为 CYP2D6 中等抑制剂。MAOI 禁忌联用。",
     effects = ratedList("强效|血清素转运体抑制;强效|正肾素转运体抑制"),
     enzymes = strList("CYP2D6,CYP1A2"),
@@ -19,5 +19,6 @@ fun duloxetine(): Drug = Drug(
     acuteAdv = ratedList("常见|恶心;常见|口干;少见|血清素综合征"),
     chronicAdv = ratedList("常见|恶心;常见|嗜睡;常见|失眠;常见|性功能障碍;少见|血压升高;少见|低血钠;少见|肝损伤"),
     withdraw = ratedList("常见|停药综合征;常见|头晕;常见|恶心"),
-    overdose = ratedList(">1200mg单次|5-HT毒性反应")
+    overdose = ratedList(">1200mg单次|5-HT毒性反应"),
+    admin = "口服"
 )

@@ -1,0 +1,24 @@
+// app/M6G（吗啡-6-葡萄糖醛酸） —— 完整资料（t78 药库扩展）
+
+fun m6g(): Drug = Drug(
+    name = "M6G（吗啡-6-葡萄糖醛酸）",
+    category = "处方药（代谢物）",
+    tags = strList("代谢物（仅资料），阿片能，镇痛药，吗啡活性代谢物"),
+    description = "M6G 为吗啡经 UGT2B7 生成的葡萄糖醛酸结合代谢物： μ 受体激动活性约为吗啡的 2 倍，镇痛强度更高，经肾排泄（肾衰竭者蓄积致呼吸抑制延长）。口服吗啡的首过代谢使 M6G 成为口服后主要活性形式之一；吗啡-3-葡萄糖醛酸（M3G）则无镇痛活性但与神经兴奋性有关。本条目仅作资料参考——不可直接口服。半衰期 2-5 小时（肾功能依赖）。",
+    effects = ratedList("强效|μ阿片受体激动（活性约2倍于吗啡）"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "代谢物（不可直接口服）", form = "常释", halfLife = 3.5, tmax = "（取决于吗啡代谢）",
+        clearance = "一级", curve = "对数", bio = 0,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("（由吗啡代谢生成）"),
+    chronicTher = ratedList("（与吗啡效应合并表达）"),
+    acuteAdv = ratedList("（参见吗啡）"),
+    chronicAdv = ratedList("少见|肾衰竭者蓄积致呼吸抑制延长"),
+    withdraw = emptyList(),
+    overdose = ratedList("（不可直接给药）"),
+    admin = "仅代谢物"
+)

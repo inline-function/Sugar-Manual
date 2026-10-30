@@ -1,0 +1,24 @@
+// app/咖啡因 —— 物质条目（t78 药库扩展）
+
+fun caffeine(): Drug = Drug(
+    name = "咖啡因",
+    category = "精神活性物质",
+    tags = strList("精神活性物质，中枢兴奋剂，黄嘌呤类，腺苷受体拮抗剂"),
+    description = "咖啡因为咖啡/茶/功能饮料中的黄嘌呤类生物碱，拮抗腺苷受体并抑制磷酸二酯酶，提神并提高警觉性。主要经 CYP1A2 代谢（清除率个体差异大）：CYP1A2 抑制剂（环丙沙星、氟伏沙明、口服避孕药）升高其血浓度/效应，吸烟（烟雾多环芳烃诱导 CYP1A2）降低之。过量致焦虑、心悸、失眠；孕妇清除显著减慢。",
+    effects = ratedList("强效|腺苷A1/A2A受体拮抗;弱效|磷酸二酯酶抑制"),
+    enzymes = strList("CYP1A2,CYP2E1（少量）"),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 5, tmax = "0.5-1h",
+        clearance = "一级", curve = "对数", bio = 1,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|提高警觉与清醒"),
+    chronicTher = ratedList("弱效|抗疲劳（急性）;弱效|增强镇痛药效应（市售复方）"),
+    acuteAdv = ratedList("常见|心悸;常见|失眠;常见|胃部不适"),
+    chronicAdv = ratedList("常见|失眠与焦虑（过量）;少见|依赖与戒断性头痛"),
+    withdraw = ratedList("常见|戒断性头痛与困倦"),
+    overdose = ratedList(">400mg单次（成人）|焦虑与心动过速"),
+    admin = "口服"
+)

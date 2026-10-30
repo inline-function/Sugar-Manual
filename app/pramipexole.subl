@@ -1,0 +1,24 @@
+// app/普拉克索 —— 完整资料（t78 药库扩展）
+
+fun pramipexole(): Drug = Drug(
+    name = "普拉克索",
+    category = "处方药",
+    tags = strList("抗帕金森药，多巴胺能，非麦角类多巴胺受体激动剂，不宁腿综合征药"),
+    description = "普拉克索为非麦角类多巴胺 D2/D3 受体激动剂，用于帕金森病与不宁腿综合征。几乎不经肝脏 CYP 代谢，以原形经肾排泄（肾功能不全需减量）。少数患者出现发作性睡眠与冲动控制障碍（病理性赌博、性强迫、过度消费），多巴胺激动剂停药需逐渐减量。",
+    effects = ratedList("强效|多巴胺D2/D3受体激动"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 8, tmax = "1-3h",
+        clearance = "一级", curve = "对数", bio = 0.9,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("中效|改善运动症状"),
+    chronicTher = ratedList("强效|抗帕金森;强效|不宁腿综合征"),
+    acuteAdv = ratedList("常见|嗜睡;常见|头晕;常见|恶心"),
+    chronicAdv = ratedList("常见|白天嗜睡;少见|冲动控制障碍;少见|直立性低血压;少见|幻觉（老年）"),
+    withdraw = ratedList("常见|停药后症状反跳"),
+    overdose = ratedList(">4.5mg|幻觉与低血压"),
+    admin = "口服"
+)

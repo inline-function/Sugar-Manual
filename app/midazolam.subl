@@ -5,7 +5,7 @@
 fun midazolam(): Drug = Drug(
     name = "咪达唑仑",
     category = "处方药",
-    tags = strList("苯二氮卓类,催眠药,镇静药,麻醉辅助药,超说明书（儿童口服术前镇静）"),
+    tags = strList("苯二氮卓类,催眠药,镇静药,麻醉辅助药,超说明书（儿童口服术前镇静）,GABA能"),
     description = "咪达唑仑是短效咪唑并苯二氮卓类，起效快（静脉 1-3 分钟）、半衰期短，用于麻醉诱导与维持、ICU 镇静、术前镇静与癫痫持续状态。口服首过代谢显著（生物利用度约 44%），中国常以注射剂【超说明书】口服用于儿童术前镇静。主要经 CYP3A4 代谢，与强 CYP3A4 抑制剂（克拉霉素、伏立康唑、利托那韦）合用可致深度镇静与呼吸抑制；氟伏沙明（1A2/3A4 抑制）亦可升高其血药浓度。与阿片类合用呼吸抑制风险显著（FDA 黑框警告）。",
     effects = ratedList("强效|GABA-A受体苯二氮卓位点变构调节;强效|催眠（起效快）"),
     enzymes = strList("CYP3A4,CYP3A5"),
@@ -22,5 +22,6 @@ fun midazolam(): Drug = Drug(
     acuteAdv = ratedList("少见|呼吸抑制;常见|嗜睡"),
     chronicAdv = ratedList("十分常见|嗜睡;常见|头晕;常见|顺行性记忆损害;少见|呼吸抑制;少见|老年ICU谵妄"),
     withdraw = ratedList("常见|焦虑反跳;常见|失眠反跳;少见|骤停高剂量癫痫发作"),
-    overdose = ratedList(">20mg|呼吸抑制")
+    overdose = ratedList(">20mg|呼吸抑制"),
+    admin = "口服"
 )

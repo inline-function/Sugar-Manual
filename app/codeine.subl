@@ -6,7 +6,7 @@
 fun codeine(): Drug = Drug(
     name = "可待因",
     category = "处方药",
-    tags = strList("阿片类,弱阿片镇痛药,镇咳药,前体药,麻醉药品（管制）"),
+    tags = strList("阿片类,弱阿片镇痛药,镇咳药,前体药,麻醉药品（管制）,阿片能"),
     description = "可待因是天然阿片生物碱、弱 μ 阿片受体激动剂，本身活性低，镇痛效应主要依赖 CYP2D6 将约 5-10% 转化为吗啡。用于轻中度疼痛与干咳（中国含可待因镇咳复方曾广泛使用，现严格管控）。与 CYP2D6 强抑制剂（帕罗西汀、氟西汀）合用可几乎消除其镇痛效应（联用即警示）；与苯二氮卓类、乙醇合用呼吸抑制风险增加；CYP2D6 慢代谢者镇痛无效。哺乳期妇女禁用（转化为吗啡可致婴儿呼吸抑制）。",
     effects = ratedList("弱效|μ-阿片受体激动（前体，需 CYP2D6 转化吗啡）;中效|咳嗽中枢抑制"),
     enzymes = strList("CYP2D6,CYP3A4,UGT2B7"),
@@ -23,5 +23,6 @@ fun codeine(): Drug = Drug(
     acuteAdv = ratedList("少见|呼吸抑制;常见|嗜睡;常见|恶心呕吐;常见|欣快"),
     chronicAdv = ratedList("常见|嗜睡;常见|恶心;少见|呼吸抑制"),
     withdraw = ratedList("常见|骤停阿片戒断综合征;常见|焦虑;常见|出汗;常见|失眠"),
-    overdose = ratedList(">120mg|呼吸抑制")
+    overdose = ratedList(">120mg|呼吸抑制"),
+    admin = "口服"
 )

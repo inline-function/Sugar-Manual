@@ -180,10 +180,193 @@ struct Home {
         BottomSheet(visible = isFormOpen(), onDismiss = { unchecked cancelForm() }) {
             Box(modifier = fillWidth().paddingHV(24, 16), orientation = "vertical", spacing = 12) {
                 Text(text = "＋服用药物", size = 22, bold = true, color = "onSurface")
-                Text(text = "选择药物并填写剂量（mg）", size = 12, color = "onSurfaceVariant")
+                Text(text = "选择药物并填写剂量（mg）；代谢物条目仅资料页，不入选", size = 12, color = "onSurfaceVariant")
                 Text(text = "药物", size = 14, color = "onSurfaceVariant")
                 Box(modifier = fillWidth().height(240), scrollable = true) {
                     Box(modifier = fillWidth(), orientation = "vertical", spacing = 6) {
+                    PickerRowsA()
+                    PickerRowsB()
+                    PickerRowsC()
+                    }
+                }
+                TextField(placeholder = "剂量 (mg)", label = "剂量 (mg)", text = curDose(), errText = doseErr(), keyboard = "number", onChange = { t => unchecked setDose(t) })
+                Box(modifier = fillWidth(), orientation = "horizontal", arrangement = "End", spacing = 8) {
+                    TextButton(label = "取消", onClick = { unchecked cancelForm() }) {}
+                    Button(label = "确认", onClick = { unchecked commitDose() }) {}
+                }
+            }
+        }
+        // 个人画像设置页（t77：CandyIDE 式分组 + 多选 chip + 年龄/性别输入；宿主态机
+        // DshComposeHost.profOn/profName/sexIs/sexName/profAge + act toggleProfCond/setSex/actText setAge）。
+        BottomSheet(visible = isSettingsOpen(), onDismiss = { unchecked closeSettings() }) {
+            Box(modifier = fillWidth().paddingHV(24, 16), orientation = "vertical", spacing = 8) {
+                Text(text = "设置 · 个人画像", size = 22, bold = true, color = "onSurface")
+                Text(text = "先天/已有疾病、年龄、性别 → 预警引擎对不良反应词条加权（加权词条进入下方效应词条流，不另起界面）。", size = 12, color = "onSurfaceVariant")
+                Box(modifier = fillWidth().height(480), scrollable = true) {
+                    Box(modifier = fillWidth(), orientation = "vertical", spacing = 10) {
+                        Text(text = "个人信息", size = 15, bold = true, color = "primary")
+                        Box(modifier = fillWidth(), orientation = "horizontal", spacing = 8) {
+                            Text(text = "年龄", size = 14, color = "onSurface")
+                            TextField(placeholder = "如 32", label = "年龄（岁）", text = profAge(), keyboard = "number", onChange = { t => unchecked setProfileAgeText(t) })
+                            Text(text = "岁", size = 14, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = fillWidth(), orientation = "horizontal", spacing = 8) {
+                            Text(text = "性别", size = 14, color = "onSurface")
+            Box(modifier = clip(14).paddingHV(10, 5), orientation = "horizontal", backgroundColor = "surfaceVariant", onClick = { unchecked setSex(0) }) {
+                Text(text = sexName(0), size = 13, bold = true, color = "onSurfaceVariant")
+                Box(modifier = width(4), visible = sexIs(0)) {
+                    Text(text = "✓", size = 13, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = clip(14).paddingHV(10, 5), orientation = "horizontal", backgroundColor = "surfaceVariant", onClick = { unchecked setSex(1) }) {
+                Text(text = sexName(1), size = 13, bold = true, color = "onSurfaceVariant")
+                Box(modifier = width(4), visible = sexIs(1)) {
+                    Text(text = "✓", size = 13, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = clip(14).paddingHV(10, 5), orientation = "horizontal", backgroundColor = "surfaceVariant", onClick = { unchecked setSex(2) }) {
+                Text(text = sexName(2), size = 13, bold = true, color = "onSurfaceVariant")
+                Box(modifier = width(4), visible = sexIs(2)) {
+                    Text(text = "✓", size = 13, bold = true, color = "primary")
+                }
+            }
+                        }
+                        Text(text = "先天疾病", size = 15, bold = true, color = "primary")
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(0) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = profName(0), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = profOn(0)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+                        Text(text = "已有疾病", size = 15, bold = true, color = "primary")
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(1) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = profName(1), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = profOn(1)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(2) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = profName(2), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = profOn(2)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(3) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = profName(3), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = profOn(3)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(4) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = profName(4), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = profOn(4)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(5) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = profName(5), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = profOn(5)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(6) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = profName(6), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = profOn(6)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(7) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = profName(7), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = profOn(7)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(8) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = profName(8), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = profOn(8)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(9) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = profName(9), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = profOn(9)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(10) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = profName(10), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = profOn(10)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(11) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = profName(11), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = profOn(11)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+                        Text(text = "关于", size = 15, bold = true, color = "primary")
+                        Text(text = "语法糖手册 V1.0 · SfA @compose 通路\n按钮交互经 DshComposeHost.act 路由到 Kotlin 侧交互态。", color = "onSurfaceVariant", size = 12)
+                        TextButton(label = "清空记录", onClick = { unchecked clearAll() }) {}
+                    }
+                }
+            }
+        }
+        BottomSheet(visible = isListOpen(), onDismiss = { unchecked closeDrugList() }) {
+            Box(modifier = fillWidth().paddingHV(24, 16), orientation = "vertical", spacing = 8) {
+                Text(text = "药库名单", size = 22, bold = true, color = "onSurface")
+                Text(text = "按主要分类分组（效应系统标签见资料页）。点击药名查看完整资料；代谢物条目仅资料页。", size = 12, color = "onSurfaceVariant")
+                Box(modifier = fillWidth().height(320), scrollable = true) {
+                    Box(modifier = fillWidth(), orientation = "vertical", spacing = 6) {
+                    LibRowsA()
+                    LibRowsB()
+                    LibRowsC()
+                    LibRowsD()
+                    }
+                }
+            }
+        }
+        BottomSheet(visible = isDocOpen(), onDismiss = { unchecked closeDoc() }) {
+            Box(modifier = fillWidth().paddingHV(24, 16), orientation = "vertical", spacing = 8) {
+                Text(text = docName(), size = 22, bold = true, color = "onSurface")
+                Box(modifier = fillWidth().height(480), scrollable = true) {
+                    Text(text = docBody(), size = 12, color = "onSurfaceVariant")
+                }
+                Text(text = "资料来源：糖手册内置药物资料（与 .subl 同源；F≈ 为估算值）", size = 11, color = "onSurfaceVariant")
+            }
+        }
+        FloatingButton(icon = "add", text = "＋服用药物", color = "primary", onClick = { unchecked toggleForm() })
+    }
+}
+
+
+@compose
+struct PickerRowsA {
+    Box(modifier = fillWidth(), orientation = "vertical", spacing = 6) {
                     Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(0) }) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "氟伏沙明", size = 16, bold = true, color = "onSurface")
@@ -196,6 +379,7 @@ struct Home {
                             Text(text = "✓", size = 16, bold = true, color = "primary")
                         }
                     }
+
                     Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(1) }) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "帕罗西汀", size = 16, bold = true, color = "onSurface")
@@ -416,162 +600,685 @@ struct Home {
                             Text(text = "✓", size = 16, bold = true, color = "primary")
                         }
                     }
-                    }
-                }
-                TextField(placeholder = "剂量 (mg)", label = "剂量 (mg)", text = curDose(), errText = doseErr(), keyboard = "number", onChange = { t => unchecked setDose(t) })
-                Box(modifier = fillWidth(), orientation = "horizontal", arrangement = "End", spacing = 8) {
-                    TextButton(label = "取消", onClick = { unchecked cancelForm() }) {}
-                    Button(label = "确认", onClick = { unchecked commitDose() }) {}
-                }
-            }
-        }
-        // 个人画像设置页（t77：CandyIDE 式分组 + 多选 chip + 年龄/性别输入；宿主态机
-        // DshComposeHost.profOn/profName/sexIs/sexName/profAge + act toggleProfCond/setSex/actText setAge）。
-        BottomSheet(visible = isSettingsOpen(), onDismiss = { unchecked closeSettings() }) {
-            Box(modifier = fillWidth().paddingHV(24, 16), orientation = "vertical", spacing = 8) {
-                Text(text = "设置 · 个人画像", size = 22, bold = true, color = "onSurface")
-                Text(text = "先天/已有疾病、年龄、性别 → 预警引擎对不良反应词条加权（加权词条进入下方效应词条流，不另起界面）。", size = 12, color = "onSurfaceVariant")
-                Box(modifier = fillWidth().height(480), scrollable = true) {
-                    Box(modifier = fillWidth(), orientation = "vertical", spacing = 10) {
-                        Text(text = "个人信息", size = 15, bold = true, color = "primary")
-                        Box(modifier = fillWidth(), orientation = "horizontal", spacing = 8) {
-                            Text(text = "年龄", size = 14, color = "onSurface")
-                            TextField(placeholder = "如 32", label = "年龄（岁）", text = profAge(), keyboard = "number", onChange = { t => unchecked setProfileAgeText(t) })
-                            Text(text = "岁", size = 14, color = "onSurfaceVariant")
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(18) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "碳酸锂", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 24h · F=100% · 口服", size = 12, color = "onSurfaceVariant")
                         }
-                        Box(modifier = fillWidth(), orientation = "horizontal", spacing = 8) {
-                            Text(text = "性别", size = 14, color = "onSurface")
-            Box(modifier = clip(14).paddingHV(10, 5), orientation = "horizontal", backgroundColor = "surfaceVariant", onClick = { unchecked setSex(0) }) {
-                Text(text = sexName(0), size = 13, bold = true, color = "onSurfaceVariant")
-                Box(modifier = width(4), visible = sexIs(0)) {
-                    Text(text = "✓", size = 13, bold = true, color = "primary")
-                }
-            }
-            Box(modifier = clip(14).paddingHV(10, 5), orientation = "horizontal", backgroundColor = "surfaceVariant", onClick = { unchecked setSex(1) }) {
-                Text(text = sexName(1), size = 13, bold = true, color = "onSurfaceVariant")
-                Box(modifier = width(4), visible = sexIs(1)) {
-                    Text(text = "✓", size = 13, bold = true, color = "primary")
-                }
-            }
-            Box(modifier = clip(14).paddingHV(10, 5), orientation = "horizontal", backgroundColor = "surfaceVariant", onClick = { unchecked setSex(2) }) {
-                Text(text = sexName(2), size = 13, bold = true, color = "onSurfaceVariant")
-                Box(modifier = width(4), visible = sexIs(2)) {
-                    Text(text = "✓", size = 13, bold = true, color = "primary")
-                }
-            }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(18) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
                         }
-                        Text(text = "先天疾病", size = 15, bold = true, color = "primary")
-            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(0) }) {
-                Box(modifier = weight(1.0)) {
-                    Text(text = profName(0), size = 14, color = "onSurface")
-                }
-                Box(modifier = paddingH(8), visible = profOn(0)) {
-                    Text(text = "✓", size = 16, bold = true, color = "primary")
-                }
-            }
-                        Text(text = "已有疾病", size = 15, bold = true, color = "primary")
-            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(1) }) {
-                Box(modifier = weight(1.0)) {
-                    Text(text = profName(1), size = 14, color = "onSurface")
-                }
-                Box(modifier = paddingH(8), visible = profOn(1)) {
-                    Text(text = "✓", size = 16, bold = true, color = "primary")
-                }
-            }
-            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(2) }) {
-                Box(modifier = weight(1.0)) {
-                    Text(text = profName(2), size = 14, color = "onSurface")
-                }
-                Box(modifier = paddingH(8), visible = profOn(2)) {
-                    Text(text = "✓", size = 16, bold = true, color = "primary")
-                }
-            }
-            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(3) }) {
-                Box(modifier = weight(1.0)) {
-                    Text(text = profName(3), size = 14, color = "onSurface")
-                }
-                Box(modifier = paddingH(8), visible = profOn(3)) {
-                    Text(text = "✓", size = 16, bold = true, color = "primary")
-                }
-            }
-            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(4) }) {
-                Box(modifier = weight(1.0)) {
-                    Text(text = profName(4), size = 14, color = "onSurface")
-                }
-                Box(modifier = paddingH(8), visible = profOn(4)) {
-                    Text(text = "✓", size = 16, bold = true, color = "primary")
-                }
-            }
-            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(5) }) {
-                Box(modifier = weight(1.0)) {
-                    Text(text = profName(5), size = 14, color = "onSurface")
-                }
-                Box(modifier = paddingH(8), visible = profOn(5)) {
-                    Text(text = "✓", size = 16, bold = true, color = "primary")
-                }
-            }
-            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(6) }) {
-                Box(modifier = weight(1.0)) {
-                    Text(text = profName(6), size = 14, color = "onSurface")
-                }
-                Box(modifier = paddingH(8), visible = profOn(6)) {
-                    Text(text = "✓", size = 16, bold = true, color = "primary")
-                }
-            }
-            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(7) }) {
-                Box(modifier = weight(1.0)) {
-                    Text(text = profName(7), size = 14, color = "onSurface")
-                }
-                Box(modifier = paddingH(8), visible = profOn(7)) {
-                    Text(text = "✓", size = 16, bold = true, color = "primary")
-                }
-            }
-            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(8) }) {
-                Box(modifier = weight(1.0)) {
-                    Text(text = profName(8), size = 14, color = "onSurface")
-                }
-                Box(modifier = paddingH(8), visible = profOn(8)) {
-                    Text(text = "✓", size = 16, bold = true, color = "primary")
-                }
-            }
-            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(9) }) {
-                Box(modifier = weight(1.0)) {
-                    Text(text = profName(9), size = 14, color = "onSurface")
-                }
-                Box(modifier = paddingH(8), visible = profOn(9)) {
-                    Text(text = "✓", size = 16, bold = true, color = "primary")
-                }
-            }
-            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(10) }) {
-                Box(modifier = weight(1.0)) {
-                    Text(text = profName(10), size = 14, color = "onSurface")
-                }
-                Box(modifier = paddingH(8), visible = profOn(10)) {
-                    Text(text = "✓", size = 16, bold = true, color = "primary")
-                }
-            }
-            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(11) }) {
-                Box(modifier = weight(1.0)) {
-                    Text(text = profName(11), size = 14, color = "onSurface")
-                }
-                Box(modifier = paddingH(8), visible = profOn(11)) {
-                    Text(text = "✓", size = 16, bold = true, color = "primary")
-                }
-            }
-                        Text(text = "关于", size = 15, bold = true, color = "primary")
-                        Text(text = "语法糖手册 V1.0 · SfA @compose 通路\n按钮交互经 DshComposeHost.act 路由到 Kotlin 侧交互态。", color = "onSurfaceVariant", size = 12)
-                        TextButton(label = "清空记录", onClick = { unchecked clearAll() }) {}
+                        Box(modifier = paddingH(8), visible = isSel(18)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
                     }
-                }
-            }
-        }
-        BottomSheet(visible = isListOpen(), onDismiss = { unchecked closeDrugList() }) {
-            Box(modifier = fillWidth().paddingHV(24, 16), orientation = "vertical", spacing = 8) {
-                Text(text = "药库名单", size = 22, bold = true, color = "onSurface")
-                Text(text = "糖手册：记录服药 → 估算血药浓度 → 呼吸抑制风险预警。点击药名查看该药完整资料。", size = 12, color = "onSurfaceVariant")
-                Box(modifier = fillWidth().height(320), scrollable = true) {
-                    Box(modifier = fillWidth(), orientation = "vertical", spacing = 6) {
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(0) }) {
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(19) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "丙戊酸", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 12h · F=90% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(19) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(19)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+    }
+}
+
+@compose
+struct PickerRowsB {
+    Box(modifier = fillWidth(), orientation = "vertical", spacing = 6) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(20) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "卡马西平", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 12h · F=80% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(20) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(20)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(21) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "拉莫三嗪", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 25h · F=98% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(21) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(21)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(22) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "文拉法辛", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 5h · F=45% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(22) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(22)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(23) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "度洛西汀", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 12h · F=50% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(23) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(23)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(24) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "阿米替林", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 19h · F=45% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(24) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(24)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(25) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "米氮平", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 30h · F=50% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(25) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(25)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(26) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "安非他酮", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 21h · F=70% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(26) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(26)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(27) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "曲唑酮", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 7h · F=65% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(27) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(27)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(28) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "氯米帕明", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 26h · F=50% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(28) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(28)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(29) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "哌甲酯", size = 16, bold = true, color = "onSurface")
+                            Text(text = "精神药品（一类） · T½ 3h · F=30% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(29) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(29)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(30) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "阿托莫西汀", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 5h · F=70% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(30) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(30)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(31) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "多奈哌齐", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 70h · F=100% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(31) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(31)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(32) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "卡巴拉汀", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 2h · F=40% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(32) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(32)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(33) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "加兰他敏", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 7h · F=90% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(33) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(33)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(34) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "丁螺环酮", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 2.5h · F=5% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(34) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(34)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(35) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "苏沃瑞生", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 12h · F=70% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(35) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(35)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(36) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "莱博瑞生", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 17h · F=65% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(36) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(36)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(37) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "氯胺酮", size = 16, bold = true, color = "onSurface")
+                            Text(text = "精神药品（一类） · T½ 2.5h · F=20% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(37) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(37)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(38) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "裸盖菇素", size = 16, bold = true, color = "onSurface")
+                            Text(text = "研究性物质 · T½ 1h · F=50% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(38) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(38)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(39) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "苯海索", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 4h · F=70% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(39) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(39)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+    }
+}
+
+@compose
+struct PickerRowsC {
+    Box(modifier = fillWidth(), orientation = "vertical", spacing = 6) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(40) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "苯扎托品", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 8h · F=50% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(40) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(40)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(41) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "普拉克索", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 8h · F=90% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(41) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(41)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(42) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "金刚烷胺", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 15h · F=100% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(42) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(42)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(43) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "美金刚", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 70h · F=100% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(43) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(43)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(44) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "普瑞巴林", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 6.3h · F=90% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(44) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(44)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(45) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "雷美替胺", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 1.6h · F=2% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(45) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(45)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(46) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "奥氮平", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 30h · F=60% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(46) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(46)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(47) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "喹硫平", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 7h · F=10% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(47) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(47)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(48) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "布洛芬", size = 16, bold = true, color = "onSurface")
+                            Text(text = "非处方药 · T½ 2h · F=80% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(48) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(48)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(49) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "塞来昔布", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 11h · F=30% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(49) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(49)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(50) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "对乙酰氨基酚", size = 16, bold = true, color = "onSurface")
+                            Text(text = "非处方药 · T½ 2.5h · F=70% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(50) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(50)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(51) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "咖啡因", size = 16, bold = true, color = "onSurface")
+                            Text(text = "精神活性物质 · T½ 5h · F=100% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(51) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(51)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(52) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "乙醇", size = 16, bold = true, color = "onSurface")
+                            Text(text = "精神活性物质 · T½ 4.5h · F=80% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(52) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(52)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(53) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "槟榔碱", size = 16, bold = true, color = "onSurface")
+                            Text(text = "精神活性物质 · T½ 0.5h · F=30% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(53) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(53)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(54) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "尼古丁", size = 16, bold = true, color = "onSurface")
+                            Text(text = "精神活性物质 · T½ 2h · F=40% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(54) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(54)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(55) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "吸烟（烟草烟雾）", size = 16, bold = true, color = "onSurface")
+                            Text(text = "精神活性物质 · T½ 2h · F=50% · 吸入·记录", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(55) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(55)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(56) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "环丙沙星", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 4h · F=70% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(56) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(56)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(57) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "克拉霉素", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 3.5h · F=55% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(57) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(57)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(58) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "利福平", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 3.5h · F=90% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(58) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(58)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(59) }) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "口服避孕药（炔雌醇/去氧孕烯）", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 17h · F=50% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(59) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(59)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+    }
+}
+
+@compose
+struct LibRowsA {
+    Box(modifier = fillWidth(), orientation = "vertical", spacing = 6) {
+                    Box(modifier = fillWidth().paddingHV(0, 4)) {
+                        Text(text = "心境稳定剂", size = 15, bold = true, color = "primary")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(0) }) {
+                        Box(modifier = width(4).height(20).background("#00897B")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "碳酸锂", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 24h · F=100% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(1) }) {
+                        Box(modifier = width(4).height(20).background("#00897B")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "丙戊酸", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 12h · F=90% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(2) }) {
+                        Box(modifier = width(4).height(20).background("#00897B")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "卡马西平", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 12h · F=80% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(3) }) {
+                        Box(modifier = width(4).height(20).background("#00897B")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "拉莫三嗪", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 25h · F=98% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().paddingHV(0, 4)) {
+                        Text(text = "抗精神病药", size = 15, bold = true, color = "primary")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(4) }) {
+                        Box(modifier = width(4).height(20).background("#5E35B1")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "奥氮平", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 30h · F=60% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(5) }) {
+                        Box(modifier = width(4).height(20).background("#5E35B1")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "喹硫平", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 7h · F=10% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().paddingHV(0, 4)) {
+                        Text(text = "促智药（抗痴呆）", size = 15, bold = true, color = "primary")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(6) }) {
+                        Box(modifier = width(4).height(20).background("#00695C")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "多奈哌齐", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 70h · F=100% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(7) }) {
+                        Box(modifier = width(4).height(20).background("#00695C")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "卡巴拉汀", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 2h · F=40% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(8) }) {
+                        Box(modifier = width(4).height(20).background("#00695C")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "加兰他敏", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 7h · F=90% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(9) }) {
+                        Box(modifier = width(4).height(20).background("#00695C")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "美金刚", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 70h · F=100% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().paddingHV(0, 4)) {
+                        Text(text = "抗抑郁药", size = 15, bold = true, color = "primary")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(10) }) {
                         Box(modifier = width(4).height(20).background("#FFC107")) {}
                         Box(modifier = width(10)) {}
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
@@ -580,7 +1287,8 @@ struct Home {
                         }
                         Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
                     }
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(1) }) {
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(11) }) {
                         Box(modifier = width(4).height(20).background("#FFC107")) {}
                         Box(modifier = width(10)) {}
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
@@ -589,7 +1297,8 @@ struct Home {
                         }
                         Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
                     }
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(2) }) {
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(12) }) {
                         Box(modifier = width(4).height(20).background("#FFC107")) {}
                         Box(modifier = width(10)) {}
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
@@ -598,7 +1307,8 @@ struct Home {
                         }
                         Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
                     }
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(3) }) {
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(13) }) {
                         Box(modifier = width(4).height(20).background("#FFC107")) {}
                         Box(modifier = width(10)) {}
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
@@ -607,7 +1317,8 @@ struct Home {
                         }
                         Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
                     }
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(4) }) {
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(14) }) {
                         Box(modifier = width(4).height(20).background("#FFC107")) {}
                         Box(modifier = width(10)) {}
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
@@ -616,7 +1327,8 @@ struct Home {
                         }
                         Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
                     }
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(5) }) {
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(15) }) {
                         Box(modifier = width(4).height(20).background("#FFC107")) {}
                         Box(modifier = width(10)) {}
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
@@ -625,7 +1337,87 @@ struct Home {
                         }
                         Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
                     }
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(6) }) {
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(16) }) {
+                        Box(modifier = width(4).height(20).background("#FFC107")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "文拉法辛", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 5h · F=45% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(17) }) {
+                        Box(modifier = width(4).height(20).background("#FFC107")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "度洛西汀", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 12h · F=50% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(18) }) {
+                        Box(modifier = width(4).height(20).background("#FFC107")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "阿米替林", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 19h · F=45% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(19) }) {
+                        Box(modifier = width(4).height(20).background("#FFC107")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "米氮平", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 30h · F=50% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(20) }) {
+                        Box(modifier = width(4).height(20).background("#FFC107")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "安非他酮", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 21h · F=70% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(21) }) {
+                        Box(modifier = width(4).height(20).background("#FFC107")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "曲唑酮", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 7h · F=65% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(22) }) {
+                        Box(modifier = width(4).height(20).background("#FFC107")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "氯米帕明", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 26h · F=50% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+    }
+}
+
+@compose
+struct LibRowsB {
+    Box(modifier = fillWidth(), orientation = "vertical", spacing = 6) {
+                    Box(modifier = fillWidth().paddingHV(0, 4)) {
+                        Text(text = "抗焦虑药", size = 15, bold = true, color = "primary")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(23) }) {
                         Box(modifier = width(4).height(20).background("#1976D2")) {}
                         Box(modifier = width(10)) {}
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
@@ -634,16 +1426,8 @@ struct Home {
                         }
                         Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
                     }
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(7) }) {
-                        Box(modifier = width(4).height(20).background("#1976D2")) {}
-                        Box(modifier = width(10)) {}
-                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
-                            Text(text = "艾司唑仑", size = 16, bold = true, color = "onSurface")
-                            Text(text = "处方药 · T½ 17h · F≈100% · 口服", size = 12, color = "onSurfaceVariant")
-                        }
-                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
-                    }
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(8) }) {
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(24) }) {
                         Box(modifier = width(4).height(20).background("#1976D2")) {}
                         Box(modifier = width(10)) {}
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
@@ -652,7 +1436,8 @@ struct Home {
                         }
                         Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
                     }
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(9) }) {
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(25) }) {
                         Box(modifier = width(4).height(20).background("#1976D2")) {}
                         Box(modifier = width(10)) {}
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
@@ -661,7 +1446,8 @@ struct Home {
                         }
                         Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
                     }
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(10) }) {
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(26) }) {
                         Box(modifier = width(4).height(20).background("#1976D2")) {}
                         Box(modifier = width(10)) {}
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
@@ -670,7 +1456,66 @@ struct Home {
                         }
                         Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
                     }
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(11) }) {
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(27) }) {
+                        Box(modifier = width(4).height(20).background("#1976D2")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "丁螺环酮", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 2.5h · F=5% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(28) }) {
+                        Box(modifier = width(4).height(20).background("#1976D2")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "普瑞巴林", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 6.3h · F=90% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().paddingHV(0, 4)) {
+                        Text(text = "抗多动药（ADHD）", size = 15, bold = true, color = "primary")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(29) }) {
+                        Box(modifier = width(4).height(20).background("#EF6C00")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "哌甲酯", size = 16, bold = true, color = "onSurface")
+                            Text(text = "精神药品（一类） · T½ 3h · F=30% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(30) }) {
+                        Box(modifier = width(4).height(20).background("#EF6C00")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "阿托莫西汀", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 5h · F=70% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().paddingHV(0, 4)) {
+                        Text(text = "安眠剂", size = 15, bold = true, color = "primary")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(31) }) {
+                        Box(modifier = width(4).height(20).background("#1976D2")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "艾司唑仑", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 17h · F≈100% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(32) }) {
                         Box(modifier = width(4).height(20).background("#1976D2")) {}
                         Box(modifier = width(10)) {}
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
@@ -679,7 +1524,91 @@ struct Home {
                         }
                         Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
                     }
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(12) }) {
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(33) }) {
+                        Box(modifier = width(4).height(20).background("#3949AB")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "苏沃瑞生", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 12h · F=70% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(34) }) {
+                        Box(modifier = width(4).height(20).background("#3949AB")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "莱博瑞生", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 17h · F=65% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(35) }) {
+                        Box(modifier = width(4).height(20).background("#3949AB")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "雷美替胺", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 1.6h · F=2% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+    }
+}
+
+@compose
+struct LibRowsC {
+    Box(modifier = fillWidth(), orientation = "vertical", spacing = 6) {
+                    Box(modifier = fillWidth().paddingHV(0, 4)) {
+                        Text(text = "抗帕金森药", size = 15, bold = true, color = "primary")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(36) }) {
+                        Box(modifier = width(4).height(20).background("#4E342E")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "苯海索", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 4h · F=70% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(37) }) {
+                        Box(modifier = width(4).height(20).background("#4E342E")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "苯扎托品", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 8h · F=50% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(38) }) {
+                        Box(modifier = width(4).height(20).background("#4E342E")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "普拉克索", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 8h · F=90% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(39) }) {
+                        Box(modifier = width(4).height(20).background("#4E342E")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "金刚烷胺", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 15h · F=100% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().paddingHV(0, 4)) {
+                        Text(text = "镇痛药", size = 15, bold = true, color = "primary")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(40) }) {
                         Box(modifier = width(4).height(20).background("#6A1B9A")) {}
                         Box(modifier = width(10)) {}
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
@@ -688,7 +1617,8 @@ struct Home {
                         }
                         Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
                     }
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(13) }) {
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(41) }) {
                         Box(modifier = width(4).height(20).background("#6A1B9A")) {}
                         Box(modifier = width(10)) {}
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
@@ -697,7 +1627,8 @@ struct Home {
                         }
                         Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
                     }
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(14) }) {
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(42) }) {
                         Box(modifier = width(4).height(20).background("#6A1B9A")) {}
                         Box(modifier = width(10)) {}
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
@@ -706,7 +1637,8 @@ struct Home {
                         }
                         Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
                     }
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(15) }) {
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(43) }) {
                         Box(modifier = width(4).height(20).background("#6A1B9A")) {}
                         Box(modifier = width(10)) {}
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
@@ -715,7 +1647,8 @@ struct Home {
                         }
                         Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
                     }
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(16) }) {
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(44) }) {
                         Box(modifier = width(4).height(20).background("#6A1B9A")) {}
                         Box(modifier = width(10)) {}
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
@@ -724,7 +1657,8 @@ struct Home {
                         }
                         Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
                     }
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openDocFor(17) }) {
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(45) }) {
                         Box(modifier = width(4).height(20).background("#6A1B9A")) {}
                         Box(modifier = width(10)) {}
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
@@ -733,19 +1667,206 @@ struct Home {
                         }
                         Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
                     }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(46) }) {
+                        Box(modifier = width(4).height(20).background("#AD1457")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "氯胺酮", size = 16, bold = true, color = "onSurface")
+                            Text(text = "精神药品（一类） · T½ 2.5h · F=20% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
                     }
-                }
-            }
-        }
-        BottomSheet(visible = isDocOpen(), onDismiss = { unchecked closeDoc() }) {
-            Box(modifier = fillWidth().paddingHV(24, 16), orientation = "vertical", spacing = 8) {
-                Text(text = docName(), size = 22, bold = true, color = "onSurface")
-                Box(modifier = fillWidth().height(480), scrollable = true) {
-                    Text(text = docBody(), size = 12, color = "onSurfaceVariant")
-                }
-                Text(text = "资料来源：糖手册内置药物资料（与 .subl 同源；F≈ 为估算值）", size = 11, color = "onSurfaceVariant")
-            }
-        }
-        FloatingButton(icon = "add", text = "＋服用药物", color = "primary", onClick = { unchecked toggleForm() })
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(47) }) {
+                        Box(modifier = width(4).height(20).background("#AD1457")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "布洛芬", size = 16, bold = true, color = "onSurface")
+                            Text(text = "非处方药 · T½ 2h · F=80% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(48) }) {
+                        Box(modifier = width(4).height(20).background("#AD1457")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "塞来昔布", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 11h · F=30% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(49) }) {
+                        Box(modifier = width(4).height(20).background("#AD1457")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "对乙酰氨基酚", size = 16, bold = true, color = "onSurface")
+                            Text(text = "非处方药 · T½ 2.5h · F=70% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+    }
+}
+
+@compose
+struct LibRowsD {
+    Box(modifier = fillWidth(), orientation = "vertical", spacing = 6) {
+                    Box(modifier = fillWidth().paddingHV(0, 4)) {
+                        Text(text = "精神活性物质", size = 15, bold = true, color = "primary")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(50) }) {
+                        Box(modifier = width(4).height(20).background("#5D4037")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "裸盖菇素", size = 16, bold = true, color = "onSurface")
+                            Text(text = "研究性物质 · T½ 1h · F=50% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(51) }) {
+                        Box(modifier = width(4).height(20).background("#5D4037")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "咖啡因", size = 16, bold = true, color = "onSurface")
+                            Text(text = "精神活性物质 · T½ 5h · F=100% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(52) }) {
+                        Box(modifier = width(4).height(20).background("#5D4037")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "乙醇", size = 16, bold = true, color = "onSurface")
+                            Text(text = "精神活性物质 · T½ 4.5h · F=80% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(53) }) {
+                        Box(modifier = width(4).height(20).background("#5D4037")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "槟榔碱", size = 16, bold = true, color = "onSurface")
+                            Text(text = "精神活性物质 · T½ 0.5h · F=30% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(54) }) {
+                        Box(modifier = width(4).height(20).background("#5D4037")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "尼古丁", size = 16, bold = true, color = "onSurface")
+                            Text(text = "精神活性物质 · T½ 2h · F=40% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(55) }) {
+                        Box(modifier = width(4).height(20).background("#5D4037")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "吸烟（烟草烟雾）", size = 16, bold = true, color = "onSurface")
+                            Text(text = "精神活性物质 · T½ 2h · F=50% · 吸入·记录", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().paddingHV(0, 4)) {
+                        Text(text = "抗生素", size = 15, bold = true, color = "primary")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(56) }) {
+                        Box(modifier = width(4).height(20).background("#2E7D32")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "环丙沙星", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 4h · F=70% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(57) }) {
+                        Box(modifier = width(4).height(20).background("#2E7D32")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "克拉霉素", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 3.5h · F=55% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(58) }) {
+                        Box(modifier = width(4).height(20).background("#2E7D32")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "利福平", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 3.5h · F=90% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().paddingHV(0, 4)) {
+                        Text(text = "激素类（避孕药）", size = 15, bold = true, color = "primary")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(59) }) {
+                        Box(modifier = width(4).height(20).background("#8E24AA")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "口服避孕药（炔雌醇/去氧孕烯）", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药 · T½ 17h · F=50% · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().paddingHV(0, 4)) {
+                        Text(text = "代谢物（仅资料）", size = 15, bold = true, color = "primary")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(60) }) {
+                        Box(modifier = width(4).height(20).background("#9E9E9E")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "去甲氟西汀", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药（代谢物） · T½ 260h · F=0% · 仅代谢物", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(61) }) {
+                        Box(modifier = width(4).height(20).background("#9E9E9E")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "O-去甲基文拉法辛", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药（代谢物） · T½ 11h · F=0% · 仅代谢物", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(62) }) {
+                        Box(modifier = width(4).height(20).background("#9E9E9E")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "去甲西酞普兰", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药（代谢物） · T½ 50h · F=0% · 仅代谢物", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), onClick = { unchecked openLibDoc(63) }) {
+                        Box(modifier = width(4).height(20).background("#9E9E9E")) {}
+                        Box(modifier = width(10)) {}
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "M6G（吗啡-6-葡萄糖醛酸）", size = 16, bold = true, color = "onSurface")
+                            Text(text = "处方药（代谢物） · T½ 3.5h · F=0% · 仅代谢物", size = 12, color = "onSurfaceVariant")
+                        }
+                        Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                    }
     }
 }

@@ -19,5 +19,6 @@ fun mirtazapine(): Drug = Drug(
     acuteAdv = ratedList("十分常见|嗜睡;常见|食欲增加;常见|体重增加"),
     chronicAdv = ratedList("十分常见|嗜睡;常见|体重增加;常见|食欲增加;少见|血脂升高"),
     withdraw = ratedList("常见|停药综合征;少见|焦虑反跳"),
-    overdose = ratedList(">500mg单次|镇静与QT间期延长")
+    overdose = ratedList(">500mg单次|镇静与QT间期延长"),
+    admin = "口服"
 )

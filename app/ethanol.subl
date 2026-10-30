@@ -1,0 +1,24 @@
+// app/乙醇 —— 物质条目（t78 药库扩展）
+
+fun ethanol(): Drug = Drug(
+    name = "乙醇",
+    category = "精神活性物质",
+    tags = strList("精神活性物质，中枢神经抑制剂，酒精,GABA能"),
+    description = "乙醇经 ADH 代谢为乙醛（ALDH 再代谢为乙酸），小部分经 CYP2E1（长期饮酒被诱导，同时使对乙酰氨基酚 NAPQI 生成增加——肝毒性协同）。与苯二氮卓类、阿片类、第一代抗组胺药存在药效学协同：呼吸抑制与镇静作用相加，临床禁忌配伍。急性过量可致呼吸抑制、误吸与低血糖；慢性使用致依赖、肝损伤与戒断（震颤、癫痫、谵妄）。",
+    effects = ratedList("强效|GABA-A受体正变构调节;中效|NMDA抑制;强效|ADH底物"),
+    enzymes = strList("CYP2E1（诱导）,ADH"),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服（饮品）", form = "常释", halfLife = 4.5, tmax = "0.5-1h",
+        clearance = "一级", curve = "对数", bio = 0.8,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("中效|松弛与去抑制（急性）"),
+    chronicTher = ratedList("（不作长期治疗用途）"),
+    acuteAdv = ratedList("十分常见|共济失调;十分常见|判断力受损;常见|恶心"),
+    chronicAdv = ratedList("常见|依赖;常见|肝损伤;常见|胃炎;少见|韦尼克脑病"),
+    withdraw = ratedList("常见|戒断（震颤/失眠/癫痫/震颤谵妄）"),
+    overdose = ratedList("血乙醇>400mg/dL|呼吸抑制致死"),
+    admin = "口服"
+)

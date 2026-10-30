@@ -1,0 +1,24 @@
+// app/去甲西酞普兰 —— 完整资料（t78 药库扩展）
+
+fun descitalopram(): Drug = Drug(
+    name = "去甲西酞普兰",
+    category = "处方药（代谢物）",
+    tags = strList("代谢物（仅资料），血清素能，西酞普兰主要代谢物"),
+    description = "去甲西酞普兰（主要指 N-去甲基西酞普兰）为西酞普兰/艾司西酞普兰的主要代谢物：对血清素转运体亲和力远低于母药（活性仅为母药的约 1/10 或更低），临床效应主要由母药承担。本条目仅作资料参考——不可直接口服。半衰期约 30-50 小时（长于母药），老年人与肝功能不全者清除进一步延长。",
+    effects = ratedList("弱效|血清素转运体抑制"),
+    enzymes = strList("CYP2C19,CYP3A4,CYP2D6"),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "代谢物（不可直接口服）", form = "常释", halfLife = 50, tmax = "（取决于西酞普兰代谢）",
+        clearance = "一级", curve = "对数", bio = 0,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("（由西酞普兰代谢生成）"),
+    chronicTher = ratedList("（效应主要由母药承担）"),
+    acuteAdv = ratedList("（参见西酞普兰）"),
+    chronicAdv = ratedList("少见|长半衰期致蓄积"),
+    withdraw = emptyList(),
+    overdose = ratedList("（不可直接给药）"),
+    admin = "仅代谢物"
+)

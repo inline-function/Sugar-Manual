@@ -1,0 +1,24 @@
+// app/布洛芬 —— 完整资料（t78 药库扩展）
+
+fun ibuprofen(): Drug = Drug(
+    name = "布洛芬",
+    category = "非处方药",
+    tags = strList("镇痛药，解热镇痛抗炎药，NSAIDs，非甾体类抗炎药"),
+    description = "布洛芬为非选择性 COX 抑制剂，解热、镇痛、抗炎。主要经 CYP2C9 代谢。与锂盐合用可降低锂清除率（升锂血浓度）；与抗凝药/抗血小板药合用增加出血风险；长期用可致胃肠溃疡、血压升高与肾损伤（与环孢素/利尿剂联用风险更高）。",
+    effects = ratedList("强效|COX1/COX2抑制"),
+    enzymes = strList("CYP2C9"),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 2, tmax = "0.5-2h",
+        clearance = "一级", curve = "对数", bio = 0.8,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|解热;强效|镇痛"),
+    chronicTher = ratedList("强效|抗炎;强效|镇痛;强效|解热"),
+    acuteAdv = ratedList("常见|胃肠不适;常见|烧心"),
+    chronicAdv = ratedList("常见|胃肠溃疡与出血（长期）;少见|肾损伤;少见|血压升高"),
+    withdraw = emptyList(),
+    overdose = ratedList(">1200mg单次|胃肠出血与急性肾损伤"),
+    admin = "口服"
+)

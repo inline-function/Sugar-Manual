@@ -1,0 +1,24 @@
+// app/奥氮平 —— 完整资料（t78 药库扩展）
+
+fun olanzapine(): Drug = Drug(
+    name = "奥氮平",
+    category = "处方药",
+    tags = strList("抗精神病药，血清素能（5-HT2A拮抗），多巴胺能（D2拮抗），非典型抗精神病药"),
+    description = "奥氮平为非典型抗精神病药（阻断 5-HT2A/D2 并兼拮抗 H1、α1 与毒蕈碱受体），用于精神分裂症与双相躁狂。主要经 CYP1A2（次 CYP2D6/3A4）代谢：吸烟诱导 CYP1A2 显著降低其血浓度（吸烟者常需更高剂量），环丙沙星/氟伏沙明（1A2 抑制）则升高之。代谢综合征（体重增加、血糖血脂升高）突出，糖尿病/肥胖患者需监测。",
+    effects = ratedList("强效|5HT2A受体拮抗;强效|D2受体拮抗;强效|H1受体拮抗"),
+    enzymes = strList("CYP1A2,CYP2D6,CYP3A4,CYP2C8"),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 30, tmax = "3-6h",
+        clearance = "一级", curve = "对数", bio = 0.6,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("中效|控制精神病性症状（数日起效）"),
+    chronicTher = ratedList("强效|抗精神病;强效|抗躁狂;弱效|抗焦虑（辅助）"),
+    acuteAdv = ratedList("十分常见|嗜睡;常见|体重增加;常见|直立性低血压"),
+    chronicAdv = ratedList("常见|代谢综合征（体重/血糖/血脂）;少见|锥体外系;少见|镇静与认知迟钝;罕见|白细胞减少"),
+    withdraw = ratedList("常见|停药复发"),
+    overdose = ratedList(">20mg|中枢抑制与锥体外系"),
+    admin = "口服"
+)

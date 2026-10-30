@@ -1,0 +1,24 @@
+// app/金刚烷胺 —— 完整资料（t78 药库扩展）
+
+fun amantadine(): Drug = Drug(
+    name = "金刚烷胺",
+    category = "处方药",
+    tags = strList("抗帕金森药，抗病毒药，多巴胺能，抗谷氨酸能"),
+    description = "金刚烷胺促多巴胺释放并阻断 NMDA 谷氨酸受体（非竞争性拮抗），用于帕金森病（含异动症）与甲型流感。以原形经肾排泄，老年与肾功能不全者需减量，停药可致高热与精神症状恶化（类似神经阻滞剂恶性综合征）。",
+    effects = ratedList("中效|促多巴胺释放;强效|NMDA受体拮抗"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 15, tmax = "2-4h",
+        clearance = "一级", curve = "对数", bio = 1,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("弱效|改善运动症状"),
+    chronicTher = ratedList("强效|抗帕金森;弱效|抗病毒（甲型流感）"),
+    acuteAdv = ratedList("常见|头晕;常见|失眠;常见|恶心"),
+    chronicAdv = ratedList("少见|幻觉;少见|网状青斑;少见|外周水肿"),
+    withdraw = ratedList("常见|停药反跳"),
+    overdose = ratedList(">300mg|幻觉与心律失常"),
+    admin = "口服"
+)

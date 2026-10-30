@@ -1,0 +1,24 @@
+// app/塞来昔布 —— 完整资料（t78 药库扩展）
+
+fun celecoxib(): Drug = Drug(
+    name = "塞来昔布",
+    category = "处方药",
+    tags = strList("镇痛药，NSAIDs，COX2选择性抑制剂，非甾体类抗炎药"),
+    description = "塞来昔布为选择性 COX-2 抑制剂，胃肠道毒性低于非选择性 NSAIDs，但心血管（心梗/卒中）与肾损伤风险仍需关注。主要经 CYP2C9 代谢，与 CYP2C9 抑制剂（如氟康唑）合用血浓度升高；磺胺类过敏者慎用。与锂盐相互作用同其他 NSAIDs。",
+    effects = ratedList("强效|COX2选择性抑制"),
+    enzymes = strList("CYP2C9,CYP3A4"),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 11, tmax = "1-3h",
+        clearance = "一级", curve = "对数", bio = 0.3,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|镇痛;强效|抗炎"),
+    chronicTher = ratedList("强效|镇痛（关节炎/术后）;强效|抗炎"),
+    acuteAdv = ratedList("常见|头痛;常见|胃肠不适"),
+    chronicAdv = ratedList("少见|血压升高与水肿;少见|心血管事件（长期大剂量）;少见|肾损伤"),
+    withdraw = emptyList(),
+    overdose = ratedList(">600mg|胃肠与中枢症状"),
+    admin = "口服"
+)

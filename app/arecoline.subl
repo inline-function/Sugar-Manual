@@ -1,0 +1,24 @@
+// app/槟榔碱 —— 物质条目（t78 药库扩展）
+
+fun arecoline(): Drug = Drug(
+    name = "槟榔碱",
+    category = "精神活性物质",
+    tags = strList("精神活性物质，胆碱能，毒蕈碱受体部分激动剂，槟榔生物碱"),
+    description = "槟榔碱为槟榔果中的主要生物碱，为 M1/M3 毒蕈碱型乙酰胆碱受体部分激动剂，产生拟胆碱效应与轻度欣快，是嚼槟榔成瘾与口腔黏膜下纤维化/口腔癌的主因。与抗精神病药（D2 阻断类）合用可加重锥体外系症状；与抗胆碱能药（苯海索等）效应相反。吸烟/嚼槟榔者口腔癌风险显著升高。",
+    effects = ratedList("强效|毒蕈碱型乙酰胆碱受体部分激动"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服（嚼食槟榔摄入）", form = "常释", halfLife = 0.5, tmax = "数分钟（嚼食吸收）",
+        clearance = "一级", curve = "对数", bio = 0.3,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("弱效|提神与欣快（嚼食）"),
+    chronicTher = ratedList("（无治疗用途）"),
+    acuteAdv = ratedList("常见|流涎;常见|心动过缓;常见|面部潮红"),
+    chronicAdv = ratedList("常见|口腔黏膜下纤维化（长期嚼食）;常见|依赖;强证据|口腔癌（长期嚼食）"),
+    withdraw = ratedList("常见|嚼食渴望"),
+    overdose = ratedList(">10mg/kg|胆碱能危象（呕吐/抽搐）"),
+    admin = "口服"
+)

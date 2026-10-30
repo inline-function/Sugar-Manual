@@ -1,0 +1,24 @@
+// app/喹硫平 —— 完整资料（t78 药库扩展）
+
+fun quetiapine(): Drug = Drug(
+    name = "喹硫平",
+    category = "处方药",
+    tags = strList("抗精神病药，血清素能（5-HT2A拮抗），多巴胺能（D2拮抗），非典型抗精神病药"),
+    description = "喹硫平为非典型抗精神病药，用于精神分裂症、双相障碍与抑郁症辅助治疗。主要经 CYP3A4 代谢：克拉霉素、酮康唑等 3A4 抑制剂显著升高其血浓度（过度镇静/低血压/QT 延长风险），苯妥英/利福平等诱导剂降低之。常用缓释制剂；镇静、体位性低血压与代谢变化较常见。",
+    effects = ratedList("强效|5HT2A受体拮抗;强效|D2受体拮抗;强效|H1受体拮抗;弱效|去甲肾上腺素转运体抑制"),
+    enzymes = strList("CYP3A4,CYP2D6（少量）"),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服（缓释）", form = "常释", halfLife = 7, tmax = "1-2h",
+        clearance = "一级", curve = "对数", bio = 0.1,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("中效|控制精神病性症状（数日起效）"),
+    chronicTher = ratedList("强效|抗精神病;强效|抗躁狂;强效|抗抑郁（辅助）"),
+    acuteAdv = ratedList("十分常见|嗜睡;常见|头晕;常见|口干"),
+    chronicAdv = ratedList("常见|体重增加;常见|血脂异常;少见|锥体外系;少见|QT延长（大剂量）"),
+    withdraw = ratedList("常见|停药复发与失眠"),
+    overdose = ratedList(">1000mg|中枢抑制、低血压与QT延长"),
+    admin = "口服"
+)

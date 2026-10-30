@@ -1,0 +1,24 @@
+// app/O-去甲基文拉法辛 —— 完整资料（t78 药库扩展）
+
+fun desvenlafaxine(): Drug = Drug(
+    name = "O-去甲基文拉法辛",
+    category = "处方药（代谢物）",
+    tags = strList("代谢物（仅资料），血清素能，去甲肾上腺素能，SNRIs，文拉法辛活性代谢物"),
+    description = "O-去甲基文拉法辛（ODV）为文拉法辛经 CYP2D6 生成的主要活性代谢物，同时抑制血清素与去甲肾上腺素再摄取；文拉法辛片剂即以其缓释前药形式发挥作用（ODV 约贡献全部药理活性）。本条目仅作资料参考——不可直接口服（其本身另有作为独立药品 desvenlafaxine 上市的剂型，但本手册按代谢物处理）。半衰期约 11 小时，经 CYP3A4 结合代谢为主、肾排泄。",
+    effects = ratedList("强效|血清素转运体抑制;中效|去甲肾上腺素转运体抑制"),
+    enzymes = strList("CYP3A4（结合代谢）"),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "代谢物（不可直接口服）", form = "常释", halfLife = 11, tmax = "（取决于文拉法辛代谢）",
+        clearance = "一级", curve = "对数", bio = 0,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("（由文拉法辛代谢生成）"),
+    chronicTher = ratedList("（与文拉法辛效应合并表达）"),
+    acuteAdv = ratedList("（参见文拉法辛）"),
+    chronicAdv = ratedList("常见|恶心;常见|失眠（转译自母药）"),
+    withdraw = emptyList(),
+    overdose = ratedList("（不可直接给药）"),
+    admin = "仅代谢物"
+)
