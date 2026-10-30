@@ -18,8 +18,8 @@ fun codeine(): Drug = Drug(
     ), emptyList()),
     acuteTher = ratedList("中效|镇痛（轻中度）;强效|镇咳（干咳）"),
     chronicTher = ratedList("中效|镇痛（轻中度疼痛）;中效|镇咳（限无痰干咳）"),
-    acuteAdv = ratedList("少见|呼吸抑制;常见|嗜睡;常见|恶心呕吐;常见|便秘（弱于吗啡）;常见|欣快"),
-    chronicAdv = ratedList("常见|便秘;常见|嗜睡;常见|恶心;少见|呼吸抑制;少见|依赖（长期使用）;少见|瘙痒;罕见|过敏反应（支气管痉挛）"),
+    acuteAdv = ratedList("少见|呼吸抑制;常见|嗜睡;常见|恶心呕吐;常见|欣快"),
+    chronicAdv = ratedList("常见|嗜睡;常见|恶心;少见|呼吸抑制"),
     withdraw = ratedList("常见|阿片戒断综合征（骤停）;常见|焦虑;常见|出汗;常见|失眠"),
-    overdose = ratedList(">120mg|呼吸抑制（纳洛酮可拮抗）")
+    overdose = ratedList(">120mg|呼吸抑制")
 )

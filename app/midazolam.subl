@@ -17,8 +17,8 @@ fun midazolam(): Drug = Drug(
     ), emptyList()),
     acuteTher = ratedList("强效|催眠（快起效）;强效|镇静（术前）"),
     chronicTher = ratedList("强效|ICU镇静;强效|麻醉诱导;强效|癫痫持续状态（静注）;中效|儿童术前镇静（口服，超说明书）"),
-    acuteAdv = ratedList("少见|呼吸抑制（静注常见剂量相关）;常见|嗜睡;常见|血压下降（静注）"),
-    chronicAdv = ratedList("十分常见|嗜睡;常见|头晕;常见|记忆损害（顺行性）;常见|耐受（ICU 长期输注）;少见|呼吸抑制（与阿片合用）;少见|谵妄（老年 ICU）;少见|低血压"),
+    acuteAdv = ratedList("少见|呼吸抑制;常见|嗜睡"),
+    chronicAdv = ratedList("十分常见|嗜睡;常见|头晕;常见|顺行性记忆损害;少见|呼吸抑制;少见|老年ICU谵妄"),
     withdraw = ratedList("常见|焦虑反跳;常见|失眠反跳;少见|癫痫发作（骤停高剂量）"),
     overdose = ratedList(">20mg|呼吸抑制")
 )

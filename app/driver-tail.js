@@ -257,13 +257,32 @@
   })());
   __smA("respColor 夹紧（<1 浅 / >9 红）", respColor(0) === "#F5FFFDE7" && respColor(20) === "#F5E53935", JSON.stringify([respColor(0), respColor(20)]));
   // 主观效应词条流（warn.subl effectTags：急性/慢性不良反应跨药聚合，三级配色，急性 flash）
-  __smA("effectTags 单药三级（欣快=常见急性/镇静=十分常见红/便秘=慢性红）", (function () {
+  // t73 清洗：无括注修饰、无非主观词条、机制词不入流、呼吸抑制统一词条
+  __smA("effectTags 单药：三级 + 无括注 + 无非主观/机制词", (function () {
     const ts = effectTags(core_collection__cons(morphine(), core_collection__emptyList()));
     const f = n => ts.find(x => x.name === n);
-    return ts.length > 5 && f("欣快").level === 2 && f("欣快").acute === true
+    const nonSubj = ["依赖", "耐受", "跌倒", "便秘", "口干", "尿潴留", "出汗", "瘙痒", "瞳孔", "血压下降", "低血压", "QT间期", "低血钠", "性功能", "免疫抑制", "肌阵挛", "低血糖", "皮疹", "过敏", "腹泻"];
+    const mech = ["受体", "CYP", "转运体", "酶"];
+    return ts.length > 4 && f("欣快").level === 2 && f("欣快").acute === true
       && f("镇静").level === 3 && f("镇静").acute === true
-      && f("便秘").level === 3 && f("便秘").acute === false
-      && f("呼吸抑制").acute === true && !ts.some(x => x.name === "阿片类中毒");
+      && f("呼吸抑制").level === 2 && f("呼吸抑制").acute === true
+      && !ts.some(x => x.name.includes("（"))
+      && !ts.some(x => nonSubj.some(k => x.name.includes(k)) || mech.some(k => x.name.includes(k)))
+      && !ts.some(x => x.name === "阿片类中毒");
+  })());
+  // 呼吸抑制括注变体合并：吗啡+地西泮+可待因 → 单一「呼吸抑制」且聚合升红（不再被括注稀释）
+  __smA("effectTags 呼吸抑制合并去稀释", (function () {
+    const ts = effectTags(core_collection__cons(morphine(), core_collection__cons(diazepam(), core_collection__cons(codeine(), core_collection__emptyList()))));
+    const rs = ts.filter(x => x.name === "呼吸抑制");
+    const f = n => ts.find(x => x.name === n);
+    return rs.length === 1 && rs[0].level === 3 && rs[0].acute === true
+      && !ts.some(x => x.name !== "呼吸抑制" && x.name.includes("呼吸抑制"))
+      && f("嗜睡").level === 3;
+  })());
+  // isSubjective 判定（纯函数）：非主观根词剔除、主观与呼吸抑制保留
+  __smA("isSubjective 非主观根词剔除", (function () {
+    return !isSubjective("依赖（长期使用）") && !isSubjective("耐受（ICU 长期输注）") && !isSubjective("跌倒（老年）") && !isSubjective("便秘") && !isSubjective("瞳孔缩小")
+      && isSubjective("顺行性记忆损害") && isSubjective("老年ICU谵妄") && isSubjective("呼吸抑制") && isSubjective("恶心");
   })());
   __smA("effectTags 跨药聚合升红 + 阿片类中毒包", (function () {
     const ts = effectTags(core_collection__cons(morphine(), core_collection__cons(diazepam(), core_collection__emptyList())));

@@ -17,7 +17,7 @@ fun escitalopram(): Drug = Drug(
     acuteTher = ratedList("弱效|镇静"),
     chronicTher = ratedList("极强|抗抑郁;强效|抗焦虑;强效|抗惊恐"),
     acuteAdv = ratedList("罕见|血清素综合征"),
-    chronicAdv = ratedList("十分常见|恶心;常见|嗜睡;常见|失眠;常见|出汗;常见|性功能障碍;常见|口干;常见|头晕;少见|QT间期延长;少见|低血钠症;少见|自杀冲动"),
+    chronicAdv = ratedList("十分常见|恶心;常见|嗜睡;常见|失眠;常见|头晕;少见|自杀冲动"),
     withdraw = ratedList("常见|头晕;常见|失眠;常见|恶心;少见|电击样感觉"),
     overdose = ratedList(">400mg|QT间期延长;>600mg|血清素综合征")
 )

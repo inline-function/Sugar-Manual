@@ -18,8 +18,8 @@ fun estazolam(): Drug = Drug(
     ), emptyList()),
     acuteTher = ratedList("强效|催眠（入睡）;强效|镇静"),
     chronicTher = ratedList("强效|入睡困难;强效|睡眠维持"),
-    acuteAdv = ratedList("少见|呼吸抑制;常见|嗜睡（次日残余）;常见|头晕"),
-    chronicAdv = ratedList("常见|嗜睡;常见|头晕;常见|口干;常见|记忆损害（顺行性）;少见|呼吸抑制（与阿片/酒精合用）;少见|依赖（长期使用）;少见|跌倒（老年）;罕见|幻觉"),
+    acuteAdv = ratedList("少见|呼吸抑制;常见|次日残余嗜睡;常见|头晕"),
+    chronicAdv = ratedList("常见|嗜睡;常见|头晕;常见|顺行性记忆损害;少见|呼吸抑制;罕见|幻觉"),
     withdraw = ratedList("常见|反跳性失眠（骤停）;常见|焦虑反跳;少见|癫痫发作（骤停高剂量）"),
     overdose = ratedList(">8mg|呼吸抑制")
 )

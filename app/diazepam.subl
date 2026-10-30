@@ -18,7 +18,7 @@ fun diazepam(): Drug = Drug(
     acuteTher = ratedList("强效|镇静;强效|抗焦虑（快速起效）"),
     chronicTher = ratedList("强效|抗焦虑;强效|抗癫痫（持续状态首选静注）;强效|酒精戒断;中效|肌肉松弛"),
     acuteAdv = ratedList("少见|呼吸抑制;常见|嗜睡;常见|头晕"),
-    chronicAdv = ratedList("十分常见|嗜睡;常见|头晕;常见|疲劳;常见|共济失调;常见|记忆损害（顺行性）;常见|依赖（长期使用）;少见|呼吸抑制（与阿片/酒精合用）;少见|跌倒（老年）;少见|反常兴奋"),
+    chronicAdv = ratedList("十分常见|嗜睡;常见|头晕;常见|疲劳;常见|共济失调;常见|顺行性记忆损害;少见|呼吸抑制;少见|反常兴奋"),
     withdraw = ratedList("常见|焦虑反跳;常见|失眠反跳;常见|震颤;常见|出汗;少见|癫痫发作（骤停高剂量）;少见|感知异常"),
     overdose = ratedList(">100mg|呼吸抑制")
 )

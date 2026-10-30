@@ -11,7 +11,7 @@
 //
 // 语义约定（对规格的两点落地，注释存档）：
 //   1. 「呼吸抑制」按受控词表计频率权重（罕见 1 / 少见 2 / 常见 3 / 十分常见 5，
-//      词表外 0）；「呼吸抑制（与阿片/酒精合用）」等括注条目是相互作用描述本身，
+//      词表外 0）；呼吸抑制为统一词条（括注变体已合并、跨药聚合不稀释）。
 //      不计入单药权重（避免循环归因）；
 //   2. 「酶抑制交集」按药品数计：某酶被 >= 2 个联用药品关联（抑制或经代谢）
 //      才触发，权重只计抑制剂（经代谢本身不贡献权重——受控词表无对应权重）。
@@ -173,10 +173,22 @@ struct EffEnt(name: Str, drug: Nat, base: Nat, acute: Bool)
 // 频率词 → 基准级（复用 main.subl advFreqLevel：十分常见 3 / 常见 2 / 少见 1；词表外 0 引擎兜 1）。
 fun effFreqBase(freq: Str): Nat = if (advFreqLevel(freq) == 0) 1 else advFreqLevel(freq)
 
-// 单药全部词条（急性 + 慢性），带药品下标供跨药去重计数。
+// 主观效应判定（t73 清洗）：词条池只留作用于主观体验/感受/意识的效应；
+// 客观体征/生理指标/行为后果/长期状态（依赖、耐受、跌倒、便秘、口干、尿潴留、出汗、
+// 瘙痒、瞳孔改变、血压下降/低血压、QT/心律、低血钠、性功能障碍、免疫抑制、肌阵挛、
+// 低血糖、皮疹、过敏、腹泻、癫痫、胸壁强直、去甲哌替啶神经毒性）一律剔除。
+// 呼吸抑制非纯主观但用户明令保留（核心预警价值，◆阿片类中毒包依赖它）。
+fun effNonSubjectiveRoots(): List[Str] = strList("依赖,耐受,跌倒,便秘,口干,尿潴留,出汗,瘙痒,瞳孔,血压下降,低血压,QT间期,心律失常,低血钠,性功能,免疫抑制,肌阵挛,低血糖,皮疹,过敏反应,腹泻,癫痫,胸壁强直,去甲哌替啶")
+fun isSubjective(name: Str): Bool = noRootOf(name, effNonSubjectiveRoots())
+fun noRootOf(name: Str, roots: List[Str]): Bool = when (roots) {
+    is Cons(h, rest) => if (tagHas(name, h)) false else noRootOf(name, rest)
+    else => true
+}
+
+// 单药全部词条（急性 + 慢性，仅主观效应），带药品下标供跨药去重计数。
 fun effEntries(d: Drug, idx: Nat): List[EffEnt] = append(
-    map(d.acuteAdv) { r => EffEnt(r.name, idx, effFreqBase(r.level), true) },
-    map(d.chronicAdv) { r => EffEnt(r.name, idx, effFreqBase(r.level), false) }
+    map(filter(d.acuteAdv) { r => isSubjective(r.name) }) { r => EffEnt(r.name, idx, effFreqBase(r.level), true) },
+    map(filter(d.chronicAdv) { r => isSubjective(r.name) }) { r => EffEnt(r.name, idx, effFreqBase(r.level), false) }
 )
 
 // 联用集全部词条（按下标尾递归展开）。

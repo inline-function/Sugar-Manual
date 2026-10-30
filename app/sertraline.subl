@@ -18,7 +18,7 @@ fun sertraline(): Drug = Drug(
     acuteTher = ratedList("弱效|激活（早期）"),
     chronicTher = ratedList("极强|抗强迫;强效|抗抑郁;强效|抗焦虑;强效|抗创伤"),
     acuteAdv = ratedList("罕见|血清素综合征"),
-    chronicAdv = ratedList("十分常见|恶心;常见|腹泻;常见|失眠;常见|嗜睡;常见|头晕;常见|口干;常见|出汗;常见|性功能障碍;少见|低血钠症;少见|震颤;罕见|自杀冲动"),
+    chronicAdv = ratedList("十分常见|恶心;常见|失眠;常见|嗜睡;常见|头晕;少见|震颤;罕见|自杀冲动"),
     withdraw = ratedList("常见|头晕;常见|失眠;常见|易激惹;常见|恶心;少见|电击样感觉"),
     overdose = ratedList(">1000mg|血清素综合征")
 )
