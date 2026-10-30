@@ -425,10 +425,144 @@ struct Home {
                 }
             }
         }
-        AlertDialog(visible = isSettingsOpen(), title = "设置", confirmText = "清空记录", dismissText = "关闭", onConfirm = { unchecked clearAll() }, onDismiss = { unchecked closeSettings() }) {
-            Box(modifier = fillWidth(), orientation = "vertical", spacing = 8) {
-                Text(text = "语法糖手册 V1.0", size = 16, bold = true, color = "onSurface")
-                Text(text = "SfA（Sublimation for Android）@compose 通路演示\n按钮交互经 DshComposeHost.act 路由到 Kotlin 侧交互态。", color = "onSurfaceVariant", size = 12)
+        // 个人画像设置页（t77：CandyIDE 式分组 + 多选 chip + 年龄/性别输入；宿主态机
+        // DshComposeHost.profOn/profName/sexIs/sexName/profAge + act toggleProfCond/setSex/actText setAge）。
+        BottomSheet(visible = isSettingsOpen(), onDismiss = { unchecked closeSettings() }) {
+            Box(modifier = fillWidth().paddingHV(24, 16), orientation = "vertical", spacing = 8) {
+                Text(text = "设置 · 个人画像", size = 22, bold = true, color = "onSurface")
+                Text(text = "先天/已有疾病、年龄、性别 → 预警引擎对不良反应词条加权（加权词条进入下方效应词条流，不另起界面）。", size = 12, color = "onSurfaceVariant")
+                Box(modifier = fillWidth().height(480), scrollable = true) {
+                    Box(modifier = fillWidth(), orientation = "vertical", spacing = 10) {
+                        Text(text = "个人信息", size = 15, bold = true, color = "primary")
+                        Box(modifier = fillWidth(), orientation = "horizontal", spacing = 8) {
+                            Text(text = "年龄", size = 14, color = "onSurface")
+                            TextField(placeholder = "如 32", label = "年龄（岁）", text = profAge(), keyboard = "number", onChange = { t => unchecked setProfileAgeText(t) })
+                            Text(text = "岁", size = 14, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = fillWidth(), orientation = "horizontal", spacing = 8) {
+                            Text(text = "性别", size = 14, color = "onSurface")
+            Box(modifier = clip(14).paddingHV(10, 5), orientation = "horizontal", backgroundColor = "surfaceVariant", onClick = { unchecked setSex(0) }) {
+                Text(text = sexName(0), size = 13, bold = true, color = "onSurfaceVariant")
+                Box(modifier = width(4), visible = sexIs(0)) {
+                    Text(text = "✓", size = 13, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = clip(14).paddingHV(10, 5), orientation = "horizontal", backgroundColor = "surfaceVariant", onClick = { unchecked setSex(1) }) {
+                Text(text = sexName(1), size = 13, bold = true, color = "onSurfaceVariant")
+                Box(modifier = width(4), visible = sexIs(1)) {
+                    Text(text = "✓", size = 13, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = clip(14).paddingHV(10, 5), orientation = "horizontal", backgroundColor = "surfaceVariant", onClick = { unchecked setSex(2) }) {
+                Text(text = sexName(2), size = 13, bold = true, color = "onSurfaceVariant")
+                Box(modifier = width(4), visible = sexIs(2)) {
+                    Text(text = "✓", size = 13, bold = true, color = "primary")
+                }
+            }
+                        }
+                        Text(text = "先天疾病", size = 15, bold = true, color = "primary")
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(0) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = profName(0), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = profOn(0)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+                        Text(text = "已有疾病", size = 15, bold = true, color = "primary")
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(1) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = profName(1), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = profOn(1)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(2) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = profName(2), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = profOn(2)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(3) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = profName(3), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = profOn(3)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(4) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = profName(4), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = profOn(4)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(5) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = profName(5), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = profOn(5)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(6) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = profName(6), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = profOn(6)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(7) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = profName(7), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = profOn(7)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(8) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = profName(8), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = profOn(8)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(9) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = profName(9), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = profOn(9)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(10) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = profName(10), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = profOn(10)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(11) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = profName(11), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = profOn(11)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+                        Text(text = "关于", size = 15, bold = true, color = "primary")
+                        Text(text = "语法糖手册 V1.0 · SfA @compose 通路\n按钮交互经 DshComposeHost.act 路由到 Kotlin 侧交互态。", color = "onSurfaceVariant", size = 12)
+                        TextButton(label = "清空记录", onClick = { unchecked clearAll() }) {}
+                    }
+                }
             }
         }
         BottomSheet(visible = isListOpen(), onDismiss = { unchecked closeDrugList() }) {

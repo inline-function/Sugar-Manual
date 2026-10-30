@@ -1,0 +1,210 @@
+// app/profile.subl —— 个人画像（t77：设置页输入 → 不良反应加权规则引擎）
+//
+// 用户模型：右上角设置改为 CandyIDE 式设置页，含
+//   先天疾病（多选：蚕豆病 G6PD 缺乏等）/ 已有疾病（多选：高血压、青光眼、
+//   肝/肾功能不全、癫痫、心律失常史、糖尿病、消化性溃疡、物质使用障碍史、
+//   痴呆/认知障碍、孕期/哺乳期）/ 生理年龄（数字）/ 生理性别（男/女/其他）。
+// 每条画像条目对**特定词条/特定药**加权，加权结果并入 effectTags 词条流
+// （不另起 UI）：沿用三级配色（白/黄/红）与 ◆ 综合征包标记，急性项闪烁。
+//
+// 规则均为真实临床规则（查不到原文的规则不写）：
+//   蚕豆病（G6PD 缺乏）× 阿司匹林/伯氨喹/磺胺类等 → 溶血风险（氧化应激诱发，
+//     G6PD 患者血红蛋白无法还原抗氧化损伤——教科书级禁忌）；
+//   未成年（<18）× 抗抑郁药 → 自杀冲动升级（FDA 黑框警告：24 岁以下抗抑郁药
+//     增加自杀想法/行为风险；舍曲林等 SSRI 亦适用）；
+//   青光眼（闭角型）× 抗胆碱能药 → 青光眼发作/加重（抗胆碱能散瞳升高眼压）；
+//   孕期/哺乳期 × 锂盐/丙戊酸/卡马西平 → 胎儿致畸（妊娠分级 D；丙戊酸神经管
+//     缺陷风险约 6-9%，卡马西平约 1%；锂盐 Ebstein 畸形风险升高）；
+//   癫痫 × 氯胺酮/曲马多 → 癫痫发作风险（降低癫痫阈值，氯胺酮说明书禁忌）；
+//   心律失常史 × 西酞普兰/艾司西酞普兰/TCA → QT 延长/心律失常风险；
+//   高血压 × 哌甲酯（中枢兴奋剂）/SNRI/NSAIDs → 血压升高；
+//   肝功能不全 × 丙戊酸/卡马西平/对乙酰氨基酚/酒精 → 肝损加重（监测转氨酶）；
+//   肾功能不全 × 锂盐 → 锂蓄积中毒（锂近端小管重吸收、治疗窗窄 0.6-1.2 mmol/L）；
+//   消化性溃疡 × 阿司匹林/NSAIDs → 黏膜损伤/出血风险；
+//   物质使用障碍史 × 阿片类/苯二氮卓/兴奋剂 → 依赖/误用风险；
+//   痴呆/认知障碍 × 抗胆碱能药/苯二氮卓 → 谵妄/认知下降（Beers 标准）；
+//   年龄 ≥65 × 苯二氮卓 → 跌倒/认知风险（Beers 标准：老年人避免）。
+
+// ---------- 结构体 ----------
+
+struct Profile(conds: List[Str], age: Nat, sex: Str)
+
+// cond = 画像条目名（与设置页候选项一一对应）；match = 药名/标签关键词
+// （逗号分隔；药名子串与标签子串双向匹配）；label = 风险文案；level = 1-3
+// （沿用 tagBg/tagFg 三级色：3 红/2 橙/1 绿）；acute → 红底 flash；pack → ◆。
+struct ProfRule(cond: Str, match: Str, label: Str, level: Nat, acute: Bool, pack: Bool)
+
+// ---------- 持久化（storage 键，同 ledger 模式） ----------
+
+fun profileCondsKey(): Str = "sm_conds"
+fun profileAgeKey(): Str = "sm_age"
+fun profileSexKey(): Str = "sm_sex"
+
+// 候选项（设置页分组用；先天性 1 项 + 已有疾病 11 项）。
+fun congenitalConds(): List[Str] = cons("蚕豆病（G6PD缺乏）", emptyList())
+fun existingConds(): List[Str] = cons("高血压", cons("青光眼", cons("肝功能不全", cons("肾功能不全", cons("癫痫",
+    cons("心律失常史", cons("糖尿病", cons("消化性溃疡", cons("物质使用障碍史", cons("痴呆/认知障碍",
+    cons("孕期/哺乳期", emptyList())))))))))))
+
+// 逗号拼接（空列表 → 空串；落 storage 的序列化）。
+fun joinCsv(xs: List[Str]): Str = xs.fold("") { acc, s => if (acc == "") s else concat(acc, concat(",", s)) }
+
+// conds 读取（空串/坏值 → 空表）。
+@impure
+fun profileConds(): List[Str] = filter(strSplit(storageGet(profileCondsKey()), ",")) { s => s != "" }
+
+// 条目选中态（设置页 chip 与断言用）。
+fun condOn(p: Profile, c: Str): Bool = contains(p.conds, c)
+@impure
+fun profCondOnIO(c: Str): Bool = contains(profileConds(), c)
+
+// 年龄：原始文本存 storage；用时解析（空/坏值 → 0，规则不触发）。
+@impure
+fun profileAgeText(): Str = storageGet(profileAgeKey())
+fun ageOfText(t: Str): Nat = getOrElse(parseNat(strTrim(t)), 0)
+@impure
+fun profileAgeNat(): Nat = ageOfText(storageGet(profileAgeKey()))
+
+// 性别（空 → 未填；候选 男/女/其他）。
+@impure
+fun profileSexText(): Str = storageGet(profileSexKey())
+fun sexOfText(t: Str): Str = if ((t == "男") || (t == "女") || (t == "其他")) t else "未填"
+
+@impure
+fun loadProfile(): Profile = Profile(profileConds(), profileAgeNat(), profileSexText())
+
+@impure
+fun saveProfileConds(cs: List[Str]): Null {
+    unchecked storagePut(profileCondsKey(), joinCsv(cs))
+    return null
+}
+@impure
+fun profileToggleCond(c: Str): Null {
+    var cur: List[Str] = profileConds()
+    var nx: List[Str] = if (contains(cur, c)) filter(cur) { x => x != c } else append(cur, cons(c, emptyList()))
+    unchecked saveProfileConds(nx)
+    unchecked refreshHome()
+    return null
+}
+@impure
+fun setProfileAgeText(t: Str): Null {
+    unchecked storagePut(profileAgeKey(), t)
+    return null
+}
+@impure
+fun setProfileSex(s: Str): Null {
+    unchecked storagePut(profileSexKey(), s)
+    unchecked refreshHome()
+    return null
+}
+
+// ---------- 规则匹配（纯函数） ----------
+
+// tags 为 List[Str]（单元素逗号串），fold 拼接后按关键词匹配。
+fun tagsJoined(d: Drug): Str = d.tags.fold("") { acc, s => concat(acc, s) }
+
+// 关键词命中：药名含关键词（覆盖「磺胺*」前缀族）或标签含关键词。
+fun keyHit(d: Drug, k: Str): Bool = if (tagHas(d.name, k)) true else tagHas(tagsJoined(d), k)
+fun keyHits(d: Drug, keys: List[Str]): Bool = when (keys) {
+    is Cons(k, rest) => if (keyHit(d, k)) true else keyHits(d, rest)
+    else => false
+}
+fun profMatches(d: Drug, keys: Str): Bool = keyHits(d, strSplit(keys, ","))
+
+// 任一联用药品命中规则关键词。
+fun profAnyMatch(drugs: List[Drug], keys: Str): Bool = when (drugs) {
+    is Cons(d, rest) => if (profMatches(d, keys)) true else profAnyMatch(rest, keys)
+    else => false
+}
+// 首个命中药品名（文案「画像×药品」用；无命中则 _,_ 不影响断言路径）。
+fun profFirstName(drugs: List[Drug], keys: Str): Str = when (drugs) {
+    is Cons(d, rest) => if (profMatches(d, keys)) d.name else profFirstName(rest, keys)
+    else => "-"
+}
+
+// ---------- 规则表（真实临床规则；关键词覆盖库内药与延伸药名） ----------
+
+fun g6pdMeds(): Str = "阿司匹林,伯氨喹,磺胺,呋喃妥因,亚甲蓝,维生素K3,萘啶酸,氯霉素"
+fun glaucomaMeds(): Str = "苯海索,苯扎托品,阿米替林,氯米帕明,抗胆碱能"
+fun teratoMeds(): Str = "碳酸锂,丙戊酸,卡马西平,苯二氮卓"
+fun seizureMeds(): Str = "氯胺酮,曲马多"
+fun arrhythmiaMeds(): Str = "西酞普兰,艾司西酞普兰,阿米替林,氯米帕明"
+fun hypertensionMeds(): Str = "哌甲酯,中枢兴奋剂,文拉法辛,度洛西汀,阿司匹林,NSAIDs"
+fun hepaticMeds(): Str = "丙戊酸,卡马西平,对乙酰氨基酚,阿司匹林,酒精"
+fun renalMeds(): Str = "碳酸锂"
+fun diabetesMeds(): Str = "米氮平,奥氮平,喹硫平"
+fun ulcerMeds(): Str = "阿司匹林,布洛芬,NSAIDs"
+fun sudMeds(): Str = "阿片,苯二氮卓,哌甲酯,中枢兴奋剂"
+fun dementiaMeds(): Str = "苯海索,苯扎托品,抗胆碱能,苯二氮卓"
+fun antidepressantKeys(): Str = "SSRI,抗抑郁,SNRI,TCA"
+
+fun profileRules(): List[ProfRule] = cons(
+    ProfRule("蚕豆病（G6PD缺乏）", g6pdMeds(), "溶血风险（G6PD 氧化应激）", 3, true, true),
+    cons(ProfRule("青光眼", glaucomaMeds(), "青光眼发作风险（抗胆碱能）", 3, true, true),
+    cons(ProfRule("孕期/哺乳期", teratoMeds(), "胎儿致畸/新生儿风险（妊娠 D 级）", 3, false, true),
+    cons(ProfRule("癫痫", seizureMeds(), "癫痫发作风险（降阈值）", 3, true, false),
+    cons(ProfRule("肾功能不全", renalMeds(), "锂蓄积中毒风险（肾排泄）", 3, false, false),
+    cons(ProfRule("心律失常史", arrhythmiaMeds(), "QT 延长/心律失常风险", 2, false, false),
+    cons(ProfRule("高血压", hypertensionMeds(), "血压升高风险", 2, false, false),
+    cons(ProfRule("肝功能不全", hepaticMeds(), "肝损加重（监测转氨酶）", 2, false, false),
+    cons(ProfRule("消化性溃疡", ulcerMeds(), "黏膜损伤/出血风险", 2, true, false),
+    cons(ProfRule("物质使用障碍史", sudMeds(), "依赖/误用风险", 2, false, false),
+    cons(ProfRule("痴呆/认知障碍", dementiaMeds(), "谵妄/认知下降风险（Beers）", 2, false, false),
+    cons(ProfRule("糖尿病", diabetesMeds(), "体重增加/血糖波动风险", 1, false, false),
+    emptyList()))))))))))))
+
+// 单条规则 → EffTag（文案「画像×药品：风险」，沿用 warn.subl EffTag 契约）。
+fun profRuleTag(r: ProfRule, drugs: List[Drug]): EffTag = EffTag(
+    concat(concat(concat(concat(r.cond, "×"), profFirstName(drugs, r.match)), "："), r.label),
+    r.level, r.acute, r.pack)
+
+// 规则表扫描：cond 命中 + 药品命中 → 出词条。
+fun profileRuleTags(p: Profile, drugs: List[Drug], rs: List[ProfRule]): List[EffTag] = when (rs) {
+    is Cons(r, rest) => if (condOn(p, r.cond)) if (profAnyMatch(drugs, r.match))
+        cons(profRuleTag(r, drugs), profileRuleTags(p, drugs, rest))
+        else profileRuleTags(p, drugs, rest)
+        else profileRuleTags(p, drugs, rest)
+    else => emptyList()
+}
+
+// 年龄规则（非 cond，由 Profile.age 直接驱动）：
+//   0 < age < 18 × 抗抑郁药 → 自杀冲动升级（黑框警告，level 3 急性 ◆）；
+//   age >= 65 × 苯二氮卓 → 跌倒/认知风险（Beers，level 1）。
+fun profileAgeTags(p: Profile, drugs: List[Drug]): List[EffTag] {
+    @mut var ts: List[EffTag] = emptyList()
+    var minor: Bool = (p.age > 0) && (p.age < 18)
+    var senior: Bool = p.age >= 65
+    ts = if (minor && profAnyMatch(drugs, antidepressantKeys()))
+        cons(EffTag("未成年×抗抑郁药：自杀冲动升级（黑框警告）", 3, true, true), ts)
+        else ts
+    ts = if (senior && profAnyMatch(drugs, "苯二氮卓"))
+        cons(EffTag("65+×苯二氮卓：跌倒/认知风险（Beers）", 1, false, false), ts)
+        else ts
+    return ts
+}
+
+// 画像 → 加权词条全集（设置页无输入/画像为空时为空表，词条流不渲染新区）。
+fun profileEffectTags(p: Profile, drugs: List[Drug]): List[EffTag] =
+    append(profileRuleTags(p, drugs, profileRules()), profileAgeTags(p, drugs))
+
+// ---------- 下标访问器（Kotlin 宿主同源路由：profOn/profName/sexIs/sexName/profAge） ----------
+
+// 画像条目按固定顺序索引（0 = 先天 1 项；1..11 = 已有疾病 11 项）。
+fun condList(): List[Str] = append(congenitalConds(), existingConds())
+fun condAtFrom(xs: List[Str], k: Nat): Str = when (xs) {
+    is Cons(h, rest) => if (k == 0) h else condAtFrom(rest, k - 1)
+    else => ""
+}
+fun condAt(k: Nat): Str = condAtFrom(condList(), k)
+fun sexAt(k: Nat): Str = if (k == 0) "男" else if (k == 1) "女" else "其他"
+
+@impure
+fun profOn(k: Nat): Bool = contains(profileConds(), condAt(k))
+@impure
+fun profName(k: Nat): Str = condAt(k)
+@impure
+fun sexIs(k: Nat): Bool = profileSexText() == sexAt(k)
+@impure
+fun sexName(k: Nat): Str = sexAt(k)
+@impure
+fun profAge(): Str = profileAgeText()

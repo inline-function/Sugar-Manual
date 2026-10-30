@@ -284,9 +284,7 @@ fun metabTagCell(t: Trigger): Any = Box(modifier = clip(12).background(tagBg(met
 fun withdrawStream(wds: List[Drug]): Any = if (size(wds) == 0) {
     Box(modifier = fillWidth()) {}
 } else {
-    Box(modifier = fillWidth().paddingHV(24, 8), orientation = "vertical", spacing = 6) {
-        withdrawRows(wds)
-    }
+    Box(modifier = fillWidth().paddingHV(24, 8), orientation = "vertical", spacing = 6, children = withdrawRows(wds))
 }
 fun withdrawRows(wds: List[Drug]): List[Any] = when (wds) {
     Nil => emptyList()
@@ -710,9 +708,83 @@ fun clearAll(): Null {
     return null
 }
 
+// ---------- 个人画像设置页（t77：CandyIDE 式分组 + 多选 chip + 输入框，BottomSheet） ----------
+
+// 分组标题（小组件：加粗 15sp + 左分隔）。
 @composable
-fun settingsDialog(open: Bool): AlertDialog = AlertDialog(visible = open, title = "设置", confirmText = "清空记录", dismissText = "关闭", onConfirm = { unchecked clearAll() }, onDismiss = { unchecked closeSettings() }) {
-    Text(text = "语法糖手册 V1.0\nSfA（Sublimation for Android）视图协议 v2 渲染\n数据持久化：storage 键 ledger", size = 12, color = "onSurfaceVariant")
+fun settingsGroup(t: Str): Any = Box(modifier = fillWidth().paddingV(6)) {
+    Text(text = t, size = 15, bold = true, color = "primary")
+}
+
+// 多选 chip：✓/○ 前缀 + primaryContainer/surfaceVariant 双态，点击切换并持久化。
+@composable
+fun condChipRows(prof: Profile, cs: List[Str]): List[Any] = when (cs) {
+    Nil => emptyList()
+    is Cons(c, rest) => cons(condChip(prof, c), condChipRows(prof, rest))
+    else => emptyList()
+}
+@composable
+fun condChip(prof: Profile, c: Str): Any = Box(modifier = clip(14).background(chipBgOf(condOn(prof, c))).paddingHV(10, 5), onClick = { unchecked profileToggleCond(c) }) {
+    Text(text = chipTextOf(condOn(prof, c), c), size = 13, bold = true, color = chipFgOf(condOn(prof, c)))
+}
+fun chipBgOf(on: Bool): Str = if (on) "primaryContainer" else "surfaceVariant"
+fun chipFgOf(on: Bool): Str = if (on) "onPrimaryContainer" else "onSurfaceVariant"
+fun chipTextOf(on: Bool, c: Str): Str = if (on) concat("✓ ", c) else concat("○ ", c)
+
+// 性别单选 chip（男/女/其他；命中 primaryContainer，点击切换并持久化）。
+@composable
+fun sexChipRow(prof: Profile): Any = Box(modifier = fillWidth(), orientation = "horizontal", spacing = 8, wrap = true) {
+    sexChip(sexOfText(prof.sex) == "男", "男")
+    sexChip(sexOfText(prof.sex) == "女", "女")
+    sexChip(sexOfText(prof.sex) == "其他", "其他")
+}
+@composable
+fun sexChip(on: Bool, s: Str): Any = Box(modifier = clip(14).background(chipBgOf(on)).paddingHV(10, 5), onClick = { unchecked setProfileSex(s) }) {
+    Text(text = s, size = 13, bold = true, color = chipFgOf(on))
+}
+
+// 设置页主体：分组区块 + 多选 chip + 年龄/性别输入，可滚动；底部版本信息与清空记录。
+@composable
+fun settingsSheet(open: Bool, prof: Profile, ageText: Str): BottomSheet = BottomSheet(visible = open, onDismiss = { unchecked closeSettings() }) {
+    Box(modifier = fillWidth().padding4(24, 0, 24, 24)) {
+        Text(text = "设置 · 个人画像", size = 22, bold = true)
+        Box(modifier = height(4)) {}
+        Text(text = "先天/已有疾病、年龄、性别 → 预警引擎对不良反应词条加权（如 蚕豆病×阿司匹林 → 溶血风险红条、未成年×SSRI → 自杀冲动升级）。", color = "onSurfaceVariant", size = 12)
+        Box(modifier = height(12)) {}
+        Box(modifier = fillWidth().height(440), scrollable = true, spacing = 10) {
+            settingsGroup("个人信息")
+            Box(modifier = fillWidth(), orientation = "horizontal", contentAlignment = CenterStart(), spacing = 8) {
+                Box(modifier = width(56)) {
+                    Text(text = "年龄", size = 14, color = "onSurface")
+                }
+                Box(modifier = width(110)) {
+                    TextField(placeholder = "如 32", label = "年龄（岁）", text = ageText, keyboard = "number",
+                        onChange = { t => unchecked setProfileAgeText(t) })
+                }
+                Box(modifier = weight(1.0)) {
+                    Text(text = " 岁", size = 14, color = "onSurfaceVariant")
+                }
+            }
+            Box(modifier = height(4)) {}
+            Box(modifier = fillWidth(), orientation = "horizontal", contentAlignment = CenterStart()) {
+                Box(modifier = width(56)) {
+                    Text(text = "性别", size = 14, color = "onSurface")
+                }
+                Box(modifier = weight(1.0)) {
+                    sexChipRow(prof)
+                }
+            }
+            settingsGroup("先天疾病")
+            Box(modifier = fillWidth(), wrap = true, spacing = 8, children = condChipRows(prof, congenitalConds()))
+            settingsGroup("已有疾病")
+            Box(modifier = fillWidth(), wrap = true, spacing = 8, children = condChipRows(prof, existingConds()))
+            settingsGroup("关于")
+            Text(text = "语法糖手册 V1.0\nSfA（Sublimation for Android）视图协议 v2 渲染\n数据持久化：storage 键 ledger / sm_conds / sm_age / sm_sex", size = 12, color = "onSurfaceVariant")
+            Text(text = "加权词条进入首页效应词条流（三级配色 + ◆ 包 + 闪烁），不另起界面。", size = 12, color = "onSurfaceVariant")
+            Box(modifier = height(4)) {}
+            TextButton(label = "清空记录", onClick = { unchecked clearAll() })
+        }
+    }
 }
 
 // ---------- 药库名单与药物资料页（替代原写死共用 docDialog） ----------
@@ -916,11 +988,29 @@ fun contentHeightDp(sh: Nat, dpi: Nat): Nat = toDp(sh, dpi) - 64
 fun chartHeightDp(sh: Nat, dpi: Nat): Nat = (contentHeightDp(sh, dpi) * 45) / 100
 fun lowerHeightDp(sh: Nat, dpi: Nat): Nat = contentHeightDp(sh, dpi) - chartHeightDp(sh, dpi)
 
+// 画像加权词条流复用戒断流同款 EffTag 单元格（不另起 UI；画像空 → 不渲染）。
 @composable
-fun lowerBox(rs: Alert, rows: List[MedCard], drugs: List[Drug], met: Alert, wds: List[Drug], sh: Nat, dpi: Nat): Box = Box(modifier = fillWidth().height(lowerHeightDp(sh, dpi)), scrollable = true) {
+fun profileStream(p: Profile, drugs: List[Drug]): Any = if (size(profileEffectTags(p, drugs)) == 0) {
+    Box(modifier = fillWidth()) {}
+} else {
+    Box(modifier = fillWidth().paddingHV(24, 8), orientation = "vertical", spacing = 6, children = profileTagCells(profileEffectTags(p, drugs)))
+}
+fun profileTagCells(ts: List[EffTag]): List[Any] = when (ts) {
+    Nil => emptyList()
+    is Cons(tg, rest) => cons(profileTagCell(tg), profileTagCells(rest))
+    else => emptyList()
+}
+@composable
+fun profileTagCell(tg: EffTag): Any = Box(modifier = clip(12).background(tagBg(tg.level, tg.acute)).paddingHV(12, 5)) {
+    Text(text = concat(if (tg.pack) "◆ " else "", tg.name), color = tagFg(tg.level, tg.acute), size = 14, bold = true, flash = tg.acute)
+}
+
+@composable
+fun lowerBox(rs: Alert, rows: List[MedCard], drugs: List[Drug], met: Alert, wds: List[Drug], drugsUsed: List[Drug], prof: Profile, sh: Nat, dpi: Nat): Box = Box(modifier = fillWidth().height(lowerHeightDp(sh, dpi)), scrollable = true) {
     respStream(rs)
     metabStream(met)
     withdrawStream(wds)
+    profileStream(prof, drugsUsed)
     recordTitle()
     // 记录卡平铺为直接子级（children=），空台账给「暂无服药记录」占位。
     Box(modifier = fillWidth(), children = recordList(rows))
@@ -945,15 +1035,17 @@ fun content(): Box {
     var rs: Alert = respAlert(drugsOf)
     var met: Alert = metabAlert(drugs)
     var wd: List[Drug] = crashedWithdrawn(drugsOf, recs, nowMs)
+    unchecked var prof: Profile = loadProfile()
+    unchecked var ageTxt: Str = profileAgeText()
     unchecked var sh: Nat = screenHeight()
     unchecked var dpi: Nat = screenDensity()
     var seriesXs: List[Series] = chartSeriesList(recs, drugs, nowMs)
     var total: List[Rat] = totalPoints(seriesXs)
     @mut var chart = Chart(kind = "line", points = total, series = seriesXs, labels = chartLabels(), color = "primary", legend = true, badge = "估算", modifier = fillWidth().height(chartHeightDp(sh, dpi)))
     unchecked var rows: List[MedCard] = medRowsOf(recs, drugs)
-    @mut var lower = lowerBox(rs, rows, drugs, met, wd, sh, dpi)
+    @mut var lower = lowerBox(rs, rows, drugs, met, wd, drugsOf, prof, sh, dpi)
     @mut var sheet = formPanel(open, drugs, idx, sel, dt, de)
-    @mut var setDlg = settingsDialog(setOp)
+    @mut var setDlg = settingsSheet(setOp, prof, ageTxt)
     @mut var listSheet = drugListSheet(listOp, drugs)
     @mut var docSheet = docSheetPage(docN, drugs)
     return Box(modifier = fillMaxSize()) {

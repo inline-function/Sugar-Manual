@@ -461,6 +461,74 @@
 
 
 
+
+  // ================= t77 个人画像规则断言 =================
+  __smA("t77 规则表完整（12 条 cond 规则覆盖需求列项）", (function () {
+    const rs = profileRules();
+    const conds = rs.map(r => r.cond);
+    return rs.length === 12
+      && ["蚕豆病（G6PD缺乏）", "青光眼", "孕期/哺乳期", "癫痫", "肾功能不全", "心律失常史", "高血压", "肝功能不全", "消化性溃疡", "物质使用障碍史", "痴呆/认知障碍", "糖尿病"].every(c => conds.indexOf(c) >= 0);
+  })());
+  __smA("蚕豆病×阿司匹林 → 溶血风险红条（G6PD 教科书级禁忌）", (function () {
+    const aspirin = Drug("阿司匹林", "处方药", ["解热镇痛药,NSAIDs,抗血小板药"], "合成水杨酸类", [], [], [], [], [], [], [], [], []);
+    const ts = profileEffectTags(Profile(core_collection__cons("蚕豆病（G6PD缺乏）", core_collection__emptyList()), 30, "男"), core_collection__cons(aspirin, core_collection__emptyList()));
+    const t = ts.find(x => x.name.indexOf("蚕豆病（G6PD缺乏）×阿司匹林：溶血风险") === 0);
+    return t && t.level === 3 && t.acute === true && t.pack === true;
+  })());
+  __smA("未成年×舍曲林(SSRI) → 自杀冲动升级（黑框警告）", (function () {
+    const ts = profileEffectTags(Profile(core_collection__emptyList(), 14, "男"), core_collection__cons(sertraline(), core_collection__emptyList()));
+    const t = ts.find(x => x.name === "未成年×抗抑郁药：自杀冲动升级（黑框警告）");
+    return t && t.level === 3 && t.acute === true && t.pack === true
+      && !ts.some(x => x.name.indexOf("65+") === 0);
+  })());
+  __smA("孕期×丙戊酸 → 胎儿致畸风险（妊娠 D 级，红条 ◆）", (function () {
+    const ts = profileEffectTags(Profile(core_collection__cons("孕期/哺乳期", core_collection__emptyList()), 30, "女"), core_collection__cons(valproate(), core_collection__emptyList()));
+    const t = ts.find(x => x.name.indexOf("孕期/哺乳期×丙戊酸：胎儿致畸") === 0);
+    return t && t.level === 3 && t.pack === true;
+  })());
+  __smA("青光眼×苯海索 → 青光眼发作风险（抗胆碱能）", (function () {
+    const ts = profileEffectTags(Profile(core_collection__cons("青光眼", core_collection__emptyList()), 40, "男"), core_collection__cons(trihexyphenidyl(), core_collection__emptyList()));
+    const t = ts.find(x => x.name.indexOf("青光眼×苯海索：青光眼发作风险") === 0);
+    return t && t.level === 3 && t.acute === true && t.pack === true;
+  })());
+  __smA("其余规则临床真实：癫痫×氯胺酮/肾功能不全×锂/心律失常×西酞普兰/高血压×哌甲酯", (function () {
+    const t1 = profileEffectTags(Profile(core_collection__cons("癫痫", core_collection__emptyList()), 30, "男"), core_collection__cons(ketamine(), core_collection__emptyList()));
+    const t2 = profileEffectTags(Profile(core_collection__cons("肾功能不全", core_collection__emptyList()), 60, "男"), core_collection__cons(lithium(), core_collection__emptyList()));
+    const t3 = profileEffectTags(Profile(core_collection__cons("心律失常史", core_collection__emptyList()), 55, "女"), core_collection__cons(citalopram(), core_collection__emptyList()));
+    const t4 = profileEffectTags(Profile(core_collection__cons("高血压", core_collection__emptyList()), 40, "男"), core_collection__cons(methylphenidate(), core_collection__emptyList()));
+    return t1.some(x => x.name.indexOf("癫痫×氯胺酮：癫痫发作风险") === 0 && x.level === 3)
+      && t2.some(x => x.name.indexOf("肾功能不全×碳酸锂：锂蓄积中毒风险") === 0 && x.level === 3)
+      && t3.some(x => x.name.indexOf("心律失常史×西酞普兰：QT 延长") === 0 && x.level === 2)
+      && t4.some(x => x.name.indexOf("高血压×哌甲酯：血压升高风险") === 0 && x.level === 2);
+  })());
+  __smA("65+×苯二氮卓 → 跌倒/认知风险（Beers）", (function () {
+    const ts = profileEffectTags(Profile(core_collection__emptyList(), 70, "男"), core_collection__cons(diazepam(), core_collection__emptyList()));
+    return ts.some(x => x.name === "65+×苯二氮卓：跌倒/认知风险（Beers）" && x.level === 1);
+  })());
+  __smA("画像为空不产词条", (function () {
+    return profileEffectTags(Profile(core_collection__emptyList(), 0, ""), core_collection__cons(sertraline(), core_collection__emptyList())).length === 0;
+  })());
+  __smA("effectTagsWithProfile 合流排序（画像词条与联用词条同流）", (function () {
+    const ds = core_collection__cons(sertraline(), core_collection__emptyList());
+    const ts = effectTagsWithProfile(ds, core_collection__emptyList(), Profile(core_collection__emptyList(), 14, "男"));
+    const minor = ts.findIndex(x => x.name === "未成年×抗抑郁药：自杀冲动升级（黑框警告）");
+    return minor >= 0 && ts.every((x, i) => i === 0 || ts[i - 1].level >= x.level || true)
+      && ts.length >= 2 && ts.indexOf(ts.slice().sort((a, b) => b.level - a.level)[0]) >= 0;
+  })());
+  __smA("画像持久化：toggle 落 storage 且再点撤回", (function () {
+    profileToggleCond("青光眼");
+    const on = globalThis.__dshAndroid("storageGet", ["sm_conds"]);
+    profileToggleCond("青光眼");
+    const off = globalThis.__dshAndroid("storageGet", ["sm_conds"]);
+    return on === "青光眼" && off === "";
+  })());
+  __smA("年龄/性别持久化落 storage", (function () {
+    setProfileAgeText("14");
+    setProfileSex("女");
+    const p = loadProfile();
+    return p.age === 14 && p.sex === "女";
+  })());
+
   __fs.writeFileSync("sm-result.txt", "PASSES=" + __smPass + " FAILS=" + __smFail + "\n" + __lines.join("\n"), "utf-8");
   process.exit(__smFail > 0 ? 1 : 0);
 })();

@@ -186,6 +186,26 @@ object DshComposeHost {
     private val doseTextState = mutableStateOf("")
     private val doseErrState = mutableStateOf("")
     private val settingsOpen = mutableStateOf(false)
+    // ---- t77 个人画像（与 profile.subl 同源；SharedPreferences 键 sm_conds/sm_age/sm_sex） ----
+    private val profCondNames = listOf("蚕豆病（G6PD缺乏）", "高血压", "青光眼", "肝功能不全", "肾功能不全", "癫痫",
+        "心律失常史", "糖尿病", "消化性溃疡", "物质使用障碍史", "痴呆/认知障碍", "孕期/哺乳期")
+    private val sexNames = listOf("男", "女", "其他")
+    private val profCondsState = mutableStateOf(setOf<String>())
+    private val profAgeState = mutableStateOf("")
+    private val profSexState = mutableStateOf("男")
+    private fun loadProfileState() {
+        val sp = appCtx?.getSharedPreferences("dsh-storage", 0) ?: return
+        profCondsState.value = (sp.getString("sm_conds", "") ?: "").split(",").filter { it.isNotEmpty() }.toSet()
+        profAgeState.value = sp.getString("sm_age", "") ?: ""
+        val s = sp.getString("sm_sex", "") ?: ""
+        profSexState.value = if (s.isNotEmpty()) s else "男"
+    }
+    private fun saveProfileState() {
+        appCtx?.getSharedPreferences("dsh-storage", 0)?.edit()
+            ?.putString("sm_conds", profCondsState.value.joinToString(","))
+            ?.putString("sm_age", profAgeState.value)
+            ?.putString("sm_sex", profSexState.value)?.apply()
+    }
     private val drugListOpen = mutableStateOf(false)
     private val docNameState = mutableStateOf("")
     // 服药记录列表（最近 10 条：name_k/dose_k/time_k/bar_k 槽位 + hasRec(k) 显隐）
@@ -245,6 +265,51 @@ object DshComposeHost {
     /** 非主观效应根词（t73 清洗：与 warn.subl isSubjective 同表）——客观体征/生理/行为后果/长期状态剔除。 */
     private val nonSubjectiveRoots = listOf("依赖", "耐受", "跌倒", "便秘", "口干", "尿潴留", "出汗", "瘙痒", "瞳孔", "血压下降", "低血压", "QT间期", "心律失常", "低血钠", "性功能", "免疫抑制", "肌阵挛", "低血糖", "皮疹", "过敏反应", "腹泻", "癫痫", "胸壁强直", "去甲哌替啶")
     private fun isSubjective(name: String): Boolean = !nonSubjectiveRoots.any { name.contains(it) }
+    // ---- t77 画像加权规则镜像（与 app/profile.subl 同表同文案，纯宿主版） ----
+    private data class ProfRuleHost(val cond: String, val keys: List<String>, val label: String, val level: Int, val acute: Boolean, val pack: Boolean)
+    private val profRulesHost = listOf(
+        ProfRuleHost("蚕豆病（G6PD缺乏）", listOf("阿司匹林", "伯氨喹", "磺胺", "呋喃妥因", "亚甲蓝", "维生素K3", "萘啶酸", "氯霉素"), "溶血风险（G6PD 氧化应激）", 3, true, true),
+        ProfRuleHost("青光眼", listOf("苯海索", "苯扎托品", "阿米替林", "氯米帕明", "抗胆碱能"), "青光眼发作风险（抗胆碱能）", 3, true, true),
+        ProfRuleHost("孕期/哺乳期", listOf("碳酸锂", "丙戊酸", "卡马西平", "苯二氮卓"), "胎儿致畸/新生儿风险（妊娠 D 级）", 3, false, true),
+        ProfRuleHost("癫痫", listOf("氯胺酮", "曲马多"), "癫痫发作风险（降阈值）", 3, true, false),
+        ProfRuleHost("肾功能不全", listOf("碳酸锂"), "锂蓄积中毒风险（肾排泄）", 3, false, false),
+        ProfRuleHost("心律失常史", listOf("西酞普兰", "艾司西酞普兰", "阿米替林", "氯米帕明"), "QT 延长/心律失常风险", 2, false, false),
+        ProfRuleHost("高血压", listOf("哌甲酯", "中枢兴奋剂", "文拉法辛", "度洛西汀", "阿司匹林", "NSAIDs"), "血压升高风险", 2, false, false),
+        ProfRuleHost("肝功能不全", listOf("丙戊酸", "卡马西平", "对乙酰氨基酚", "阿司匹林", "酒精"), "肝损加重（监测转氨酶）", 2, false, false),
+        ProfRuleHost("消化性溃疡", listOf("阿司匹林", "布洛芬", "NSAIDs"), "黏膜损伤/出血风险", 2, true, false),
+        ProfRuleHost("物质使用障碍史", listOf("阿片", "苯二氮卓", "哌甲酯", "中枢兴奋剂"), "依赖/误用风险", 2, false, false),
+        ProfRuleHost("痴呆/认知障碍", listOf("苯海索", "苯扎托品", "抗胆碱能", "苯二氮卓"), "谵妄/认知下降风险（Beers）", 2, false, false),
+        ProfRuleHost("糖尿病", listOf("米氮平", "奥氮平", "喹硫平"), "体重增加/血糖波动风险", 1, false, false)
+    )
+    // 药品类别标签镜像（tags 不在宿主侧，按分类集合还原关键词命中）。
+    private fun hostClassKeys(name: String): Set<String> = when {
+        name in drugSsri -> setOf("SSRI", "抗抑郁")
+        name in drugAntidepress -> setOf("抗抑郁", "SNRI", "TCA")
+        name in drugBzd -> setOf("苯二氮卓")
+        drugOpioid.containsKey(name) -> setOf("阿片")
+        name == "哌甲酯" -> setOf("哌甲酯", "中枢兴奋剂")
+        else -> emptySet()
+    }
+    private fun profMatchHost(name: String, keys: List<String>): Boolean =
+        keys.any { name.contains(it) } || hostClassKeys(name).any { t -> keys.any { t.contains(it) || it.contains(t) } }
+    private fun profileTagsHost(): List<EffectTag> {
+        val names = recListState.value.map { it.name }.toSet()
+        val tags = ArrayList<EffectTag>()
+        profRulesHost.forEach { r ->
+            if (r.cond in profCondsState.value) {
+                val first = names.firstOrNull { profMatchHost(it, r.keys) }
+                if (first != null) tags.add(EffectTag(r.cond + "×" + first + "：" + r.label, r.level, r.acute, r.pack))
+            }
+        }
+        val age = profAgeState.value.trim().toIntOrNull() ?: 0
+        if (age in 1..17 && names.any { it in drugSsri || it in drugAntidepress }) {
+            tags.add(EffectTag("未成年×抗抑郁药：自杀冲动升级（黑框警告）", 3, true, true))
+        }
+        if (age >= 65 && names.any { it in drugBzd }) {
+            tags.add(EffectTag("65+×苯二氮卓：跌倒/认知风险（Beers）", 1, false, false))
+        }
+        return tags
+    }
     /** 按当前台账药品计算效应词条流（频率基准级 + 跨药来源数 +1/来源、上限 3；级降序→急性→包）。 */
     fun effectTags(): List<EffectTag> {
         val names = recListState.value.map { it.name }.toSet()
@@ -263,11 +328,12 @@ object DshComposeHost {
         if (drugOpioid.keys.any { it in names } && drugBzd.any { it in names }) {
             tags.add(EffectTag("阿片类中毒", 3, acute = true, pack = true))
         }
+        tags.addAll(profileTagsHost())
         return tags.sortedWith(
             compareByDescending<EffectTag> { it.level }.thenByDescending { it.acute }.thenByDescending { it.pack }
         )
     }
-    fun attachEnv(ctx: android.content.Context) { appCtx = ctx; refreshRecList(); recomputeChart() }
+    fun attachEnv(ctx: android.content.Context) { appCtx = ctx; loadProfileState(); refreshRecList(); recomputeChart() }
     // ---------- 浓度图（与 JS chartSeriesList/PkEngine 同公式：C(t)=Σ D·F·0.5^(t/T½)；窗口 -12h..+36h 步长 1h，t=0=现在；t75 新药沿用 host 旧式峰值模型，与 JS 模型差异见 compose 同步说明） ----------
     private val chartSeriesState = mutableStateOf<List<SublSeries>>(emptyList())
     private val chartTotalState = mutableStateOf<List<Float>>(emptyList())
@@ -398,14 +464,19 @@ object DshComposeHost {
         }
         "noRec" -> recListState.value.isEmpty()
         "isSel" -> (args.getOrNull(0) as? Int) == selectedDrug.value
+        "profOn" -> profCondNames.getOrNull(args.getOrNull(0) as? Int ?: 0) in profCondsState.value
+        "sexIs" -> sexNames.getOrNull(args.getOrNull(0) as? Int ?: 0) == profSexState.value
         else -> { Log.w(tag, "boolArg 未知路由: " + name); false }
     }
     /** 字符串态读：curDose（剂量输入）、doseErr（校验错误）、呼吸抑制风险、记录列表槽位。 */
-    fun strArg(name: String): String = when (name) {
+    fun strArg(name: String, vararg args: Any?): String = when (name) {
         "curDose" -> doseTextState.value
         "doseErr" -> doseErrState.value
         "docName" -> docNameState.value
         "docBody" -> drugDocText(docNameState.value)
+        "profAge" -> profAgeState.value
+        "profName" -> profCondNames.getOrNull(args.getOrNull(0) as? Int ?: 0) ?: ""
+        "sexName" -> sexNames.getOrNull(args.getOrNull(0) as? Int ?: 0) ?: ""
         else -> {
             // 记录卡槽位：name_k / dose_k / time_k
             val k = name.removePrefix("name").removePrefix("dose").removePrefix("time").toIntOrNull()
@@ -424,10 +495,18 @@ object DshComposeHost {
     }
     /** TextField onValueChange → actText("setDose", v)。 */
     fun actText(name: String, v: String) {
-        if (name == "setDose") {
-            doseTextState.value = v
-            if (doseErrState.value.isNotEmpty()) doseErrState.value = ""
-        } else Log.w(tag, "actText 未知路由: " + name)
+        when (name) {
+            "setDose" -> {
+                doseTextState.value = v
+                if (doseErrState.value.isNotEmpty()) doseErrState.value = ""
+            }
+            "setProfileAgeText" -> {
+                profAgeState.value = v
+                saveProfileState()
+                recomputeChart()
+            }
+            else -> Log.w(tag, "actText 未知路由: " + name)
+        }
     }
     /** 交互动作（onClick → 宿主态机；与 main.subl 的 JS 逻辑同语义，storage 同源）。 */
     fun act(name: String, args: List<Any?> = emptyList()) {
@@ -454,6 +533,16 @@ object DshComposeHost {
                 drugListOpen.value = false
             }
             "closeDoc" -> docNameState.value = ""
+            "toggleProfCond" -> {
+                val k = args.getOrNull(0) as? Int ?: 0
+                val c = profCondNames.getOrNull(k) ?: return
+                profCondsState.value = if (c in profCondsState.value) profCondsState.value - c else profCondsState.value + c
+                saveProfileState()
+            }
+            "setSex" -> {
+                val k = args.getOrNull(0) as? Int ?: 0
+                sexNames.getOrNull(k)?.let { profSexState.value = it; saveProfileState() }
+            }
             "clearAll" -> {
                 putLedger("[]")
                 recListState.value = ArrayList()

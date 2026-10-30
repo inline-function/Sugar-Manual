@@ -151,10 +151,11 @@ tagLevels.forEach((exp, i) => {
 
 console.log("== F 记录卡 ==");
 check("空台账 → 「暂无服药记录」占位", findByTag(tree, "Text").some(t => t.text === "暂无服药记录"));
-const titleBox = lowerN.children[3];
+// t77：预警区新增 profileStream 占位（空画像 → 占位 Box），下标 +1
+const titleBox = lowerN.children[4];
 check("记录标题链 [FillWidth, Padding4(24,16,24,8)]",
   eq(mods(titleBox), ["FillWidth", "Padding4(24,16,24,8)"]) && titleBox.children[0].text === "服药记录", mods(titleBox).join(","));
-const tailBox = lowerN.children[5];
+const tailBox = lowerN.children[6];
 check("底部留白 Height(96)（LazyColumn contentPadding bottom=96）", eq(mods(tailBox), ["Height(96)"]), mods(tailBox).join(","));
 
 console.log("== G FAB ==");
@@ -242,24 +243,42 @@ const sheet5 = findByTag(latestTree(), "BottomSheet")[0];
 callKey(findByTag(sheet5, "Box").find(b => b.arrangement === "End").children.find(c => c.tag === "Button").onClick);
 check("校验②非数字 → toast 且表单不关", toasts[toasts.length - 1] === "剂量必须为数字" && findByTag(latestTree(), "BottomSheet")[0].visible === true, toasts[toasts.length - 1]);
 
-console.log("== I 设置/文档弹层 ==");
+console.log("== I 设置（个人画像）/文档弹层 ==");
 tree = latestTree();
 const dismissSheet = findByTag(tree, "BottomSheet")[0];
 callKey(findByTag(dismissSheet, "Box").find(b => b.arrangement === "End").children.find(c => c.tag === "TextButton").onClick);
 tree = latestTree();
-let dlgs = findByTag(tree, "AlertDialog");
-check("取消/遮罩关闭表单 → 设置 AlertDialog 存在（stub 占位）", dlgs.length === 1, "n=" + dlgs.length);
-// 设置
+check("取消/遮罩关闭表单 → 无 AlertDialog 残留（设置页 t77 改为 BottomSheet 分组页）", findByTag(tree, "AlertDialog").length === 0, "n=" + findByTag(tree, "AlertDialog").length);
+// 设置（t77：CandyIDE 式个人画像分组页）
 const topTree = latestTree();
 const setBtn = findByTag(topTree, "TextButton").find(b => (b.children || []).some(c => c.tag === "Icon" && c.name === "settings"));
 callKey(setBtn.onClick);
 tree = latestTree();
-dlgs = findByTag(tree, "AlertDialog");
-const setDlg = dlgs.find(d => d.title === "设置");
-check("设置弹层 visible=true，确认=清空记录/取消=关闭", setDlg && setDlg.visible === true && setDlg.confirmText === "清空记录" && setDlg.dismissText === "关闭", JSON.stringify(setDlg && {v: setDlg.visible, c: setDlg.confirmText}));
-callKey(setDlg.onConfirm);
+const setSheet = findByTag(tree, "BottomSheet").find(s => s.visible === true);
+check("设置页 visible=true（BottomSheet）", setSheet && setSheet.visible === true, String(setSheet && setSheet.visible));
+const stexts = setSheet ? findByTag(setSheet, "Text").map(x => x.text) : [];
+check("设置页 CandyIDE 分组（个人信息/先天疾病/已有疾病/关于）",
+  ["个人信息", "先天疾病", "已有疾病", "关于"].every(t => stexts.indexOf(t) >= 0), JSON.stringify(stexts.filter(t => ["个人信息", "先天疾病", "已有疾病", "关于"].indexOf(t) >= 0)));
+const setChips = setSheet ? findByTag(setSheet, "Box").filter(b => b.onClick !== undefined && b.onClick !== null && (b.children || []).some(c => c.tag === "Text" && (String(c.text).indexOf("✓ ") === 0 || String(c.text).indexOf("○ ") === 0))) : [];
+check("疾病多选 chip 12 个（先天 1 + 已有 11）", setChips.length === 12, "n=" + setChips.length + " " + setChips.map(b => b.children[0].text).join(","));
+const sexChips = setSheet ? findByTag(setSheet, "Box").filter(b => b.onClick !== undefined && b.onClick !== null && (b.children || []).some(c => c.tag === "Text" && ["男", "女", "其他"].indexOf(c.text) >= 0)) : [];
+check("性别单选 chip 3 个", sexChips.length === 3, "n=" + sexChips.length);
+const ageField = setSheet ? findByTag(setSheet, "TextField")[0] : null;
+check("年龄数字输入框（label 年龄，keyboard number）", ageField && ageField.keyboard === "number" && String(ageField.label).indexOf("年龄") >= 0, JSON.stringify(ageField && { k: ageField.keyboard, l: ageField.label }));
+check("设置页可滚动（scrollable 分组区）", setSheet ? findByTag(setSheet, "Box").some(b => b.scrollable === true) : false);
+// chip 持久化：点「青光眼」→ sm_conds 含青光眼 + chip 变 ✓ 选中态
+const glauChip = setChips.find(b => b.children[0].text === "○ 青光眼");
+callKey(glauChip.onClick);
 tree = latestTree();
-check("清空记录 → 台账空 + 弹层关", JSON.parse(storage.get("ledger")).length === 0 && findByTag(tree, "AlertDialog").every(d => !d.visible));
+const setSheet2 = findByTag(tree, "BottomSheet").find(s => s.visible === true);
+check("画像持久化：点 chip → sm_conds=青光眼", storage.get("sm_conds") === "青光眼", storage.get("sm_conds"));
+const chip2 = findByTag(setSheet2, "Box").filter(b => b.onClick !== undefined && b.onClick !== null && (b.children || []).some(c => c.tag === "Text" && (String(c.text).indexOf("✓ 青光眼") === 0 || String(c.text).indexOf("○ 青光眼") === 0)))[0];
+check("chip 选中态切换（✓ + primaryContainer）", chip2 && chip2.children[0].text === "✓ 青光眼" && (chip2.modifiers || []).some(m => m.tag === "Background" && m["0"] === "primaryContainer"), chip2 && chip2.children[0].text);
+// 清空记录（原设置弹层的确认动作，改由设置页内 TextButton 承载）
+const clearBtn = findByTag(setSheet2, "TextButton").find(b => b.label === "清空记录" || (b.children || []).some(c => c.text === "清空记录"));
+callKey(clearBtn.onClick);
+tree = latestTree();
+check("清空记录 → 台账空 + 设置页关", JSON.parse(storage.get("ledger")).length === 0 && !findByTag(tree, "BottomSheet").some(s => s.visible === true));
 check("台账空后回到演示序列（氟伏沙明）", findByTag(tree, "Chart")[0].series[0].label === "氟伏沙明");
 // 文档 → 药库名单抽屉（顶栏 info icon）→ 药物资料页
 const docBtn = findByTag(tree, "TextButton").find(b => (b.children || []).some(c => c.tag === "Icon" && c.name === "info"));
@@ -285,6 +304,29 @@ check("资料页过量行红色闪烁", findByTag(docSheet, "Text").some(x => x.
 callKey(docSheet.onDismiss);
 tree = latestTree();
 check("资料页关闭", !findByTag(tree, "BottomSheet").some(s => s.visible === true));
+
+// t77 端到端：画像（青光眼）+ 台账（苯海索）→ 首页效应词条流红条（不另起 UI）
+storage.set("sm_conds", "青光眼");
+callKey(findByTag(tree, "FloatingButton")[0].onClick);
+tree = latestTree();
+const sheet77 = findByTag(tree, "BottomSheet")[0];
+const rows77 = findByTag(sheet77, "Box").find(b => b.scrollable === true).children;
+const hxRow = rows77.find(b => flatten(b, []).some(n => n.text === "苯海索"));
+check("选药行含苯海索（t75 药库）", !!hxRow, "rows=" + rows77.length);
+callKey(hxRow.onClick);
+callKey(findByTag(latestTree(), "TextField")[0].onChange, "2");
+const sh77 = findByTag(latestTree(), "BottomSheet")[0];
+callKey(findByTag(sh77, "Box").find(b => b.arrangement === "End").children.find(c => c.tag === "Button").onClick);
+tree = latestTree();
+const ptexts = findByTag(tree, "Text").map(t => t.text);
+check("画像加权词条进效应词条流（青光眼×苯海索 红条）",
+  ptexts.some(s => s.indexOf("青光眼×苯海索：青光眼发作风险") >= 0), ptexts.filter(s => s.indexOf("青光眼") >= 0).join(","));
+const pcell = findByTag(tree, "Box").find(b => (b.children[0] || {}).text && String((b.children[0] || {}).text).indexOf("青光眼×苯海索") >= 0);
+check("加权词条红底 flash（沿用 tagBg/tagFg 三级配色）",
+  pcell && (pcell.modifiers || []).some(m => m.tag === "Background" && m["0"] === "#40D32F2F") && (pcell.children[0] || {}).flash === true && (pcell.children[0] || {}).color === "#D32F2F",
+  pcell && JSON.stringify({ bg: (pcell.modifiers || []).find(m => m.tag === "Background") && (pcell.modifiers || []).find(m => m.tag === "Background")["0"], fg: pcell.children[0] && pcell.children[0].color, flash: pcell.children[0] && pcell.children[0].flash }));
+// 清理画像以便 v2 幂等
+storage.set("sm_conds", "");
 
 console.log("\n" + "PASSES=" + pass + " FAILS=" + fail);
 process.exit(fail === 0 ? 0 : 1);
