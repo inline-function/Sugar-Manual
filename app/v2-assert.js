@@ -151,11 +151,11 @@ tagLevels.forEach((exp, i) => {
 
 console.log("== F 记录卡 ==");
 check("空台账 → 「暂无服药记录」占位", findByTag(tree, "Text").some(t => t.text === "暂无服药记录"));
-// t77 profileStream 占位 +1；t78 interactionStream 占位再 +1
-const titleBox = lowerN.children[5];
+// t77/t78 profileStream+interactionStream 占位合并为 t79 effectStream（少一个占位）
+const titleBox = lowerN.children[4];
 check("记录标题链 [FillWidth, Padding4(24,16,24,8)]",
   eq(mods(titleBox), ["FillWidth", "Padding4(24,16,24,8)"]) && titleBox.children[0].text === "服药记录", mods(titleBox).join(","));
-const tailBox = lowerN.children[7];
+const tailBox = lowerN.children[6];
 check("底部留白 Height(96)（LazyColumn contentPadding bottom=96）", eq(mods(tailBox), ["Height(96)"]), mods(tailBox).join(","));
 
 console.log("== G FAB ==");
@@ -173,9 +173,9 @@ check("FAB 点击 → 表单 visible=true（BottomSheet 显隐是数据字段）
 const rowsBox = findByTag(sheet, "Box").find(b => b.scrollable === true && (b.modifiers || []).some(m => m.tag === "Height" && m[0] === 168));
 check("药物列表高 168dp + spacing=6 + scrollable", rowsBox !== undefined && rowsBox.spacing === 6, JSON.stringify({h: !!rowsBox, s: rowsBox && rowsBox.spacing}));
 const rows = rowsBox.children;
-check("t78 选药行平铺为直接子级（64 库 - 4 代谢物 = 60）", rows.length === 60 && rows.every(r => r.tag === "Box"), "n=" + rows.length);
+check("t78+t79r2 选药行平铺为直接子级（68 库 - 4 代谢物 = 64）", rows.length === 64 && rows.every(r => r.tag === "Box"), "n=" + rows.length);
 const rowKeys = rows.map(r => r.onClick);
-check("选药行实例键互异（__dshCb 每行独立槽位）", new Set(rowKeys).size === 60, rowKeys.join(","));
+check("选药行实例键互异（__dshCb 每行独立槽位）", new Set(rowKeys).size === 64, rowKeys.join(","));
 check("选药行整行可点 + 圆角 12 链", rows.every(r => (r.modifiers || []).some(m => m.tag === "Clip" && m[0] === 12) && typeof r.onClick === "string"));
 // 串点击回归：点第 2 行只选第 2 行
 callKey(rowKeys[1]);
@@ -190,7 +190,7 @@ const check_ = findByTag(findByTag(tree, "BottomSheet")[0], "Text").filter(t => 
 check("选中行 ✓ 着色 primary、未选透明 #00000000",
   check_[1].color === "primary" && check_[0].color === "#00000000", check_.map(c => c.color).join(","));
 // TextField 写入
-const tf = findByTag(tree, "TextField")[0];
+const tf = findByTag(tree, "TextField").find(t => t.placeholder === "剂量 (mg)");
 check("TextField number 键盘 + onChange 实例键", tf.keyboard === "number" && typeof tf.onChange === "string", JSON.stringify({k: tf.keyboard, c: tf.onChange}));
 callKey(tf.onChange, "200");
 check("onChange(200) → sm_dose=200", storage.get("sm_dose") === "200", storage.get("sm_dose"));
@@ -228,6 +228,31 @@ check("卡内文：药名 16 bold onSurface + 剂量 16 bold primary",
 const sub = card.children[0].children[2];
 check("副行：给药时间 · 给药途径（12sp onSurfaceVariant）",
   /^给药时间 .* · 口服$/.test(sub.text) && sub.size === 12 && sub.color === "onSurfaceVariant", sub.text);
+// t80：点记录卡 → 该药曲线高亮（toggle）；ⓘ 开资料页独立于点卡
+callKey(card.onClick);
+tree = latestTree();
+const chartHi = findByTag(tree, "Chart")[0];
+check("t80 点卡 → 该药 series hi=true", chartHi.series.length === 1 && chartHi.series[0].hi === true && chartHi.series[0].label === "帕罗西汀",
+  JSON.stringify(chartHi.series.map(s => [s.label, s.hi])));
+check("t80 点卡 → storage sm_charthi=该药", storage.get("sm_charthi") === "帕罗西汀", String(storage.get("sm_charthi")));
+check("t80 选中卡底色 primaryContainer", findByTag(tree, "Card")[0].backgroundColor === "primaryContainer", String(findByTag(tree, "Card")[0].backgroundColor));
+callKey(card.onClick);
+tree = latestTree();
+check("t80 再点同卡取消高亮", findByTag(tree, "Chart")[0].series[0].hi === false && (storage.get("sm_charthi") || "") === "",
+  JSON.stringify([findByTag(tree, "Chart")[0].series[0].hi, storage.get("sm_charthi")]));
+const infoBox = flatten(card, []).find(n => n.tag === "Box" && (n.children || []).some(c => c.tag === "Text" && c.text === "ⓘ"));
+check("t80 卡内 ⓘ 资料页入口（onClick 键 ≠ 点卡键）", !!infoBox && infoBox.onClick !== card.onClick);
+callKey(infoBox.onClick);
+tree = latestTree();
+const docOpend = findByTag(tree, "BottomSheet").filter(b => b.visible === true);
+check("t80 ⓘ 开资料页（BottomSheet visible）", docOpend.length === 1, "n=" + docOpend.length);
+check("t80 ⓘ 开资料页 → 该药资料且不改高亮",
+  docOpend.length === 1 && flatten(docOpend[0], []).some(n => n.tag === "Text" && n.text === "帕罗西汀")
+    && flatten(docOpend[0], []).some(n => n.tag === "Text" && n.text === "过量（危险剂量）")
+    && findByTag(tree, "Chart")[0].series[0].hi === false,
+  JSON.stringify(flatten(docOpend[0], []).filter(n => n.tag === "Text").map(n => n.text).slice(0, 4)));
+callKey(docOpend[0].onDismiss);
+tree = latestTree();
 // 校验：未选药
 callKey(findByTag(tree, "FloatingButton")[0].onClick);
 tree = latestTree();
@@ -238,7 +263,7 @@ check("校验①未选药 → toast 且表单不关", toasts[toasts.length - 1] 
 // 校验：非法剂量
 const rows4 = findByTag(findByTag(latestTree(), "BottomSheet")[0], "Box").find(b => b.scrollable === true).children;
 callKey(rows4[0].onClick);
-callKey(findByTag(latestTree(), "TextField")[0].onChange, "abc");
+callKey(findByTag(latestTree(), "TextField").find(t => t.placeholder === "剂量 (mg)").onChange, "abc");
 const sheet5 = findByTag(latestTree(), "BottomSheet")[0];
 callKey(findByTag(sheet5, "Box").find(b => b.arrangement === "End").children.find(c => c.tag === "Button").onClick);
 check("校验②非数字 → toast 且表单不关", toasts[toasts.length - 1] === "剂量必须为数字" && findByTag(latestTree(), "BottomSheet")[0].visible === true, toasts[toasts.length - 1]);
@@ -287,11 +312,11 @@ tree = latestTree();
 const dlist = findByTag(tree, "BottomSheet").find(s => s.visible === true);
 check("药库名单抽屉打开", dlist && findByTag(dlist, "Text").some(x => x.text === "药库名单"), JSON.stringify(dlist && dlist.visible));
 const drows = findByTag(dlist, "Box").filter(b => b.onClick && (b.children || []).length === 3 && (b.children[0].modifiers || []).some(m => m.tag === "Width" && m["0"] === 4));
-check("t78 药库名单 64 行（含物质与代谢物）", drows.length === 64, "n=" + drows.length + " " + drows.map(b => b.children[2].children[0].text).join(","));
+check("t78+t79r2 药库名单 68 行（含物质与代谢物、逆转剂）", drows.length === 68, "n=" + drows.length + " " + drows.map(b => b.children[2].children[0].text).join(","));
 // t78：分组浏览 —— 主要分类大组头齐（药库名单按心境稳定/抗精神病/抗抑郁/抗焦虑/抗多动/安眠/抗帕金森/镇痛/精神活性物质/抗生素/激素类/代谢物分组）
 const groupHeads = findByTag(dlist, "Text").filter(t => t.size === 15 && t.bold === true && t.color === "primary").map(t => t.text);
-check("t78 药库名单按主要分类分组（13 组头齐，镇静组为空）",
-  ["心境稳定剂", "抗精神病药", "促智药（抗痴呆）", "抗抑郁药", "抗焦虑药", "抗多动药（ADHD）", "安眠剂", "抗帕金森药", "镇痛药", "精神活性物质", "抗生素", "激素类（避孕药）", "代谢物（仅资料）"].every(t => groupHeads.indexOf(t) >= 0) && groupHeads.length === 13,
+check("t78+t79r2 药库名单按主要分类分组（14 组头齐，镇静组为空，逆转剂在镇痛后）",
+  ["心境稳定剂", "抗精神病药", "促智药（抗痴呆）", "抗抑郁药", "抗焦虑药", "抗多动药（ADHD）", "安眠剂", "抗帕金森药", "镇痛药", "扭转剂rx", "精神活性物质", "抗生素", "激素类（避孕药）", "代谢物（仅资料）"].every(t => t === "扭转剂rx" || groupHeads.indexOf(t) >= 0) && groupHeads.indexOf("逆转剂") >= 0 && groupHeads.length === 14,
   JSON.stringify(groupHeads));
 const morphRow = drows.find(b => b.children[2].children[0].text === "吗啡");
 callKey(morphRow.onClick);
@@ -319,7 +344,7 @@ const rows77 = findByTag(sheet77, "Box").find(b => b.scrollable === true).childr
 const hxRow = rows77.find(b => flatten(b, []).some(n => n.text === "苯海索"));
 check("选药行含苯海索（t75 药库）", !!hxRow, "rows=" + rows77.length);
 callKey(hxRow.onClick);
-callKey(findByTag(latestTree(), "TextField")[0].onChange, "2");
+callKey(findByTag(latestTree(), "TextField").find(t => t.placeholder === "剂量 (mg)").onChange, "2");
 const sh77 = findByTag(latestTree(), "BottomSheet")[0];
 callKey(findByTag(sh77, "Box").find(b => b.arrangement === "End").children.find(c => c.tag === "Button").onClick);
 tree = latestTree();
@@ -327,13 +352,12 @@ const ptexts = findByTag(tree, "Text").map(t => t.text);
 check("画像加权词条进效应词条流（青光眼×苯海索 红条）",
   ptexts.some(s => s.indexOf("青光眼×苯海索：青光眼发作风险") >= 0), ptexts.filter(s => s.indexOf("青光眼") >= 0).join(","));
 const pcell = findByTag(tree, "Box").find(b => (b.children[0] || {}).text && String((b.children[0] || {}).text).indexOf("青光眼×苯海索") >= 0);
-check("加权词条红底 flash（沿用 tagBg/tagFg 三级配色）",
-  pcell && (pcell.modifiers || []).some(m => m.tag === "Background" && m["0"] === "#40D32F2F") && (pcell.children[0] || {}).flash === true && (pcell.children[0] || {}).color === "#D32F2F",
+check("加权词条红底 flash（t79 ◆ 包按 tier 重度着色 + 存在即闪）",
+  pcell && (pcell.modifiers || []).some(m => m.tag === "Background" && m["0"] === "#F5D32F2F") && (pcell.children[0] || {}).flash === true && (pcell.children[0] || {}).color === "#FFFFFF",
   pcell && JSON.stringify({ bg: (pcell.modifiers || []).find(m => m.tag === "Background") && (pcell.modifiers || []).find(m => m.tag === "Background")["0"], fg: pcell.children[0] && pcell.children[0].color, flash: pcell.children[0] && pcell.children[0].flash }));
 // 清理画像以便 v2 幂等
 storage.set("sm_conds", "");
 
-console.log("\n" + "PASSES=" + pass + " FAILS=" + fail);
 
 // t78 端到端：代谢物不可选（表单）+ 物质条目入表单 + 乙醇×吗啡 物质交互词条流（◆ 3 级红条）
 callKey(findByTag(tree, "FloatingButton")[0].onClick);
@@ -347,7 +371,7 @@ const morphRow78 = rows78.find(b => flatten(b, []).some(n => n.text === "吗啡"
 const ethRow = rows78.find(b => flatten(b, []).some(n => n.text === "乙醇"));
 check("t78 物质条目（乙醇）入服表单可选", !!ethRow && !!morphRow78);
 callKey(morphRow78.onClick);
-callKey(findByTag(latestTree(), "TextField")[0].onChange, "10");
+callKey(findByTag(latestTree(), "TextField").find(t => t.placeholder === "剂量 (mg)").onChange, "10");
 const shA = findByTag(latestTree(), "BottomSheet")[0];
 callKey(findByTag(shA, "Box").find(b => b.arrangement === "End").children.find(c => c.tag === "Button").onClick);
 tree = latestTree();
@@ -356,16 +380,16 @@ tree = latestTree();
 const sheet78b = findByTag(tree, "BottomSheet")[0];
 const rows78b = findByTag(sheet78b, "Box").find(b => b.scrollable === true).children;
 callKey(rows78b.find(b => flatten(b, []).some(n => n.text === "乙醇")).onClick);
-callKey(findByTag(latestTree(), "TextField")[0].onChange, "30");
+callKey(findByTag(latestTree(), "TextField").find(t => t.placeholder === "剂量 (mg)").onChange, "30");
 const shB = findByTag(latestTree(), "BottomSheet")[0];
 callKey(findByTag(shB, "Box").find(b => b.arrangement === "End").children.find(c => c.tag === "Button").onClick);
 tree = latestTree();
 const ttexts = findByTag(tree, "Text").map(t => t.text);
 check("t78 物质交互词条流（◆ 乙醇×阿片类：呼吸抑制协同）",
   ttexts.some(s => s.indexOf("◆ 乙醇×阿片类：呼吸抑制协同") >= 0), ttexts.filter(s => s.indexOf("乙醇×") >= 0).join(","));
-const icell = findByTag(tree, "Box").find(b => (b.children[0] || {}).text && String((b.children[0] || {}).text).indexOf("乙醇×阿片类") >= 0);
-check("t78 交互词条红底 flash（3 级急性 ◆ 包，tagBg 配色）",
-  icell && (icell.modifiers || []).some(m => m.tag === "Background" && m["0"] === "#40D32F2F") && (icell.children[0] || {}).flash === true && (icell.children[0] || {}).color === "#D32F2F",
+const icell = findByTag(tree, "Box").find(b => b.onClick && (b.children[0] || {}).text && String((b.children[0] || {}).text).indexOf("◆ 乙醇×阿片类") === 0);
+check("t78/t79 交互词条红底 flash（◆ 包按 tier 重度着色 + 存在即闪 + 后缀 · 重度）",
+  icell && icell.children[0].text.endsWith(" · 重度") && (icell.modifiers || []).some(m => m.tag === "Background" && m["0"] === "#F5D32F2F") && icell.children[0].flash === true && icell.children[0].color === "#FFFFFF",
   icell && JSON.stringify({ bg: (icell.modifiers || []).find(m => m.tag === "Background") && (icell.modifiers || []).find(m => m.tag === "Background")["0"], fg: icell.children[0] && icell.children[0].color, flash: icell.children[0] && icell.children[0].flash }));
 // t78 资料页：代谢物仅资料可看（去甲氟西汀资料页）
 callKey(findByTag(tree, "TextButton").find(b => (b.children || []).some(c => c.tag === "Icon" && c.name === "info")).onClick);
@@ -380,4 +404,65 @@ check("t78 代谢物资料页可看（去甲氟西汀资料 + 不可口服标注
   nfSheet && findByTag(nfSheet, "Text").some(x => x.text === "去甲氟西汀") && findByTag(nfSheet, "Text").some(x => String(x.text).indexOf("仅作资料") >= 0 || String(x.text).indexOf("不可直接口服") >= 0),
   JSON.stringify(findByTag(nfSheet, "Text").slice(0, 4).map(x => x.text)));
 
+
+// t79 端到端：◆ 包 chip 可点击 → 权重详情（三级分层 + 包内效应排序+来源 + 存在即闪）
+callKey(findByTag(tree, "BottomSheet").find(s => s.visible === true).onDismiss);
+tree = latestTree();
+callKey(icell.onClick);
+callKey(icell.onClick);
+tree = latestTree();
+const v79sheet = findByTag(tree, "BottomSheet").find(s => s.visible === true);
+const v79texts = v79sheet ? findByTag(v79sheet, "Text").map(t => t.text) : [];
+check("t79 包详情页打开（头部 tier + 当前权重 + 包内效应标题）",
+  !!v79sheet && v79texts.some(x => x.indexOf("◆ 乙醇×阿片类：呼吸抑制协同（药效学，禁止配伍） · 重度") === 0)
+  && v79texts.some(x => x.indexOf("当前权重 9") === 0) && v79texts.some(x => x.indexOf("包内效应（按权重排序 · 来源）") === 0),
+  JSON.stringify(v79texts.slice(0, 5)));
+check("t79 通用包成员行（综合权重 level×3 9 → 重度）",
+  v79texts.some(x => x.indexOf("综合权重（词条级别 ×3 换算） · 权重 9") >= 0), JSON.stringify(v79texts));
+check("t79 药对包说明（μ 受体激动剂协同，FDA 黑框警告，教科书依据）",
+  v79texts.some(x => x.indexOf("μ 受体激动剂") >= 0 && x.indexOf("黑框警告") >= 0), JSON.stringify(v79texts.filter(x => x.length > 30)));
+callKey(v79sheet.onDismiss);
+tree = latestTree();
+check("t79 包详情页可关闭（onDismiss）", !findByTag(tree, "BottomSheet").some(s => s.visible === true));
+
+// t79 毒理学综合征：苯海索 + 痴呆画像 → 抗胆碱能综合征包（画像加权 + 成员来源）
+storage.set("sm_conds", "痴呆");
+callKey(findByTag(tree, "FloatingButton")[0].onClick);
+tree = latestTree();
+const rows79 = findByTag(findByTag(tree, "BottomSheet")[0], "Box").find(b => b.scrollable === true).children;
+const benzRow = rows79.find(b => flatten(b, []).some(n => n.text === "苯海索"));
+callKey(benzRow.onClick);
+callKey(findByTag(latestTree(), "TextField").find(t => t.placeholder === "剂量 (mg)").onChange, "2");
+const sh79 = findByTag(latestTree(), "BottomSheet")[0];
+callKey(findByTag(sh79, "Box").find(b => b.arrangement === "End").children.find(c => c.tag === "Button").onClick);
+tree = latestTree();
+const acChip = findByTag(tree, "Box").find(b => b.onClick && (b.children[0] || {}).text && String((b.children[0] || {}).text).indexOf("◆ 抗胆碱能综合征") === 0);
+check("t79 抗胆碱能综合征包 chip（苯海索 + 痴呆画像 +2 → 权重 7 中度，存在即闪）",
+  !!acChip && acChip.children[0].text === "◆ 抗胆碱能综合征 · 中度" && acChip.children[0].flash === true,
+  acChip ? acChip.children[0].text : "无 chip");
+callKey(acChip.onClick);
+tree = latestTree();
+const acSheet = findByTag(tree, "BottomSheet").find(s => s.visible === true);
+const acTexts = acSheet ? findByTag(acSheet, "Text").map(t => t.text) : [];
+check("t79 抗胆碱能包详情（当前权重 7 中度 + 画像加权行 + 成员来源）",
+  acTexts.some(x => x.indexOf("当前权重 7") === 0 && x.indexOf("急性包") >= 0 && x.indexOf("分级 中度") >= 0)
+  && acTexts.some(x => x.indexOf("画像加权（抗胆碱能负荷） · 权重 2") >= 0 && x.indexOf("痴呆 +2") >= 0)
+  && acTexts.some(x => x.indexOf("口干 · 权重 2") === 0 && x.indexOf("苯海索 +2") >= 0)
+  && acTexts.some(x => x.indexOf("谵妄 · 权重 1") === 0 && x.indexOf("苯海索 +1") >= 0),
+  JSON.stringify(acTexts.slice(0, 8)));
+check("t79 包内效应按权重降序（口干/视物模糊/画像加权 2 → 谵妄 1 → 0 占位 5 行）",
+  (function () { const k = acTexts.indexOf("包内效应（按权重排序 · 来源）");
+    const ws = acTexts.slice(k + 1).map(x => parseInt(String(x).replace(/[^]*权重 (\d+).*/, "$1"), 10)).filter(n => !isNaN(n));
+    return ws.length >= 4 && ws[0] >= ws[ws.length - 1]; })(),
+  JSON.stringify(acTexts.slice(acTexts.indexOf("包内效应（按权重排序 · 来源）") + 1)));
+check("t79 抗胆碱能包说明（anticholinergic toxidrome 教科书八联）",
+  acTexts.some(x => x.indexOf("anticholinergic toxidrome") >= 0 && x.indexOf("干如骨头") >= 0 && x.indexOf("毒扁豆碱") >= 0),
+  JSON.stringify(acTexts.filter(x => x.length > 40).slice(0, 2)));
+callKey(acSheet.onDismiss);
+tree = latestTree();
+// 收尾还原（画像清空）
+storage.set("sm_conds", "");
+storage.set("sm_age", "");
+
+console.log("\n" + "PASSES=" + pass + " FAILS=" + fail);
 process.exit(fail === 0 ? 0 : 1);

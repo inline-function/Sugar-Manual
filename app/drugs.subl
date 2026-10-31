@@ -251,7 +251,7 @@ fun pickableDrugs(all: List[Drug]): List[Drug] = filter(all) { d => isOralEntry(
 fun effectSystems(): List[Str] = cons("血清素能", cons("去甲肾上腺素能", cons("多巴胺能", cons("抗谷氨酸能", cons("胆碱能", cons("抗胆碱能", cons("抗食欲素能", cons("褪黑素能", cons("GABA能", cons("阿片能", emptyList()))))))))))
 
 // 主要分类大组（分组浏览顺序；匹配 tags 关键字，先命中者归属）。
-fun classKinds(): List[Str] = cons("心境稳定剂", cons("抗精神病药", cons("促智", cons("抗抑郁药", cons("抗焦虑药", cons("抗多动", cons("催眠", cons("镇静", cons("抗帕金森", cons("镇痛", cons("精神活性物质", cons("抗生素", cons("激素类", emptyList())))))))))))))
+fun classKinds(): List[Str] = cons("心境稳定剂", cons("抗精神病药", cons("促智", cons("抗抑郁药", cons("抗焦虑药", cons("抗多动", cons("催眠", cons("镇静", cons("抗帕金森", cons("镇痛", cons("逆转剂", cons("精神活性物质", cons("抗生素", cons("激素类", emptyList()))))))))))))))
 
 // 组显示名（匹配关键字 → 用户叙事大组名）。
 fun classDisplay(k: Str): Str = if (k == "促智") "促智药（抗痴呆）" else if (k == "催眠") "安眠剂" else if (k == "镇静") "镇静剂" else if (k == "抗帕金森") "抗帕金森药" else if (k == "镇痛") "镇痛药" else if (k == "抗多动") "抗多动药（ADHD）" else if (k == "激素类") "激素类（避孕药）" else k

@@ -1,0 +1,24 @@
+// app/cyproheptadine.subl —— 逆转剂条目（t79 rev2）
+
+fun cyproheptadine(): Drug = Drug(
+    name = "赛庚啶",
+    category = "逆转剂",
+    tags = strList("逆转剂，5-HT2受体拮抗剂，抗组胺剂"),
+    description = "赛庚啶为 5-HT2 受体拮抗剂兼强效 H1 抗组胺作用，口服用于血清素综合征的辅助逆转（病例报告与专家共识推荐）。抗组胺作用带来镇静、口干等抗胆碱能样副反应。常用量 4 mg。",
+    effects = ratedList("强效|5-HT2受体拮抗;强效|H1组胺受体拮抗"),
+    enzymes = strList("CYP3A4"),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 8, tmax = "2h",
+        clearance = "一级", curve = "对数", bio = 1,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|逆转血清素综合征（辅助）"),
+    chronicTher = emptyList(),
+    acuteAdv = ratedList("十分常见|镇静;常见|口干"),
+    chronicAdv = emptyList(),
+    withdraw = emptyList(),
+    overdose = emptyList(),
+    admin = "口服"
+)

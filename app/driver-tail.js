@@ -34,7 +34,7 @@ function __smA(name, cond, extra) {
   // ---------- 首屏（空台账） ----------
   __smA("首次 layout", __smLayouts.length === 1);
   const root0 = __smRoot(0);
-  __smA("根 8 区（表单/设置/药库名单/资料页四弹层存根）", root0.children.length === 8, JSON.stringify(root0.children.map((c) => c.tag)));
+  __smA("根 9 区（表单/设置/药库名单/资料页/效应包四+一弹层存根）", root0.children.length === 9, JSON.stringify(root0.children.map((c) => c.tag)));
   const topNode = root0.children[0];
   __smA("顶栏 Box", topNode.tag === "Box", "got " + topNode.tag);
   __smA("顶栏横向", topNode.orientation === "horizontal");
@@ -83,11 +83,11 @@ function __smA(name, cond, extra) {
   const dlistSheet = __smNodes(listRoot).find((n) => n.tag === "BottomSheet" && n.visible === true);
   __smA("药库名单打开", !!dlistSheet && __smHasText(listRoot, "药库名单"));
   const listRows = __smNodes(dlistSheet).filter((n) => n.tag === "Box" && typeof n.onClick === "string" && (n.children || []).length === 3 && (n.children[0].modifiers || []).some((m) => m.tag === "Width" && m["0"] === 4));
-  __smA("药库名单 64 行（t78 扩展后全库，含物质/代谢物）", listRows.length === 64, "got " + listRows.length + " " + listRows.map((b) => b.children[2].children[0].text).join(","));
+  __smA("药库名单 68 行（t78 扩展 + t79rev2 逆转剂，含物质/代谢物）", listRows.length === 68, "got " + listRows.length + " " + listRows.map((b) => b.children[2].children[0].text).join(","));
   // t78：分组浏览 —— 主要分类大组头齐（心境稳定剂/抗精神病药/抗抑郁药/抗焦虑药/安眠剂/镇静剂/促智药/抗帕金森药/镇痛药/精神活性物质/抗生素/代谢物）
   const groupHeads = __smNodes(dlistSheet).filter((n) => n.tag === "Text" && (n.size === 15) && n.bold === true && n.color === "primary").map((n) => n.text);
   __smA("药库名单按主要分类分组（12 组头齐且仅含非空组）",
-    ["心境稳定剂", "抗精神病药", "促智药（抗痴呆）", "抗抑郁药", "抗焦虑药", "抗多动药（ADHD）", "安眠剂", "抗帕金森药", "镇痛药", "精神活性物质", "抗生素", "激素类（避孕药）", "代谢物（仅资料）"].every((t) => groupHeads.indexOf(t) >= 0) && groupHeads.length === 13 && groupHeads.indexOf("镇静剂") < 0,
+    ["心境稳定剂", "抗精神病药", "促智药（抗痴呆）", "抗抑郁药", "抗焦虑药", "抗多动药（ADHD）", "安眠剂", "抗帕金森药", "镇痛药", "逆转剂", "精神活性物质", "抗生素", "激素类（避孕药）", "代谢物（仅资料）"].every((t) => groupHeads.indexOf(t) >= 0) && groupHeads.length === 14 && groupHeads.indexOf("镇静剂") < 0,
     JSON.stringify(groupHeads));
   // 点吗啡行开资料页并核验内容
   const morphRow = listRows.find((b) => b.children[2].children[0].text === "吗啡");
@@ -119,7 +119,7 @@ function __smA(name, cond, extra) {
   function __smRowName(b) { return b.children[0].children[0]; }
   function __smRowSub(b) { return b.children[0].children[1]; }
   function __smRowChecked(b) { return (b.children || []).some((c) => c.tag === "Text" && c.text.indexOf("✓") === 0 && c.color !== "#00000000"); } // v2：✓ 常驻，未选为透明 #00000000
-  __smA("药物行 60 行（t78：64 库 - 4 代谢物，表单不可选）", rowBtns.length === 60, "got " + rowBtns.length + " " + rowBtns.map((b) => __smRowName(b).text).join(","));
+  __smA("药物行 64 行（t79rev2：68 库 - 4 代谢物，表单不可选）", rowBtns.length === 64, "got " + rowBtns.length + " " + rowBtns.map((b) => __smRowName(b).text).join(","));
   __smA("表单选药列表过滤代谢物（去甲氟西汀/O-去甲基文拉法辛/去甲西酞普兰/M6G 不可见）",
     ["去甲氟西汀", "O-去甲基文拉法辛", "去甲西酞普兰", "M6G（吗啡-6-葡萄糖醛酸）"].every((n) => !rowBtns.some((b) => __smRowName(b).text.indexOf(n) === 0)));
   __smA("行 0 氟伏沙明未选", rowBtns.some((b) => __smRowName(b).text === "氟伏沙明" && __smRowName(b).bold === false), "got " + JSON.stringify(rowBtns.map((b) => __smRowName(b).text)));
@@ -127,7 +127,7 @@ function __smA(name, cond, extra) {
   __smA("行副标题：氟伏沙明", rowBtns.some((b) => __smRowSub(b).text === "处方药 · T½ 15h · F=50% · 口服"), "got " + JSON.stringify(rowBtns.map((b) => __smRowSub(b).text)));
   __smA("行副标题：帕罗西汀", rowBtns.some((b) => __smRowSub(b).text === "处方药 · T½ 24h · F=100% · 口服"));
   __smA("默认未选药", rowBtns.every((b) => __smRowName(b).bold === false && !__smRowChecked(b)));
-  const tf = __smNodes(root1).find((n) => n.tag === "TextField");
+  const tf = __smNodes(root1).find((n) => n.tag === "TextField" && n.placeholder === "剂量 (mg)");
   __smA("TextField 存在", !!tf);
   __smA("TextField 占位符", tf.placeholder === "剂量 (mg)", "got " + tf.placeholder);
   __smA("TextField 数字键盘", tf.keyboard === "number");
@@ -156,7 +156,7 @@ function __smA(name, cond, extra) {
   __smCall(cBtn, "onClick");
   __smA("空剂量 toast", __smLastToast === "剂量必须为数字", "got " + __smLastToast);
   __smA("空剂量不刷新", __smLayouts.length === lenA + 1, "got " + __smLayouts.length + " vs " + (lenA + 1));
-  const tf2 = __smNodes(__smRoot()).find((n) => n.tag === "TextField");
+  const tf2 = __smNodes(__smRoot()).find((n) => n.tag === "TextField" && n.placeholder === "剂量 (mg)");
   __smCall(tf2, "onChange", "0");
   __smCall(cBtn, "onClick");
   __smA("0 剂量 toast", __smLastToast === "剂量必须大于 0", "got " + __smLastToast);
@@ -214,22 +214,22 @@ function __smA(name, cond, extra) {
   __smCall(fab4, "onClick");
   const rowsY = __smNodes(__smRoot()).filter((n) => n.tag === "Box" && typeof n.onClick === "string" && (n.children || [])[0] && n.children[0].tag === "Box" && (n.children[0].children || [])[0] && n.children[0].children[0].tag === "Text" && (n.children[0].children || [])[1] && n.children[0].children[1].tag === "Text");
   __smCall(rowsY.find((b) => b.children[0].children[0].text === "吗啡"), "onClick");
-  const tfY = __smNodes(__smRoot()).find((n) => n.tag === "TextField");
+  const tfY = __smNodes(__smRoot()).find((n) => n.tag === "TextField" && n.placeholder === "剂量 (mg)");
   __smCall(tfY, "onChange", "10");
   __smCall(__smFindButton(__smRoot(), "确认"), "onClick");
   const rootM = __smRoot();
-  const respTagM = __smNodes(rootM).filter((n) => n.tag === "Text" && typeof n.text === "string" && n.text.indexOf("呼吸抑制") === 0);
+  const respTagM = __smNodes(rootM).filter((n) => n.tag === "Text" && typeof n.text === "string" && n.text.indexOf("呼吸抑制") === 0 && n.text.indexOf("权重×") > 0);
   __smA("单类吗啡=警告不红", respTagM.length === 1 && respTagM[0].text.indexOf("剂量依赖") >= 0 && respTagM[0].color === "#E65100" && respTagM[0].flash !== true, "got " + JSON.stringify(respTagM.map((n) => [n.text, n.color])));
-  __smA("单类无红闪(flash)", !__smNodes(rootM).some((n) => n.tag === "Text" && n.flash === true));
+  __smA("单类无红闪(flash)", !__smNodes(rootM).some((n) => n.tag === "Text" && n.flash === true && typeof n.text === "string" && n.text.indexOf("权重×") > 0));
   const fab5 = __smNodes(__smRoot()).find((n) => n.tag === "FloatingButton");
   __smCall(fab5, "onClick");
   const rowsZ = __smNodes(__smRoot()).filter((n) => n.tag === "Box" && typeof n.onClick === "string" && (n.children || [])[0] && n.children[0].tag === "Box" && (n.children[0].children || [])[0] && n.children[0].children[0].tag === "Text" && (n.children[0].children || [])[1] && n.children[0].children[1].tag === "Text");
   __smCall(rowsZ.find((b) => b.children[0].children[0].text === "地西泮"), "onClick");
-  const tfZ = __smNodes(__smRoot()).find((n) => n.tag === "TextField");
+  const tfZ = __smNodes(__smRoot()).find((n) => n.tag === "TextField" && n.placeholder === "剂量 (mg)");
   __smCall(tfZ, "onChange", "5");
   __smCall(__smFindButton(__smRoot(), "确认"), "onClick");
   const rootD = __smRoot();
-  const respTagD = __smNodes(rootD).filter((n) => n.tag === "Text" && typeof n.text === "string" && n.text.indexOf("呼吸抑制") === 0);
+  const respTagD = __smNodes(rootD).filter((n) => n.tag === "Text" && typeof n.text === "string" && n.text.indexOf("呼吸抑制") === 0 && n.text.indexOf("权重×") > 0);
   __smA("双类叠加红色危险", respTagD.length === 1 && respTagD[0].text.indexOf("联用叠加") >= 0 && respTagD[0].text.indexOf("权重×9") >= 0 && respTagD[0].color === "#D32F2F" && respTagD[0].flash === true, "got " + JSON.stringify(respTagD.map((n) => [n.text, n.color, n.flash])));
   const flashBoxD = __smNodes(rootD).find((n) => n.tag === "Box" && (n.modifiers || []).some((m) => m.tag === "Background" && m["0"] === "#40D32F2F"));
   __smA("红底 #40 通路", !!flashBoxD);
@@ -540,12 +540,12 @@ function __smA(name, cond, extra) {
 
   // ---------- t78：标签双层 / 代谢物不可口服 / 物质药对相互作用 / 短名清洗 ----------
   // 【1】药库全量 64 = 41 既有 + 23 新增（药/物质/代谢物）
-  __smA("t78 药库 64 条（41 + 23 扩展）", coadmin().length === 64, "got " + coadmin().length);
+  __smA("t78+t79r2 药库 68 条（41 + 23 + 4 逆转剂）", coadmin().length === 68, "got " + coadmin().length);
   // 【2】双层标签：每药 ≥1 神经递质系统标签 + ≥1 临床主要分类（碳酸锂为唯一无系统标签豁免，见其资料页说明）
   (function () {
     const sys = ["血清素能", "去甲肾上腺素能", "多巴胺能", "抗谷氨酸能", "胆碱能", "抗胆碱能", "抗食欲素能", "褪黑素能", "GABA能", "阿片能"];
     // 非精神科药（镇痛/抗生素/激素类等）无递质系统归属，属合理豁免；碳酸锂为唯一精神科例外
-    const exemptSys = ["碳酸锂", "咖啡因", "吸烟（烟草烟雾）", "普瑞巴林", "布洛芬", "塞来昔布", "对乙酰氨基酚", "环丙沙星", "克拉霉素", "利福平", "口服避孕药（炔雌醇/去氧孕烯）"];
+    const exemptSys = ["碳酸锂", "咖啡因", "吸烟（烟草烟雾）", "普瑞巴林", "布洛芬", "塞来昔布", "对乙酰氨基酚", "环丙沙星", "克拉霉素", "利福平", "口服避孕药（炔雌醇/去氧孕烯）", "纳洛酮", "氟马西尼", "毒扁豆碱", "赛庚啶"];
     const noSys = coadmin().filter((x) => exemptSys.indexOf(x.name) < 0).filter((d) => !sys.some((t) => d.tags.some((x) => x.indexOf(t) >= 0)));
     const noClass = coadmin().filter((d) => primaryClassOf(d) === "其他");
     __smA("t78 效应系统标签齐（精神科/精神活性物质全覆盖；非精神科豁免、碳酸锂唯一例外）", noSys.length === 0, "缺系统标签: " + noSys.map((d) => d.name).join(","));
@@ -561,7 +561,7 @@ function __smA(name, cond, extra) {
     const okMeta = metas.every((n) => { const x = ddrug(n); return x && x.admin === "仅代谢物" && x.description.indexOf("仅作资料") >= 0; });
     const pick = pickableDrugs(coadmin()).map((d) => d.name);
     __smA("t78 代谢物 admin=仅代谢物且资料页可看", okMeta, "");
-    __smA("t78 pickableDrugs 过滤代谢物（60 可选）", pick.length === 60 && metas.every((n) => pick.indexOf(n) < 0), "got " + pick.length);
+    __smA("t78+t79r2 pickableDrugs 过滤代谢物（64 可选，含逆转剂）", pick.length === 64 && metas.every((n) => pick.indexOf(n) < 0), "got " + pick.length);
     __smA("t78 口服药 admin=口服（舍曲林/普瑞巴林/奥氮平）",
       ddrug("舍曲林").admin === "口服" && ddrug("普瑞巴林").admin === "口服" && ddrug("奥氮平").admin === "口服");
   })();
@@ -611,6 +611,194 @@ function __smA(name, cond, extra) {
     const ts = effectTagsWithProfile(L(ddrug("乙醇"), L(ddrug("吗啡"), E)), E, loadProfile());
     return ts.length > 0 && ts[0].level === 3 && ts[0].pack === true;
   })(), "");
+
+
+  // 【t79】效应包详情：权重/三级分层/成员排序/来源/包存在即闪/教科书内容
+  __smA("t79 packTier 三级阈值（3-5 轻/6-8 中/>=9 重）", packTierOf(2) === 0 && packTierOf(3) === 1 && packTierOf(5) === 1 && packTierOf(6) === 2 && packTierOf(8) === 2 && packTierOf(9) === 3 && packTierName(1) === "轻度" && packTierName(2) === "中度" && packTierName(3) === "重度", "");
+  __smA("t79 抗胆碱能综合征（苯海索单药 → 权重5 轻度，成员排序+来源）", (function () {
+    const L = core_collection__cons, E = core_collection__emptyList();
+    const info = antiCholinergicPack(L(ddrug("苯海索"), E), L(2.0, E), Profile(E, 0, "未填"));
+    const ms = info.members;
+    return info.weight === 5 && info.tier === 1 && info.isAcute === true
+      && ms[0].name === "口干" && ms[0].weight === 2 && ms[0].srcs.indexOf("苯海索 +2") >= 0
+      && ms[1].name === "视物模糊" && ms[2].name === "谵妄"
+      && ms[ms.length - 1].weight === 0
+      && info.desc.indexOf("anticholinergic toxidrome") >= 0;
+  })(), "");
+  __smA("t79 画像加权（痴呆+65+ → 权重9 重度，ACB 画像行）", (function () {
+    const L = core_collection__cons, E = core_collection__emptyList();
+    const info = antiCholinergicPack(L(ddrug("苯海索"), E), L(2.0, E), Profile(L("痴呆", E), 70, "男"));
+    const row = info.members.find((m) => m.name.indexOf("画像加权") >= 0);
+    return info.weight === 9 && info.tier === 3 && !!row && row.weight === 4 && row.srcs.indexOf("痴呆") >= 0 && row.srcs.indexOf("年龄>=65") >= 0;
+  })(), "");
+  __smA("t79 阿片类中毒包（吗啡+地西泮 → >=9 重度，三联成员排序）", (function () {
+    const L = core_collection__cons, E = core_collection__emptyList();
+    const info = opioidToxPack(L(ddrug("吗啡"), L(ddrug("地西泮"), E)), L(10.0, L(5.0, E)), Profile(E, 0, "未填"));
+    const ms = info.members;
+    return info.weight >= 9 && info.tier === 3 && ms[0].name === "意识抑制" && ms[1].name === "呼吸抑制"
+      && ms[0].srcs.indexOf("吗啡 +3") >= 0 && ms[0].srcs.indexOf("地西泮 +3") >= 0
+      && info.desc.indexOf("三联") >= 0 && info.desc.indexOf("纳洛酮") >= 0;
+  })(), "");
+  __smA("t79 血清素综合征（两 SSRI → 联用行 + 轻度，Sternbach）", (function () {
+    const L = core_collection__cons, E = core_collection__emptyList();
+    const info = serotonergicPack(L(ddrug("舍曲林"), L(ddrug("氟西汀"), E)), L(50.0, L(20.0, E)), Profile(E, 0, "未填"));
+    const row = info.members.find((m) => m.name === "血清素能药物联用");
+    return info.weight >= 3 && info.tier === 1 && !!row && row.weight === 2 && row.srcs.indexOf("舍曲林") >= 0
+      && info.desc.indexOf("Sternbach") >= 0 && info.desc.indexOf("反射亢进") >= 0;
+  })(), "");
+  __smA("t79 包存在即 flash（packChipFlash 包恒 true；慢性包不闪；普通词条按 acute）", (function () {
+    const L = core_collection__cons, E = core_collection__emptyList();
+    const P = Profile(E, 0, "未填");
+    return packChipFlash({ name: "阿片类中毒", level: 3, acute: false, pack: true }, L(ddrug("吗啡"), L(ddrug("地西泮"), E)), P) === true
+      && packChipFlash({ name: "代谢综合征（体重/血糖/血脂）", level: 2, acute: false, pack: true }, L(ddrug("奥氮平"), E), P) === false
+      && packChipFlash({ name: "恶心", level: 2, acute: false, pack: false }, E, P) === false
+      && packChipFlash({ name: "恶心", level: 2, acute: true, pack: false }, E, P) === true;
+  })(), "");
+  __smA("t79 包 chip 文本加 tier 后缀（◆ 阿片类中毒 · 重度 / 苯海索 · 轻度）", (function () {
+    const L = core_collection__cons, E = core_collection__emptyList();
+    const P = Profile(E, 0, "未填");
+    const t = packChipText({ name: "阿片类中毒", level: 3, acute: true, pack: true }, L(ddrug("吗啡"), L(ddrug("地西泮"), E)), L(10.0, L(5.0, E)), P);
+    const t2 = packChipText({ name: "抗胆碱能综合征", level: 1, acute: true, pack: true }, L(ddrug("苯海索"), E), L(2.0, E), P);
+    const t3 = packChipText({ name: "恶心", level: 2, acute: false, pack: false }, E, E, P);
+    return t === "◆ 阿片类中毒 · 重度" && t2 === "◆ 抗胆碱能综合征 · 轻度" && t3 === "恶心";
+  })(), "");
+  __smA("t79 抗胆碱能综合征注入 effectTagsWithProfile（tier=level，无抗胆碱能药不注入）", (function () {
+    const L = core_collection__cons, E = core_collection__emptyList();
+    const withAc = effectTagsWithProfile(L(ddrug("苯海索"), E), E, Profile(E, 0, "未填"), E);
+    const p = withAc.find((t) => t.name === "抗胆碱能综合征");
+    const noAc = effectTagsWithProfile(L(ddrug("舍曲林"), E), E, Profile(E, 0, "未填"), E).find((t) => t.name === "抗胆碱能综合征");
+    return !!p && p.level === 1 && p.acute === true && p.pack === true && !noAc;
+  })(), "");
+  __smA("t79 通用包权重换算（level×3：3→9 重/2→6 中/1→3 轻；药对包说明按教科书）", (function () {
+    const L = core_collection__cons, E = core_collection__emptyList();
+    const n3 = "乙醇×阿片类：呼吸抑制协同（药效学，禁止配伍）";
+    const g3 = genericPackInfo(n3, 3, true);
+    const g2 = genericPackInfo("代谢综合征（体重/血糖/血脂）", 2, false);
+    return g3.weight === 9 && g3.tier === 3 && g3.isAcute === true
+      && g2.weight === 6 && g2.tier === 2 && g2.isAcute === false
+      && g3.desc.indexOf("μ 受体激动剂") >= 0 && g2.desc === ""
+      && packDescOf("未成年×抗抑郁药：自杀冲动升级（黑框警告）").indexOf("黑框警告") >= 0;
+  })(), "");
+
+  // 【t79 rev2】剂量量效 + 逆转剂 + 子效应内聚
+  __smA("t79r2 常用剂量表与量效加成（<1.5× +0 / <4× +1 / >=4× +2）", (function () {
+    return typDoseOf("吗啡") === 10.0 && typDoseOf("氟西汀") === 20.0 && doseBonusAt(10.0, 10.0) === 0
+      && doseBonusAt(14.0, 10.0) === 0 && doseBonusAt(15.0, 10.0) === 1 && doseBonusAt(40.0, 10.0) === 2 && doseBonusAt(0.0, 10.0) === 0;
+  })(), "");
+  __smA("t79r2 剂量提升权重（吗啡40mg+地西泮5mg：成员各带剂量加成）", (function () {
+    const L = core_collection__cons, E = core_collection__emptyList();
+    const info = opioidToxPack(L(ddrug("吗啡"), L(ddrug("地西泮"), E)), L(40.0, L(5.0, E)), Profile(E, 0, "未填"));
+    const ms = info.members;
+    return ms[0].srcs.indexOf("吗啡 +5") >= 0 && ms[1].srcs.indexOf("吗啡 +4") >= 0 && info.weight >= 12 && info.tier === 3;
+  })(), "");
+  __smA("t79r2 纳洛酮逆转（吗啡+地西泮+纳洛酮 → 权重-4，rev 行）", (function () {
+    const L = core_collection__cons, E = core_collection__emptyList();
+    const base = opioidToxPack(L(ddrug("吗啡"), L(ddrug("地西泮"), E)), L(10.0, L(5.0, E)), Profile(E, 0, "未填"));
+    const rev = opioidToxPack(L(ddrug("吗啡"), L(ddrug("地西泮"), L(ddrug("纳洛酮"), E))), L(10.0, L(5.0, L(0.4, E))), Profile(E, 0, "未填"));
+    return base.weight >= 9 && rev.weight === base.weight - 4 && rev.tier < base.tier && rev.rev.indexOf("纳洛酮") >= 0;
+  })(), "");
+  __smA("t79r2 氟马西尼（BZD 贡献归零：无 μ 协同行、无地西泮来源）", (function () {
+    const L = core_collection__cons, E = core_collection__emptyList();
+    const info = opioidToxPack(L(ddrug("吗啡"), L(ddrug("地西泮"), L(ddrug("氟马西尼"), E))), L(10.0, L(5.0, L(0.2, E))), Profile(E, 0, "未填"));
+    const combo = info.members.find((m) => m.name === "μ 受体药效学协同");
+    return !combo && info.members.every((m) => m.srcs.indexOf("地西泮") < 0) && info.rev.indexOf("氟马西尼") >= 0;
+  })(), "");
+  __smA("t79r2 毒扁豆碱/赛庚啶逆转（抗胆碱能-3 / 血清素-3）", (function () {
+    const L = core_collection__cons, E = core_collection__emptyList();
+    const ac = antiCholinergicPack(L(ddrug("苯海索"), L(ddrug("毒扁豆碱"), E)), L(2.0, L(1.0, E)), Profile(E, 0, "未填"));
+    const seBase = serotonergicPack(L(ddrug("舍曲林"), L(ddrug("氟西汀"), E)), L(50.0, L(20.0, E)), Profile(E, 0, "未填"));
+    const se = serotonergicPack(L(ddrug("舍曲林"), L(ddrug("氟西汀"), L(ddrug("赛庚啶"), E))), L(50.0, L(20.0, L(4.0, E))), Profile(E, 0, "未填"));
+    return ac.weight === 2 && ac.rev.indexOf("毒扁豆碱") >= 0 && seBase.weight >= 3 && se.weight === seBase.weight - 3 && se.rev.indexOf("赛庚啶") >= 0;
+  })(), "");
+  __smA("t79r2 子效应内聚（包显示时成员只随包；无成员权重不显示包）", (function () {
+    const L = core_collection__cons, E = core_collection__emptyList();
+    const ts = effectTagsWithProfile(L(ddrug("苯海索"), E), E, Profile(E, 0, "未填"), L(2.0, E));
+    const packTag = ts.find((t) => t.name === "抗胆碱能综合征");
+    const loose = ts.some((t) => t.name === "视物模糊" || t.name === "谵妄");
+    const noMemberPack = packDisplayed("血清素综合征", L(ddrug("苯海索"), E), L(2.0, E), Profile(E, 0, "未填"), 1);
+    return !!packTag && !loose && noMemberPack === false;
+  })(), "");
+  __smA("t79r2 包详情分派含剂量（packInfoOf 与分药同口径）", (function () {
+    const L = core_collection__cons, E = core_collection__emptyList();
+    const info = packInfoOf("阿片类中毒", L(ddrug("吗啡"), L(ddrug("地西泮"), E)), L(10.0, L(5.0, E)), Profile(E, 0, "未填"), 3, true);
+    return info.name === "阿片类中毒" && info.weight >= 9 && info.tier === 3 && info.rev === "";
+  })(), "");
+
+  
+  // 【t79 rev2】表单搜索 E2E
+  (function () {
+    const fbq = __smNodes(__smRoot()).find((n) => n.tag === "FloatingButton");
+    __smCall(fbq.onClick, "");
+    const qRoot = __smRoot();
+    const tfq = __smNodes(qRoot).find((n) => n.tag === "TextField" && n.placeholder === "搜索药名/关键字");
+    __smA("t79r2 表单搜索框（placeholder 搜索药名/关键字，default 键盘）", !!tfq && tfq.keyboard === "default", "");
+    __smCall(tfq, "onChange", "吗");
+    const qRoot2 = __smRoot();
+    const qRows = __smNodes(qRoot2).filter((n) => n.tag === "Box" && typeof n.onClick === "string" && (n.children || [])[0] && n.children[0].tag === "Box" && n.children[0].children[0] && n.children[0].children[0].text);
+    __smA("t79r2 搜索过滤（吗 → 仅吗啡一行）", qRows.length === 1 && qRows[0].children[0].children[0].text === "吗啡", "got " + qRows.map((b) => b.children[0].children[0].text).join(","));
+    const tfq2 = __smNodes(__smRoot()).find((n) => n.tag === "TextField" && n.placeholder === "搜索药名/关键字");
+    __smCall(tfq2, "onChange", "zz");
+    __smA("t79r2 搜索无匹配占位行（无匹配药物）", __smHasText(__smRoot(), "无匹配药物"), "");
+    const tfq3 = __smNodes(__smRoot()).find((n) => n.tag === "TextField" && n.placeholder === "搜索药名/关键字");
+    __smCall(tfq3, "onChange", "");
+    const qRoot4 = __smRoot();
+    const qRows4 = __smNodes(qRoot4).filter((n) => n.tag === "Box" && typeof n.onClick === "string" && (n.children || [])[0] && n.children[0].tag === "Box" && n.children[0].children[0] && n.children[0].children[0].text);
+    __smA("t79r2 清空搜索恢复全量（64 行）", qRows4.length === 64, "got " + qRows4.length);
+    const cb = __smFindButton(qRoot4, "取消");
+    __smCall(cb, "onClick", "");
+  })();
+
+  // 【t80】点记录卡 → 图中该药曲线高亮：再点取消、点他卡切换；ⓘ 开资料页不动高亮
+  (function () {
+    function chartOf(r) { return __smNodes(r).find((n) => n.tag === "Chart"); }
+    function hiFlags(r) { return chartOf(r).series.map((s) => !!s.hi); }
+    function cardsOf(r) { return __smNodes(r).filter((n) => n.tag === "Card"); }
+    function cardName(c) { return c.children[0].children[0].children[2].text; }
+    // 补一剂氟伏沙明：与既有记录构成两条序列 + 两张记录卡
+    const fb80 = __smNodes(__smRoot()).find((n) => n.tag === "FloatingButton");
+    __smCall(fb80, "onClick");
+    const rowF = __smNodes(__smRoot()).filter((n) => n.tag === "Box" && typeof n.onClick === "string" && (n.children || [])[0] && n.children[0].tag === "Box" && n.children[0].children[0] && n.children[0].children[0].text === "氟伏沙明");
+    __smCall(rowF[0], "onClick");
+    __smCall(__smNodes(__smRoot()).find((n) => n.tag === "TextField" && n.placeholder === "剂量 (mg)"), "onChange", "10");
+    __smCall(__smFindButton(__smRoot(), "确认"), "onClick");
+    const r0 = __smRoot();
+    const cards0 = cardsOf(r0);
+    __smA("t80 两张记录卡", cards0.length === 2, "got " + cards0.length);
+    const chart0 = chartOf(r0);
+    __smA("t80 两条分量序列（含新提交的氟伏沙明）", chart0.series.length === 2 && chart0.series.some((s) => s.label === "氟伏沙明"), "got " + JSON.stringify(chart0.series.map((s) => s.label)));
+    __smA("t80 序列带 hi 布尔标记", chart0.series.every((s) => s.hi === false), "got " + JSON.stringify(hiFlags(r0)));
+    __smA("t80 初始无高亮", hiFlags(r0).every((f) => f === false) && (__smStore["sm_charthi"] === undefined || __smStore["sm_charthi"] === ""), "got " + JSON.stringify(hiFlags(r0)) + " " + __smStore["sm_charthi"]);
+    const n0 = cardName(cards0[0]), n1 = cardName(cards0[1]);
+    // 点卡 0 → 该药曲线 hi=true，另一条 false
+    __smCall(cards0[0], "onClick");
+    const r1 = __smRoot();
+    const f1 = hiFlags(r1);
+    __smA("t80 点卡 → 该药 series hi=true（其余 false）", f1[0] === true && f1[1] === false, "got " + JSON.stringify(f1) + " names=" + n0 + "/" + n1);
+    __smA("t80 点卡 → storage sm_charthi", __smStore["sm_charthi"] === n0, "got " + __smStore["sm_charthi"]);
+    __smA("t80 选中卡底色 primaryContainer / 未选中 surfaceVariant", cardsOf(r1)[0].backgroundColor === "primaryContainer" && cardsOf(r1)[1].backgroundColor === "surfaceVariant", "got " + cardsOf(r1)[0].backgroundColor + "/" + cardsOf(r1)[1].backgroundColor);
+    // 再点同一卡 → 取消
+    __smCall(cardsOf(r1)[0], "onClick");
+    const r2 = __smRoot();
+    __smA("t80 再点同卡取消高亮", JSON.stringify(hiFlags(r2)) === "[false,false]" && (__smStore["sm_charthi"] === undefined || __smStore["sm_charthi"] === ""), "got " + JSON.stringify(hiFlags(r2)) + " " + __smStore["sm_charthi"]);
+    // 点另一张卡 → 切换
+    __smCall(cardsOf(r2)[1], "onClick");
+    const r3 = __smRoot();
+    __smA("t80 点他卡切换高亮", JSON.stringify(hiFlags(r3)) === "[false,true]", "got " + JSON.stringify(hiFlags(r3)));
+    __smA("t80 切换后卡底色对调", cardsOf(r3)[1].backgroundColor === "primaryContainer" && cardsOf(r3)[0].backgroundColor === "surfaceVariant", "got " + cardsOf(r3)[1].backgroundColor + "/" + cardsOf(r3)[0].backgroundColor);
+    // ⓘ 开资料页，且不改高亮
+    const cardFlu = cardsOf(r3).find((c) => cardName(c) === "氟伏沙明");
+    const infoBox = __smNodes(cardFlu).find((n) => n.tag === "Box" && Array.isArray(n.children) && n.children.some((c) => c.tag === "Text" && c.text === "ⓘ"));
+    __smA("t80 卡内有 ⓘ 资料页入口", !!infoBox, "");
+    __smCall(infoBox, "onClick");
+    const r4 = __smRoot();
+    const docSheet = __smNodes(r4).filter((n) => n.tag === "BottomSheet" && n.visible === true);
+    __smA("t80 ⓘ 开资料页（BottomSheet visible）", docSheet.length === 1, "got " + docSheet.length);
+    __smA("t80 资料页为该药（ⓘ 独立于点卡）", docSheet.length === 1 && __smNodes(docSheet[0]).some((n) => n.tag === "Text" && n.text === "氟伏沙明") && __smNodes(docSheet[0]).some((n) => n.tag === "Text" && n.text === "过量（危险剂量）"), "got " + JSON.stringify(docSheet.map((s) => __smNodes(s).filter((n) => n.tag === "Text").map((n) => n.text).slice(0, 3))));
+    __smA("t80 资料页开时高亮不变（仍为切换后的卡）", JSON.stringify(hiFlags(r4)) === "[false,true]", "got " + JSON.stringify(hiFlags(r4)));
+    __smCall(__smNodes(r4).find((n) => n.tag === "BottomSheet" && n.visible === true), "onDismiss");
+    const r5 = __smRoot();
+    __smA("t80 关资料页后高亮保留（session 态）", JSON.stringify(hiFlags(r5)) === "[false,true]", "got " + JSON.stringify(hiFlags(r5)));
+  })();
 
   __fs.writeFileSync("sm-result.txt", "PASSES=" + __smPass + " FAILS=" + __smFail + "\n" + __lines.join("\n"), "utf-8");
   process.exit(__smFail > 0 ? 1 : 0);

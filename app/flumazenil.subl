@@ -1,0 +1,24 @@
+// app/flumazenil.subl —— 逆转剂条目（t79 rev2）
+
+fun flumazenil(): Drug = Drug(
+    name = "氟马西尼",
+    category = "逆转剂",
+    tags = strList("逆转剂，GABA-A受体别构位点竞争性拮抗剂"),
+    description = "氟马西尼竞争性拮抗苯二氮卓识别位点（GABA-A 受体别构位点），逆转苯二氮卓类过度镇静与呼吸抑制。半衰期约 1 小时，短于多数苯二氮卓类，作用消退后镇静可复现，必要时重复给药。苯二氮卓依赖者使用可诱发戒断与癫痫。常用量 0.2 mg（静脉）。",
+    effects = ratedList("强效|GABA-A受体苯二氮卓位点竞争性拮抗"),
+    enzymes = strList("CYP3A4（少量）"),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "注射", form = "常释", halfLife = 1, tmax = "0.1h",
+        clearance = "一级", curve = "对数", bio = 1,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|逆转苯二氮卓类镇静与呼吸抑制"),
+    chronicTher = emptyList(),
+    acuteAdv = ratedList("常见|癫痫发作（BZD依赖者）;少见|焦虑"),
+    chronicAdv = emptyList(),
+    withdraw = emptyList(),
+    overdose = emptyList(),
+    admin = "口服"
+)

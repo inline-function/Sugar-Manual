@@ -1,0 +1,24 @@
+// app/physostigmine.subl —— 逆转剂条目（t79 rev2）
+
+fun physostigmine(): Drug = Drug(
+    name = "毒扁豆碱",
+    category = "逆转剂",
+    tags = strList("逆转剂，乙酰胆碱酯酶抑制剂"),
+    description = "毒扁豆碱为可逆性乙酰胆碱酯酶抑制剂（叔胺叔胺类，可透过血脑屏障），用于重度抗胆碱能谵妄的逆转诊断与治疗。可致胆碱能副反应（唾液分泌、出汗、心动过缓、肠绞痛），哮喘、心脏病、肠梗阻患者慎用。常用量 1 mg（缓慢静脉）。",
+    effects = ratedList("强效|乙酰胆碱酯酶可逆性抑制"),
+    enzymes = strList("血浆胆碱酯酶（降解）"),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "注射", form = "常释", halfLife = 1, tmax = "0.2h",
+        clearance = "一级", curve = "对数", bio = 1,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|逆转抗胆碱能谵妄"),
+    chronicTher = emptyList(),
+    acuteAdv = ratedList("常见|唾液分泌增多;常见|出汗;少见|心动过缓"),
+    chronicAdv = emptyList(),
+    withdraw = emptyList(),
+    overdose = ratedList(">4mg|胆碱能危象（肌无力、抽搐）"),
+    admin = "口服"
+)

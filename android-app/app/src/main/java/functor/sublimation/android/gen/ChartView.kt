@@ -60,6 +60,7 @@ data class SublSeries(
     val label: String,
     val color: Color,
     val points: List<Float>,
+    val hi: Boolean = false,      // t80：点记录卡选中该药曲线 → hi=true（其余变淡，粗线置顶）
 )
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -109,7 +110,7 @@ fun Subl_ConcentrationChart(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
-                    for (s in series) Subl_LegendItem(s.label, s.color)
+                    for (s in series) Subl_LegendItem(s.label, s.color, s.hi)
                 }
                 if (badge.isNotEmpty()) {
                     Text(
@@ -231,10 +232,18 @@ fun Subl_ConcentrationChart(
                 }
             }
 
-            // 各药分量线（药物颜色，半透明；仅绘制视口内采样段）
-            for (s in series) {
+            // 各药分量线（仅绘制视口内采样段）。t80 选中态：非高亮线变淡收窄（alpha 0.15 / 1.5dp），
+            // 高亮线置顶重绘（原色 alpha 0.95 / 4dp），形成「其他药曲线变淡、该药抬亮」的视觉层次。
+            val dim = ArrayList<SublSeries>()
+            val lit = ArrayList<SublSeries>()
+            for (s in series) (if (s.hi) lit else dim).add(s)
+            for (s in dim) {
                 val path = subPath(s.points, startHour, stepHour, viewStart, viewEnd, { h -> hourToX(h) }, { c -> concY(c) })
-                if (path != null) drawPath(path, s.color.copy(alpha = 0.6f), style = Stroke(width = 2.dp.toPx()))
+                if (path != null) drawPath(path, s.color.copy(alpha = 0.15f), style = Stroke(width = 1.5.dp.toPx()))
+            }
+            for (s in lit) {
+                val path = subPath(s.points, startHour, stepHour, viewStart, viewEnd, { h -> hourToX(h) }, { c -> concY(c) })
+                if (path != null) drawPath(path, s.color.copy(alpha = 0.95f), style = Stroke(width = 4.dp.toPx()))
             }
             if (mainPoints.isNotEmpty()) {
                 val line = subPath(mainPoints, startHour, stepHour, viewStart, viewEnd, { h -> hourToX(h) }, { c -> concY(c) })
@@ -260,18 +269,19 @@ fun Subl_ConcentrationChart(
     }
 }
 
-/** 图例项：色点 + 药名。 */
+/** 图例项：色点 + 药名（t80：非高亮序列变淡，高亮序列原色）。 */
 @Composable
-fun Subl_LegendItem(name: String, color: Color) {
+fun Subl_LegendItem(name: String, color: Color, hi: Boolean = false) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Spacer(
-            Modifier.size(9.dp).clip(CircleShape).background(color),
+            Modifier.size(9.dp).clip(CircleShape).background(color.copy(alpha = if (hi) 1f else 0.35f)),
         )
         Spacer(Modifier.width(4.dp))
         Text(
             text = name,
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (hi) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = if (hi) FontWeight.Bold else FontWeight.Normal,
         )
     }
 }

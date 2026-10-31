@@ -19,6 +19,7 @@ import androidx.compose.material3.MaterialTheme
 @Composable
 fun PickerRowsA() {
     androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+        if (functor.sublimation.android.DshComposeHost.boolArg("pickRowVisible", 0)) {
         androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("pickDrugAt", listOf(0)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
             androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1.0f)) {
                 androidx.compose.material3.Text(text = "氟伏沙明", modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
@@ -33,6 +34,8 @@ fun PickerRowsA() {
             }
             }
         }
+        }
+        if (functor.sublimation.android.DshComposeHost.boolArg("pickRowVisible", 1)) {
         androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("pickDrugAt", listOf(1)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
             androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1.0f)) {
                 androidx.compose.material3.Text(text = "帕罗西汀", modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
@@ -47,6 +50,8 @@ fun PickerRowsA() {
             }
             }
         }
+        }
+        if (functor.sublimation.android.DshComposeHost.boolArg("pickRowVisible", 2)) {
         androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("pickDrugAt", listOf(2)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
             androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1.0f)) {
                 androidx.compose.material3.Text(text = "氟西汀", modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
@@ -61,6 +66,8 @@ fun PickerRowsA() {
             }
             }
         }
+        }
+        if (functor.sublimation.android.DshComposeHost.boolArg("pickRowVisible", 3)) {
         androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("pickDrugAt", listOf(3)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
             androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1.0f)) {
                 androidx.compose.material3.Text(text = "舍曲林", modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
@@ -75,6 +82,8 @@ fun PickerRowsA() {
             }
             }
         }
+        }
+        if (functor.sublimation.android.DshComposeHost.boolArg("pickRowVisible", 4)) {
         androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("pickDrugAt", listOf(4)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
             androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1.0f)) {
                 androidx.compose.material3.Text(text = "西酞普兰", modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
@@ -89,6 +98,8 @@ fun PickerRowsA() {
             }
             }
         }
+        }
+        if (functor.sublimation.android.DshComposeHost.boolArg("pickRowVisible", 5)) {
         androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("pickDrugAt", listOf(5)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
             androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1.0f)) {
                 androidx.compose.material3.Text(text = "艾司西酞普兰", modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
@@ -103,6 +114,8 @@ fun PickerRowsA() {
             }
             }
         }
+        }
+        if (functor.sublimation.android.DshComposeHost.boolArg("pickRowVisible", 6)) {
         androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("pickDrugAt", listOf(6)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
             androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1.0f)) {
                 androidx.compose.material3.Text(text = "地西泮", modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
@@ -117,6 +130,8 @@ fun PickerRowsA() {
             }
             }
         }
+        }
+        if (functor.sublimation.android.DshComposeHost.boolArg("pickRowVisible", 7)) {
         androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("pickDrugAt", listOf(7)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
             androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1.0f)) {
                 androidx.compose.material3.Text(text = "艾司唑仑", modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
@@ -131,6 +146,8 @@ fun PickerRowsA() {
             }
             }
         }
+        }
+        if (functor.sublimation.android.DshComposeHost.boolArg("pickRowVisible", 8)) {
         androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("pickDrugAt", listOf(8)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
             androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1.0f)) {
                 androidx.compose.material3.Text(text = "阿普唑仑", modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
@@ -145,6 +162,8 @@ fun PickerRowsA() {
             }
             }
         }
+        }
+        if (functor.sublimation.android.DshComposeHost.boolArg("pickRowVisible", 9)) {
         androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("pickDrugAt", listOf(9)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
             androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1.0f)) {
                 androidx.compose.material3.Text(text = "氯硝西泮", modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
@@ -159,6 +178,8 @@ fun PickerRowsA() {
             }
             }
         }
+        }
+        if (functor.sublimation.android.DshComposeHost.boolArg("pickRowVisible", 10)) {
         androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("pickDrugAt", listOf(10)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
             androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1.0f)) {
                 androidx.compose.material3.Text(text = "劳拉西泮", modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
@@ -173,6 +194,8 @@ fun PickerRowsA() {
             }
             }
         }
+        }
+        if (functor.sublimation.android.DshComposeHost.boolArg("pickRowVisible", 11)) {
         androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("pickDrugAt", listOf(11)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
             androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1.0f)) {
                 androidx.compose.material3.Text(text = "咪达唑仑", modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
@@ -187,6 +210,8 @@ fun PickerRowsA() {
             }
             }
         }
+        }
+        if (functor.sublimation.android.DshComposeHost.boolArg("pickRowVisible", 12)) {
         androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("pickDrugAt", listOf(12)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
             androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1.0f)) {
                 androidx.compose.material3.Text(text = "吗啡", modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
@@ -201,6 +226,8 @@ fun PickerRowsA() {
             }
             }
         }
+        }
+        if (functor.sublimation.android.DshComposeHost.boolArg("pickRowVisible", 13)) {
         androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("pickDrugAt", listOf(13)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
             androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1.0f)) {
                 androidx.compose.material3.Text(text = "羟考酮", modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
@@ -215,6 +242,8 @@ fun PickerRowsA() {
             }
             }
         }
+        }
+        if (functor.sublimation.android.DshComposeHost.boolArg("pickRowVisible", 14)) {
         androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("pickDrugAt", listOf(14)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
             androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1.0f)) {
                 androidx.compose.material3.Text(text = "芬太尼", modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
@@ -229,6 +258,8 @@ fun PickerRowsA() {
             }
             }
         }
+        }
+        if (functor.sublimation.android.DshComposeHost.boolArg("pickRowVisible", 15)) {
         androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("pickDrugAt", listOf(15)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
             androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1.0f)) {
                 androidx.compose.material3.Text(text = "可待因", modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
@@ -243,6 +274,8 @@ fun PickerRowsA() {
             }
             }
         }
+        }
+        if (functor.sublimation.android.DshComposeHost.boolArg("pickRowVisible", 16)) {
         androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("pickDrugAt", listOf(16)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
             androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1.0f)) {
                 androidx.compose.material3.Text(text = "曲马多", modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
@@ -257,6 +290,8 @@ fun PickerRowsA() {
             }
             }
         }
+        }
+        if (functor.sublimation.android.DshComposeHost.boolArg("pickRowVisible", 17)) {
         androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("pickDrugAt", listOf(17)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
             androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1.0f)) {
                 androidx.compose.material3.Text(text = "哌替啶", modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
@@ -271,6 +306,8 @@ fun PickerRowsA() {
             }
             }
         }
+        }
+        if (functor.sublimation.android.DshComposeHost.boolArg("pickRowVisible", 18)) {
         androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("pickDrugAt", listOf(18)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
             androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1.0f)) {
                 androidx.compose.material3.Text(text = "碳酸锂", modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
@@ -285,6 +322,8 @@ fun PickerRowsA() {
             }
             }
         }
+        }
+        if (functor.sublimation.android.DshComposeHost.boolArg("pickRowVisible", 19)) {
         androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("pickDrugAt", listOf(19)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
             androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1.0f)) {
                 androidx.compose.material3.Text(text = "丙戊酸", modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
@@ -298,6 +337,7 @@ fun PickerRowsA() {
                 androidx.compose.material3.Text(text = "✓", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
             }
             }
+        }
         }
     }
 }

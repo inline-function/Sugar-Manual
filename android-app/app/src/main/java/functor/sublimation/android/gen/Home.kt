@@ -261,11 +261,12 @@ fun Home() {
                     }
                 }
                 if (functor.sublimation.android.DshComposeHost.boolArg("isFormOpen")) {
-                androidx.compose.material3.ModalBottomSheet(onDismissRequest = { functor.sublimation.android.DshComposeHost.act("cancelForm") }, sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+                functor.sublimation.android.DshComposeHost.DshSheet(onDismiss = { functor.sublimation.android.DshComposeHost.act("cancelForm") }) {
                     androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp)) {
                         androidx.compose.material3.Text(text = "＋服用药物", modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 22.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
                         androidx.compose.material3.Text(text = "选择药物并填写剂量（mg）；代谢物条目仅资料页，不入选", modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
                         androidx.compose.material3.Text(text = "药物", modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.0.sp)
+                        androidx.compose.material3.TextField(value = functor.sublimation.android.DshComposeHost.strArg("pickQuery"), onValueChange = { v -> functor.sublimation.android.DshComposeHost.actText("setPickQuery", v) }, label = { androidx.compose.material3.Text(text = "搜索药物") }, singleLine = true)
                         androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().height(240.dp).verticalScroll(rememberScrollState())) {
                             androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
                                 PickerRowsA()
@@ -286,7 +287,7 @@ fun Home() {
                 }
                 }
                 if (functor.sublimation.android.DshComposeHost.boolArg("isSettingsOpen")) {
-                androidx.compose.material3.ModalBottomSheet(onDismissRequest = { functor.sublimation.android.DshComposeHost.act("closeSettings") }, sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+                functor.sublimation.android.DshComposeHost.DshSheet(onDismiss = { functor.sublimation.android.DshComposeHost.act("closeSettings") }) {
                     androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp)) {
                         androidx.compose.material3.Text(text = "设置 · 个人画像", modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 22.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
                         androidx.compose.material3.Text(text = "先天/已有疾病、年龄、性别 → 预警引擎对不良反应词条加权（加权词条进入下方效应词条流，不另起界面）。", modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
@@ -301,7 +302,7 @@ fun Home() {
                                 androidx.compose.foundation.layout.Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                                     androidx.compose.material3.Text(text = "性别", modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.0.sp)
                                     androidx.compose.foundation.layout.Row(modifier = Modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("setSex", listOf(0)) }.padding(horizontal = 10.dp, vertical = 5.dp)) {
-                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("sexName"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("sexName", 0), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
                                         if (functor.sublimation.android.DshComposeHost.boolArg("sexIs", 0)) {
                                         androidx.compose.foundation.layout.Column(modifier = Modifier.width(4.dp)) {
                                             androidx.compose.material3.Text(text = "✓", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 13.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
@@ -309,7 +310,7 @@ fun Home() {
                                         }
                                     }
                                     androidx.compose.foundation.layout.Row(modifier = Modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("setSex", listOf(1)) }.padding(horizontal = 10.dp, vertical = 5.dp)) {
-                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("sexName"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("sexName", 1), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
                                         if (functor.sublimation.android.DshComposeHost.boolArg("sexIs", 1)) {
                                         androidx.compose.foundation.layout.Column(modifier = Modifier.width(4.dp)) {
                                             androidx.compose.material3.Text(text = "✓", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 13.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
@@ -317,7 +318,7 @@ fun Home() {
                                         }
                                     }
                                     androidx.compose.foundation.layout.Row(modifier = Modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("setSex", listOf(2)) }.padding(horizontal = 10.dp, vertical = 5.dp)) {
-                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("sexName"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("sexName", 2), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
                                         if (functor.sublimation.android.DshComposeHost.boolArg("sexIs", 2)) {
                                         androidx.compose.foundation.layout.Column(modifier = Modifier.width(4.dp)) {
                                             androidx.compose.material3.Text(text = "✓", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 13.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
@@ -328,7 +329,7 @@ fun Home() {
                                 androidx.compose.material3.Text(text = "先天疾病", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 15.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
                                 androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("toggleProfCond", listOf(0)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
                                     androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1.0f)) {
-                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("profName"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.0.sp)
+                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("profName", 0), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.0.sp)
                                     }
                                     if (functor.sublimation.android.DshComposeHost.boolArg("profOn", 0)) {
                                     androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
@@ -339,7 +340,7 @@ fun Home() {
                                 androidx.compose.material3.Text(text = "已有疾病", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 15.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
                                 androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("toggleProfCond", listOf(1)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
                                     androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1.0f)) {
-                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("profName"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.0.sp)
+                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("profName", 1), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.0.sp)
                                     }
                                     if (functor.sublimation.android.DshComposeHost.boolArg("profOn", 1)) {
                                     androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
@@ -349,7 +350,7 @@ fun Home() {
                                 }
                                 androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("toggleProfCond", listOf(2)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
                                     androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1.0f)) {
-                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("profName"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.0.sp)
+                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("profName", 2), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.0.sp)
                                     }
                                     if (functor.sublimation.android.DshComposeHost.boolArg("profOn", 2)) {
                                     androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
@@ -359,7 +360,7 @@ fun Home() {
                                 }
                                 androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("toggleProfCond", listOf(3)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
                                     androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1.0f)) {
-                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("profName"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.0.sp)
+                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("profName", 3), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.0.sp)
                                     }
                                     if (functor.sublimation.android.DshComposeHost.boolArg("profOn", 3)) {
                                     androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
@@ -369,7 +370,7 @@ fun Home() {
                                 }
                                 androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("toggleProfCond", listOf(4)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
                                     androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1.0f)) {
-                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("profName"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.0.sp)
+                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("profName", 4), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.0.sp)
                                     }
                                     if (functor.sublimation.android.DshComposeHost.boolArg("profOn", 4)) {
                                     androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
@@ -379,7 +380,7 @@ fun Home() {
                                 }
                                 androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("toggleProfCond", listOf(5)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
                                     androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1.0f)) {
-                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("profName"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.0.sp)
+                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("profName", 5), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.0.sp)
                                     }
                                     if (functor.sublimation.android.DshComposeHost.boolArg("profOn", 5)) {
                                     androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
@@ -389,7 +390,7 @@ fun Home() {
                                 }
                                 androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("toggleProfCond", listOf(6)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
                                     androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1.0f)) {
-                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("profName"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.0.sp)
+                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("profName", 6), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.0.sp)
                                     }
                                     if (functor.sublimation.android.DshComposeHost.boolArg("profOn", 6)) {
                                     androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
@@ -399,7 +400,7 @@ fun Home() {
                                 }
                                 androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("toggleProfCond", listOf(7)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
                                     androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1.0f)) {
-                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("profName"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.0.sp)
+                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("profName", 7), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.0.sp)
                                     }
                                     if (functor.sublimation.android.DshComposeHost.boolArg("profOn", 7)) {
                                     androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
@@ -409,7 +410,7 @@ fun Home() {
                                 }
                                 androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("toggleProfCond", listOf(8)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
                                     androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1.0f)) {
-                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("profName"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.0.sp)
+                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("profName", 8), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.0.sp)
                                     }
                                     if (functor.sublimation.android.DshComposeHost.boolArg("profOn", 8)) {
                                     androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
@@ -419,7 +420,7 @@ fun Home() {
                                 }
                                 androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("toggleProfCond", listOf(9)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
                                     androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1.0f)) {
-                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("profName"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.0.sp)
+                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("profName", 9), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.0.sp)
                                     }
                                     if (functor.sublimation.android.DshComposeHost.boolArg("profOn", 9)) {
                                     androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
@@ -429,7 +430,7 @@ fun Home() {
                                 }
                                 androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("toggleProfCond", listOf(10)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
                                     androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1.0f)) {
-                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("profName"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.0.sp)
+                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("profName", 10), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.0.sp)
                                     }
                                     if (functor.sublimation.android.DshComposeHost.boolArg("profOn", 10)) {
                                     androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
@@ -439,7 +440,7 @@ fun Home() {
                                 }
                                 androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("toggleProfCond", listOf(11)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
                                     androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1.0f)) {
-                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("profName"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.0.sp)
+                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("profName", 11), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.0.sp)
                                     }
                                     if (functor.sublimation.android.DshComposeHost.boolArg("profOn", 11)) {
                                     androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
@@ -458,7 +459,7 @@ fun Home() {
                 }
                 }
                 if (functor.sublimation.android.DshComposeHost.boolArg("isListOpen")) {
-                androidx.compose.material3.ModalBottomSheet(onDismissRequest = { functor.sublimation.android.DshComposeHost.act("closeDrugList") }, sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+                functor.sublimation.android.DshComposeHost.DshSheet(onDismiss = { functor.sublimation.android.DshComposeHost.act("closeDrugList") }) {
                     androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp)) {
                         androidx.compose.material3.Text(text = "药库名单", modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 22.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
                         androidx.compose.material3.Text(text = "按主要分类分组（效应系统标签见资料页）。点击药名查看完整资料；代谢物条目仅资料页。", modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
@@ -474,13 +475,20 @@ fun Home() {
                 }
                 }
                 if (functor.sublimation.android.DshComposeHost.boolArg("isDocOpen")) {
-                androidx.compose.material3.ModalBottomSheet(onDismissRequest = { functor.sublimation.android.DshComposeHost.act("closeDoc") }, sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+                functor.sublimation.android.DshComposeHost.DshSheet(onDismiss = { functor.sublimation.android.DshComposeHost.act("closeDoc") }) {
                     androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp)) {
                         androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("docName"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 22.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
                         androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().height(480.dp).verticalScroll(rememberScrollState())) {
                             androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("docBody"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
                         }
                         androidx.compose.material3.Text(text = "资料来源：糖手册内置药物资料（与 .subl 同源；F≈ 为估算值）", modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.0.sp)
+                    }
+                }
+                }
+                if (functor.sublimation.android.DshComposeHost.boolArg("isPackOpen")) {
+                functor.sublimation.android.DshComposeHost.DshSheet(onDismiss = { functor.sublimation.android.DshComposeHost.act("closePackSheet") }) {
+                    androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp)) {
+                        functor.sublimation.android.DshComposeHost.Subl_PackSheet(modifier = Modifier)
                     }
                 }
                 }

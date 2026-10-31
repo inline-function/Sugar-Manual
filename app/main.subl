@@ -85,11 +85,18 @@ fun demoDoses(): List[Dose] = cons(Dose(100.0, 0), cons(Dose(100.0, 24), emptyLi
 // ---------- 示例联用集（引擎评估用） ----------
 
 @impure
-fun coadmin(): List[Drug] = append(loadDrugs(), cons(fluvoxamine(), cons(paroxetine(), cons(fluoxetine(), cons(sertraline(), cons(citalopram(), cons(escitalopram(), cons(diazepam(), cons(estazolam(), cons(alprazolam(), cons(clonazepam(), cons(lorazepam(), cons(midazolam(), cons(morphine(), cons(oxycodone(), cons(fentanyl(), cons(codeine(), cons(tramadol(), cons(pethidine(), cons(lithium(), cons(valproate(), cons(carbamazepine(), cons(lamotrigine(), cons(venlafaxine(), cons(duloxetine(), cons(amitriptyline(), cons(mirtazapine(), cons(bupropion(), cons(trazodone(), cons(clomipramine(), cons(methylphenidate(), cons(atomoxetine(), cons(donepezil(), cons(rivastigmine(), cons(galantamine(), cons(buspirone(), cons(suvorexant(), cons(lemborexant(), cons(ketamine(), cons(psilocybin(), cons(trihexyphenidyl(), cons(benztropine(), cons(pramipexole(), cons(amantadine(), cons(memantine(), cons(pregabalin(), cons(ramelteon(), cons(olanzapine(), cons(quetiapine(), cons(ibuprofen(), cons(celecoxib(), cons(paracetamol(), cons(caffeine(), cons(ethanol(), cons(arecoline(), cons(nicotine(), cons(tobaccoSmoke(), cons(ciprofloxacin(), cons(clarithromycin(), cons(rifampicin(), cons(oralContraceptive(), cons(norfluoxetine(), cons(desvenlafaxine(), cons(descitalopram(), cons(m6g(), emptyList())))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+fun coadmin(): List[Drug] = append(loadDrugs(), cons(fluvoxamine(), cons(paroxetine(), cons(fluoxetine(), cons(sertraline(), cons(citalopram(), cons(escitalopram(), cons(diazepam(), cons(estazolam(), cons(alprazolam(), cons(clonazepam(), cons(lorazepam(), cons(midazolam(), cons(morphine(), cons(oxycodone(), cons(fentanyl(), cons(codeine(), cons(tramadol(), cons(pethidine(), cons(lithium(), cons(valproate(), cons(carbamazepine(), cons(lamotrigine(), cons(venlafaxine(), cons(duloxetine(), cons(amitriptyline(), cons(mirtazapine(), cons(bupropion(), cons(trazodone(), cons(clomipramine(), cons(methylphenidate(), cons(atomoxetine(), cons(donepezil(), cons(rivastigmine(), cons(galantamine(), cons(buspirone(), cons(suvorexant(), cons(lemborexant(), cons(ketamine(), cons(psilocybin(), cons(trihexyphenidyl(), cons(benztropine(), cons(pramipexole(), cons(amantadine(), cons(memantine(), cons(pregabalin(), cons(ramelteon(), cons(olanzapine(), cons(quetiapine(), cons(ibuprofen(), cons(celecoxib(), cons(paracetamol(), cons(caffeine(), cons(ethanol(), cons(arecoline(), cons(nicotine(), cons(tobaccoSmoke(), cons(ciprofloxacin(), cons(clarithromycin(), cons(rifampicin(), cons(oralContraceptive(), cons(naloxone(), cons(flumazenil(), cons(physostigmine(), cons(cyproheptadine(), cons(norfluoxetine(), cons(desvenlafaxine(), cons(descitalopram(), cons(m6g(), emptyList())))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
 
 // 台账联用集（呼吸抑制风险引擎输入：以实际服药药名为准，非全库演示集）。
 @impure
 fun coadminOf(recs: List[DoseRec]): List[Drug] = coadminNames(recentDrugs(recs), coadmin())
+
+// 台账剂量：与 drugs 同序平行（最新一次给药 mg；未给药 0）。供 t79 rev2 剂量量效模型。
+fun lastDoseAt(n: Str, recs: List[DoseRec], t: Nat, v: Rat): Rat = when (recs) {
+    is Cons(r, rest) => if ((r.drug == n) && (r.time >= t)) lastDoseAt(n, rest, r.time, r.amount) else lastDoseAt(n, rest, t, v)
+    else => v
+}
+fun doseListOf(drugs: List[Drug], recs: List[DoseRec]): List[Rat] = map(drugs) { d => lastDoseAt(d.name, recs, 0, 0.0) }
 @impure
 fun coadminNames(names: List[Str], all: List[Drug]): List[Drug] = when (names) {
     Nil => emptyList()
@@ -145,6 +152,22 @@ fun setFormOpen(o: Bool): Null {
     return null
 }
 @impure
+fun pickQueryKey(): Str = "sm_pickq"
+@impure
+fun pickQuery(): Str = storageGet(pickQueryKey())
+fun pickFiltered(drugs: List[Drug], q: Str): List[Drug] = if (strTrim(q) == "") drugs else filter(drugs) { d => kwHitOf(d.name, q) }
+@impure
+fun setPickQuery(t: Str): Null {
+    unchecked var q: Str = strTrim(t)
+    if (storageGet(pickQueryKey()) != q) {
+        unchecked storagePut(pickQueryKey(), q)
+        unchecked refreshHome()
+    }
+    return null
+}
+@impure
+fun pickRowVisible(i: Nat): Bool = kwHitOf(drugAt(pickableDrugs(coadmin()), i), pickQuery())
+@impure
 fun setPickUnset(): Null {
     unchecked storagePut(pickKey(), "")
     return null
@@ -172,6 +195,18 @@ fun setDocName(n: Str): Null {
 @impure
 fun setListOpen(o: Bool): Null {
     unchecked storagePut(drugListKey(), if (o) "1" else "0")
+    return null
+}
+// t80 曲线高亮（点记录卡选中该药曲线；session 态——重渲染时跨帧保持，进程即逝，不要求持久化）。
+@impure
+fun chartHiKey(): Str = "sm_charthi"
+@impure
+fun chartHi(): Str = storageGet(chartHiKey())
+@impure
+fun toggleChartHi(n: Str): Null {
+    var cur: Str = chartHi()
+    unchecked storagePut(chartHiKey(), if (cur == n) "" else n)
+    unchecked refreshHome()
     return null
 }
 @impure
@@ -301,8 +336,8 @@ fun withdrawTagCells(ts: List[EffTag]): List[Any] = when (ts) {
     else => emptyList()
 }
 @composable
-fun withdrawTagCell(tg: EffTag): Any = Box(modifier = clip(12).background(tagBg(tg.level, tg.acute)).paddingHV(12, 5)) {
-    Text(text = concat(if (tg.pack) "◆ " else "", tg.name), color = tagFg(tg.level, tg.acute), size = 14, bold = true, flash = tg.acute)
+fun withdrawTagCell(tg: EffTag): Any = Box(modifier = clip(12).background(effCellBgLite(tg)).paddingHV(12, 5), onClick = { unchecked if (tg.pack) openPackDetail(tg.name, tg.level, tg.acute) else noOp() }) {
+    Text(text = effChipTextLite(tg), color = effCellFgLite(tg), size = 14, bold = true, flash = if (tg.pack) true else tg.acute)
 }
 // ---------- 服药记录（≈ DoseLogList：Card + 颜色竖条 + 四字段） ----------
 
@@ -374,19 +409,27 @@ fun doseEmpty(): Any = Box(modifier = fillWidth().paddingH(24).paddingV(12), con
 }
 
 // 一张记录卡（≈ DoseCard：Card 圆角 12 + elevation 0 + surfaceVariant 底，无阴影）。
-// 行内：4×20dp 药色竖条（width(4).height(20) 链）+ Spacer(10) + 药名 weight(1) + 右侧剂量。
+// 行内：4×20dp 药色竖条（width(4).height(20) 链）+ Spacer(10) + 药名 weight(1) + 右侧剂量 + ⓘ。
+// t80：点卡 = 高亮该药曲线（toggle，选中卡转 primaryContainer 底）；资料页入口移到 ⓘ，
+// 主交互与资料页互不干扰（同 JS/宿主两侧）。
 @composable
 @composable
-fun doseCard(c: MedCard): Any = Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = "surfaceVariant", onClick = { unchecked openDocFor(c.name) }) {
-    Box(modifier = fillWidth().paddingHV(16, 12)) {
-        Box(modifier = fillWidth(), orientation = "horizontal", contentAlignment = CenterStart()) {
-            Box(modifier = width(4).height(20).background(drugColor(c.name))) {}
-            Box(modifier = width(10)) {}
-            Text(text = c.name, modifier = weight(1.0), size = 16, bold = true, color = "onSurface")
-            Text(text = c.dose, size = 16, bold = true, color = "primary")
+fun doseCard(c: MedCard): Any {
+    unchecked var hiOn: Bool = (chartHi() == c.name)
+    return Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = if (hiOn) "primaryContainer" else "surfaceVariant", onClick = { unchecked toggleChartHi(c.name) }) {
+        Box(modifier = fillWidth().paddingHV(16, 12)) {
+            Box(modifier = fillWidth(), orientation = "horizontal", contentAlignment = CenterStart()) {
+                Box(modifier = width(4).height(20).background(drugColor(c.name))) {}
+                Box(modifier = width(10)) {}
+                Text(text = c.name, modifier = weight(1.0), size = 16, bold = true, color = "onSurface")
+                Text(text = c.dose, size = 16, bold = true, color = "primary")
+                Box(modifier = paddingH(4), onClick = { unchecked openDocFor(c.name) }) {
+                    Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                }
+            }
+            Box(modifier = height(4)) {}
+            Text(text = concat(concat("给药时间 ", c.time), concat(" · ", c.route)), color = "onSurfaceVariant", size = 12)
         }
-        Box(modifier = height(4)) {}
-        Text(text = concat(concat("给药时间 ", c.time), concat(" · ", c.route)), color = "onSurfaceVariant", size = 12)
     }
 }
 
@@ -437,11 +480,11 @@ fun bioOfName(n: Str, drugs: List[Drug]): Rat = when (drugs) {
 fun seriesOfDrug(n: Str, recs: List[DoseRec], drugs: List[Drug], nowMs: Nat): List[Rat] =
     seriesValues(dosesOfName(n, recs, nowMs), halfRatOf(n, drugs), absorbOfName(n, drugs), bioOfName(n, drugs), 0, windowHours(), stepHours())
 
-fun seriesOfNames(names: List[Str], recs: List[DoseRec], drugs: List[Drug], nowMs: Nat): List[Series] = when (names) {
+fun seriesOfNames(names: List[Str], recs: List[DoseRec], drugs: List[Drug], nowMs: Nat, hi: Str): List[Series] = when (names) {
     Nil => emptyList()
     is Cons(n, rest) => append(
-        cons(Series(label = n, color = drugColor(n), points = seriesOfDrug(n, recs, drugs, nowMs)), metaboSeriesOf(n, recs, drugs, nowMs)),
-        seriesOfNames(rest, recs, drugs, nowMs))
+        cons(Series(label = n, color = drugColor(n), points = seriesOfDrug(n, recs, drugs, nowMs), hi = (n == hi)), metaboSeriesOf(n, recs, drugs, nowMs)),
+        seriesOfNames(rest, recs, drugs, nowMs, hi))
     else => emptyList()
 }
 
@@ -473,11 +516,11 @@ fun metaColorOf(n: Str): Str = if (n == "去甲氟西汀") "#4FC3F7"
     else "#607D8B"
 
 // 图表全部序列（逐药分量线）。空台账 → 氟伏沙明演示序列（home 首启不空图）。
-fun chartSeriesList(recs: List[DoseRec], drugs: List[Drug], nowMs: Nat): List[Series] =
+fun chartSeriesList(recs: List[DoseRec], drugs: List[Drug], nowMs: Nat, hi: Str = ""): List[Series] =
     if (size(recentDrugs(recs)) == 0) {
-        cons(Series(label = "氟伏沙明", color = "#FFC107", points = seriesValues(demoDoses(), halfRatOf("氟伏沙明", drugs), absorbOfName("氟伏沙明", drugs), bioRat(fluvoxamine().pk), 0, windowHours(), stepHours())), emptyList())
+        cons(Series(label = "氟伏沙明", color = "#FFC107", points = seriesValues(demoDoses(), halfRatOf("氟伏沙明", drugs), absorbOfName("氟伏沙明", drugs), bioRat(fluvoxamine().pk), 0, windowHours(), stepHours()), hi = ("氟伏沙明" == hi)), emptyList())
     } else {
-        seriesOfNames(recentDrugs(recs), recs, drugs, nowMs)
+        seriesOfNames(recentDrugs(recs), recs, drugs, nowMs, hi)
     }
 
 // 总浓度主线 = 逐药分量逐点求和（参考 PkEngine.concentrationAt 的跨药叠加：
@@ -524,6 +567,7 @@ fun toggleForm(): Null {
         unchecked setFormOpen(false)
     } else {
         unchecked setFormOpen(true)
+        unchecked setPickQuery("")
         unchecked setPickUnset()
         unchecked setDose("")
         unchecked setDoseErr("")
@@ -543,6 +587,7 @@ fun pickDrugAt(k: Nat): Null {
 @impure
 fun cancelForm(): Null {
     unchecked setFormOpen(false)
+    unchecked setPickQuery("")
     unchecked setPickUnset()
     unchecked setDose("")
     unchecked setDoseErr("")
@@ -578,7 +623,7 @@ fun commitDose(): Null {
                     } else {
                         unchecked var recs: List[DoseRec] = loadLedger()
                         unchecked var nowMs: Nat = timeNow()
-                        unchecked var drugs: List[Drug] = pickableDrugs(coadmin())
+                        unchecked var drugs: List[Drug] = pickFiltered(pickableDrugs(coadmin()), pickQuery())
                         unchecked var idx: Nat = curPick()
                         var drug: Str = drugAt(drugs, idx)
                         var nr: List[DoseRec] = cons(DoseRec(drug, amt, nowMs), recs)
@@ -610,7 +655,7 @@ fun drugAt(drugs: List[Drug], n: Nat): Str = when (elementAt(drugs, n)) {
 
 // 表单面板（≈ ModalBottomSheet：BottomSheet 视图，visible 数据字段驱显隐）。
 @composable
-fun formPanel(open: Bool, drugs: List[Drug], idx: Nat, sel: Bool, dt: Str, de: Str): BottomSheet = BottomSheet(visible = open, onDismiss = { unchecked cancelForm() }) {
+fun formPanel(open: Bool, drugs: List[Drug], idx: Nat, sel: Bool, dt: Str, de: Str, q: Str): BottomSheet = BottomSheet(visible = open, onDismiss = { unchecked cancelForm() }) {
     Box(modifier = fillWidth().padding4(24, 0, 24, 24)) {
         Text(text = "＋服用药物", size = 22, bold = true)
         Box(modifier = height(4)) {}
@@ -618,8 +663,11 @@ fun formPanel(open: Bool, drugs: List[Drug], idx: Nat, sel: Bool, dt: Str, de: S
         Box(modifier = height(12)) {}
         Text(text = "药物", color = "onSurfaceVariant", size = 14)
         Box(modifier = height(6)) {}
+        TextField(placeholder = "搜索药名/关键字", label = "搜索药物", text = q, keyboard = "default",
+            onChange = { t => unchecked setPickQuery(t) })
+        Box(modifier = height(6)) {}
         // 参考的药物列表高 168dp、条间距 6dp：height(168) + spacing，行平铺经 children。
-        Box(modifier = fillWidth().height(168), scrollable = true, spacing = 6, children = drugRowsFrom(pickableDrugs(drugs), 0, idx, sel))
+        Box(modifier = fillWidth().height(168), scrollable = true, spacing = 6, children = pickRowsOrFiltered(pickableDrugs(drugs), q, idx, sel))
         Box(modifier = height(12)) {}
         TextField(placeholder = "剂量 (mg)", label = "剂量 (mg)", text = dt, keyboard = "number", errText = de,
             onChange = { t => unchecked setDose(t) })
@@ -634,6 +682,14 @@ fun formPanel(open: Bool, drugs: List[Drug], idx: Nat, sel: Bool, dt: Str, de: S
 
 // 药物选择行（≈ Surface(onClick)：整行可点的圆角 12 条，选中 primaryContainer 底 + ✓）。
 // 递归生成 → 每行 onClick 经 __dshCb 独立实例键（旧协议串点击 bug 的回归点）。
+// 表单列表：按搜索关键字过滤；无匹配时给占位行（索引与确认提交同口径）。
+fun pickRowsOrFiltered(drugs: List[Drug], q: Str, idx: Nat, sel: Bool): List[Any] =
+    if (size(pickFiltered(drugs, q)) == 0) cons(pickNoMatchRow(), emptyList()) else drugRowsFrom(pickFiltered(drugs, q), 0, idx, sel)
+@composable
+fun pickNoMatchRow(): Any = Box(modifier = fillWidth().paddingHV(12, 10)) {
+    Text(text = "无匹配药物", color = "onSurfaceVariant", size = 14)
+}
+
 @composable
 fun drugRowsFrom(drugs: List[Drug], k: Nat, idx: Nat, sel: Bool): List[Any] = when (drugs) {
     Nil => emptyList()
@@ -1001,38 +1057,118 @@ fun contentHeightDp(sh: Nat, dpi: Nat): Nat = toDp(sh, dpi) - 64
 fun chartHeightDp(sh: Nat, dpi: Nat): Nat = (contentHeightDp(sh, dpi) * 45) / 100
 fun lowerHeightDp(sh: Nat, dpi: Nat): Nat = contentHeightDp(sh, dpi) - chartHeightDp(sh, dpi)
 
-// 画像加权词条流复用戒断流同款 EffTag 单元格（不另起 UI；画像空 → 不渲染）。
+// ---------- t79 效应词条总流（联用效应 + 画像 + 物质交互 + ◆ 综合征包） ----------
+//
+// 首页预警区统一词条流：与宿主 DshComposeHost.effectTags() 同表同规则。
+// ◆ 包 chip 加「 · 轻度/中度/重度」后缀、按 tier 着色（黄/橙/红）、可点击展开
+// 权重详情 BottomSheet（当前权重、画像加权、包内效应按权重排序+来源）；
+// 包存在即 flash（急性属性），普通词条急性判断不变。
+fun noOp(): Null {
+    return null
+}
+
+@impure
+fun packOpen(): Str {
+    return storageGet("sm_pack")
+}
+@impure
+fun closePackSheet(): Null {
+    unchecked setPackOpen("")
+    unchecked refreshHome()
+    return null
+}
+
+@impure
+fun isPackOpen(): Bool = storageGet("sm_pack") != ""
+@impure
+fun packTitle(): Str = packNameOf(packOpen())
+
+@impure
+fun setPackOpen(v: Str): Null {
+    unchecked storagePut("sm_pack", v)
+    return null
+}
+@impure
+fun closePackDetail(): Null {
+    unchecked setPackOpen("")
+    unchecked refreshHome()
+    return null
+}
+@impure
+fun openPackDetail(n: Str, lv: Nat, ac: Bool): Null {
+    unchecked setPackOpen(concat(n, concat("|", concat(toStr(lv), concat("|", if (ac) "1" else "0")))))
+    unchecked refreshHome()
+    return null
+}
+
+// tier 配色（轻度黄/中度橙/重度红；fg 白字于中重度）。
+fun packCellBg(t: Nat): Str = if (t == 3) "#F5D32F2F" else if (t == 2) "#F5FF9800" else if (t == 1) "#F5FFEE58" else "#F5ECEFF1"
+fun packCellFg(t: Nat): Str = if (t >= 2) "#FFFFFF" else "#4E342E"
+// 戒断流的包 chip（无 drugs 上下文）：权重按 level ×3 换算（与 genericPackInfo 同口径）。
+fun effCellBgLite(tg: EffTag): Str = if (tg.pack) packCellBg(packTierOf(tg.level * 3)) else tagBg(tg.level, tg.acute)
+fun effCellFgLite(tg: EffTag): Str = if (tg.pack) packCellFg(packTierOf(tg.level * 3)) else tagFg(tg.level, tg.acute)
+fun effChipTextLite(tg: EffTag): Str = if (tg.pack) concat(concat("◆ ", tg.name), concat(" · ", packTierName(packTierOf(tg.level * 3)))) else tg.name
+
 @composable
-fun profileStream(p: Profile, drugs: List[Drug]): Any = if (size(profileEffectTags(p, drugs)) == 0) {
+fun effTagCell(tg: EffTag, drugs: List[Drug], prof: Profile, doses: List[Rat]): Any = Box(modifier = clip(12).background(if (tg.pack) packCellBg(packChipTier(tg, drugs, doses, prof)) else tagBg(tg.level, tg.acute)).paddingHV(12, 5), onClick = { unchecked if (tg.pack) openPackDetail(tg.name, tg.level, tg.acute) else noOp() }) {
+    Text(text = packChipText(tg, drugs, doses, prof), color = if (tg.pack) packCellFg(packChipTier(tg, drugs, doses, prof)) else tagFg(tg.level, tg.acute), size = 14, bold = true, flash = packChipFlash(tg, drugs, prof))
+}
+@composable
+fun effectStream(drugs: List[Drug], prof: Profile, doses: List[Rat]): Any = if (size(effectTagsWithProfile(drugs, emptyList(), prof, doses)) == 0) {
     Box(modifier = fillWidth()) {}
 } else {
-    Box(modifier = fillWidth().paddingHV(24, 8), orientation = "vertical", spacing = 6, children = profileTagCells(profileEffectTags(p, drugs)))
+    Box(modifier = fillWidth().paddingHV(24, 8), orientation = "vertical", spacing = 6, children = effTagCells(effectTagsWithProfile(drugs, emptyList(), prof, doses), drugs, prof, doses))
 }
-fun profileTagCells(ts: List[EffTag]): List[Any] = when (ts) {
-    Nil => emptyList()
-    is Cons(tg, rest) => cons(profileTagCell(tg), profileTagCells(rest))
+fun effTagCells(ts: List[EffTag], drugs: List[Drug], prof: Profile, doses: List[Rat]): List[Any] = when (ts) {
+    is Cons(tg, rest) => cons(effTagCell(tg, drugs, prof, doses), effTagCells(rest, drugs, prof, doses))
+    else => emptyList()
+}
+
+// 包详情 BottomSheet（复用资料页抽屉通路）。
+@composable
+fun packSheetPage(v: Str, drugs: List[Drug], prof: Profile, doses: List[Rat]): BottomSheet = BottomSheet(visible = v != "", onDismiss = { unchecked closePackDetail() }) {
+    Box(modifier = fillWidth().padding4(24, 0, 24, 24)) {
+        if (v != "") {
+            packDetailBody(packDecode(v, drugs, prof, doses))
+        }
+    }
+}
+// 解码「name|level|acute」存储串 → PackInfo。
+fun strPartAt(xs: List[Str], k: Nat): Str = when (xs) {
+    is Cons(hh, rest) => if (k == 0) hh else strPartAt(rest, k - 1)
+    else => ""
+}
+fun packPartAt(v: Str, k: Nat): Str = strPartAt(strSplit(v, "|"), k)
+fun packNameOf(v: Str): Str = packPartAt(v, 0)
+fun packLvOf(v: Str): Nat = getOrElse(parseNat(packPartAt(v, 1)), 1)
+fun packAcOf(v: Str): Bool = if (packPartAt(v, 2) == "1") true else false
+fun packDecode(v: Str, drugs: List[Drug], prof: Profile, doses: List[Rat]): PackInfo = packInfoOf(packNameOf(v), drugs, doses, prof, packLvOf(v), packAcOf(v))
+
+@composable
+fun packDetailBody(info: PackInfo): Any = Box(modifier = fillWidth().height(520), scrollable = true, orientation = "vertical", spacing = 10) {
+    Text(text = concat(concat("◆ ", info.name), concat(" · ", packTierName(info.tier))), size = 18, bold = true, color = "primary")
+    Text(text = concat(concat("当前权重 ", toStr(info.weight)), concat("（含画像加权与剂量加成），分级 ", concat(packTierName(info.tier), if (info.isAcute) "，急性包 → 始终闪烁" else "，慢性包不闪烁"))), size = 14, bold = true, color = packCellFg(info.tier))
+    if (info.rev != "") Box(modifier = fillWidth()) {
+        Text(text = concat("逆转剂：", info.rev), size = 13, bold = true, color = "primary")
+    } else Box(modifier = height(0)) {}
+    Text(text = info.desc, size = 12, color = "onSurfaceVariant")
+    Text(text = "包内效应（按权重排序 · 来源）", size = 13, bold = true, color = "primary")
+    Box(modifier = fillWidth(), orientation = "vertical", spacing = 6, children = packMemberRows(info.members))
+}
+fun packMemberRows(ms: List[PackMember]): List[Any] = when (ms) {
+    is Cons(m, rest) => cons(packMemberRow(m), packMemberRows(rest))
     else => emptyList()
 }
 @composable
-fun profileTagCell(tg: EffTag): Any = Box(modifier = clip(12).background(tagBg(tg.level, tg.acute)).paddingHV(12, 5)) {
-    Text(text = concat(if (tg.pack) "◆ " else "", tg.name), color = tagFg(tg.level, tg.acute), size = 14, bold = true, flash = tg.acute)
+fun packMemberRow(m: PackMember): Any = Box(modifier = fillWidth().clip(12).background(packCellBg(packTierOf(m.weight))).paddingHV(12, 6)) {
+    Text(text = concat(m.name, concat(" · 权重 ", concat(toStr(m.weight), concat("　", if (m.srcs == "") "（当前无药贡献）" else m.srcs)))), size = 13, color = packCellFg(packTierOf(m.weight)))
 }
-
-// t78 物质/药对相互作用流（首页预警区小节，与画像流并列；空集占位）。
 @composable
-fun interactionStream(drugs: List[Drug]): Any = if (size(substanceInteractions(drugs)) == 0) {
-    Box(modifier = fillWidth()) {}
-} else {
-    Box(modifier = fillWidth().paddingHV(24, 8), orientation = "vertical", spacing = 6, children = profileTagCells(substanceInteractions(drugs)))
-}
-
-@composable
-fun lowerBox(rs: Alert, rows: List[MedCard], drugs: List[Drug], met: Alert, wds: List[Drug], drugsUsed: List[Drug], prof: Profile, sh: Nat, dpi: Nat): Box = Box(modifier = fillWidth().height(lowerHeightDp(sh, dpi)), scrollable = true) {
+fun lowerBox(rs: Alert, rows: List[MedCard], drugs: List[Drug], met: Alert, wds: List[Drug], drugsUsed: List[Drug], prof: Profile, doses: List[Rat], sh: Nat, dpi: Nat): Box = Box(modifier = fillWidth().height(lowerHeightDp(sh, dpi)), scrollable = true) {
     respStream(rs)
     metabStream(met)
     withdrawStream(wds)
-    profileStream(prof, drugsUsed)
-    interactionStream(drugsUsed)
+    effectStream(drugsUsed, prof, doses)
     recordTitle()
     // 记录卡平铺为直接子级（children=），空台账给「暂无服药记录」占位。
     Box(modifier = fillWidth(), children = recordList(rows))
@@ -1054,6 +1190,7 @@ fun content(): Box {
     unchecked @mut var nowMs: Nat = timeNow()
     unchecked var drugs: List[Drug] = coadmin()
     unchecked var drugsOf: List[Drug] = coadminOf(recs)
+    unchecked var doses: List[Rat] = doseListOf(drugsOf, recs)
     var rs: Alert = respAlert(drugsOf)
     var met: Alert = metabAlert(drugs)
     var wd: List[Drug] = crashedWithdrawn(drugsOf, recs, nowMs)
@@ -1061,15 +1198,19 @@ fun content(): Box {
     unchecked var ageTxt: Str = profileAgeText()
     unchecked var sh: Nat = screenHeight()
     unchecked var dpi: Nat = screenDensity()
-    var seriesXs: List[Series] = chartSeriesList(recs, drugs, nowMs)
+    unchecked var hiN: Str = chartHi()
+    var seriesXs: List[Series] = chartSeriesList(recs, drugs, nowMs, hiN)
     var total: List[Rat] = totalPoints(seriesXs)
     @mut var chart = Chart(kind = "line", points = total, series = seriesXs, labels = chartLabels(), color = "primary", legend = true, badge = "估算", modifier = fillWidth().height(chartHeightDp(sh, dpi)))
     unchecked var rows: List[MedCard] = medRowsOf(recs, drugs)
-    @mut var lower = lowerBox(rs, rows, drugs, met, wd, drugsOf, prof, sh, dpi)
-    @mut var sheet = formPanel(open, drugs, idx, sel, dt, de)
+    @mut var lower = lowerBox(rs, rows, drugs, met, wd, drugsOf, prof, doses, sh, dpi)
+    unchecked var pq: Str = pickQuery()
+    @mut var sheet = formPanel(open, drugs, idx, sel, dt, de, pq)
     @mut var setDlg = settingsSheet(setOp, prof, ageTxt)
     @mut var listSheet = drugListSheet(listOp, drugs)
     @mut var docSheet = docSheetPage(docN, drugs)
+    unchecked var packN: Str = packOpen()
+    @mut var packSheet = packSheetPage(packN, drugsOf, prof, doses)
     return Box(modifier = fillMaxSize()) {
         topBar()
         chart
@@ -1079,5 +1220,6 @@ fun content(): Box {
         setDlg
         listSheet
         docSheet
+        packSheet
     }
 }

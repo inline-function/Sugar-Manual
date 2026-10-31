@@ -42,130 +42,200 @@ struct Home {
             Box(modifier = fillWidth().padding4(24, 10, 24, 8)) {
                 Text(text = "EFFECTTAGS_HOST", size = 1)
             }
-            Box(modifier = fillWidth(), visible = hasRec(0)) {
-                Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = "surfaceVariant") {
+            // t80：点卡 = 高亮该药曲线（toggle；选中卡背景转 primaryContainer），ⓘ 开资料页。
+            Box(modifier = fillWidth(), visible = hasRec(0), onClick = { unchecked toggleChartHi(0) }) {
+                Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = cardBgOf(0)) {
                     Box(modifier = fillWidth().paddingHV(16, 12)) {
                         Box(modifier = fillWidth(), orientation = "horizontal") {
                             Box(modifier = width(10)) {}
                             Text(text = name0(), modifier = weight(1.0), size = 16, bold = true, color = "onSurface")
                             Text(text = dose0(), size = 16, bold = true, color = "primary")
+                            Box(modifier = paddingH(4), onClick = { unchecked openDocFor(0) }) {
+                                Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                            }
+                            Box(modifier = paddingH(8), visible = cardHiOf(0)) {
+                                Text(text = "● 高亮", size = 11, bold = true, color = "primary")
+                            }
                         }
                         Box(modifier = height(4)) {}
                         Text(text = time0(), color = "onSurfaceVariant", size = 12)
                     }
                 }
             }
-            Box(modifier = fillWidth(), visible = hasRec(1)) {
-                Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = "surfaceVariant") {
+            // t80：点卡 = 高亮该药曲线（toggle；选中卡背景转 primaryContainer），ⓘ 开资料页。
+            Box(modifier = fillWidth(), visible = hasRec(1), onClick = { unchecked toggleChartHi(1) }) {
+                Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = cardBgOf(1)) {
                     Box(modifier = fillWidth().paddingHV(16, 12)) {
                         Box(modifier = fillWidth(), orientation = "horizontal") {
                             Box(modifier = width(10)) {}
                             Text(text = name1(), modifier = weight(1.0), size = 16, bold = true, color = "onSurface")
                             Text(text = dose1(), size = 16, bold = true, color = "primary")
+                            Box(modifier = paddingH(4), onClick = { unchecked openDocFor(1) }) {
+                                Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                            }
+                            Box(modifier = paddingH(8), visible = cardHiOf(1)) {
+                                Text(text = "● 高亮", size = 11, bold = true, color = "primary")
+                            }
                         }
                         Box(modifier = height(4)) {}
                         Text(text = time1(), color = "onSurfaceVariant", size = 12)
                     }
                 }
             }
-            Box(modifier = fillWidth(), visible = hasRec(2)) {
-                Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = "surfaceVariant") {
+            // t80：点卡 = 高亮该药曲线（toggle；选中卡背景转 primaryContainer），ⓘ 开资料页。
+            Box(modifier = fillWidth(), visible = hasRec(2), onClick = { unchecked toggleChartHi(2) }) {
+                Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = cardBgOf(2)) {
                     Box(modifier = fillWidth().paddingHV(16, 12)) {
                         Box(modifier = fillWidth(), orientation = "horizontal") {
                             Box(modifier = width(10)) {}
                             Text(text = name2(), modifier = weight(1.0), size = 16, bold = true, color = "onSurface")
                             Text(text = dose2(), size = 16, bold = true, color = "primary")
+                            Box(modifier = paddingH(4), onClick = { unchecked openDocFor(2) }) {
+                                Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                            }
+                            Box(modifier = paddingH(8), visible = cardHiOf(2)) {
+                                Text(text = "● 高亮", size = 11, bold = true, color = "primary")
+                            }
                         }
                         Box(modifier = height(4)) {}
                         Text(text = time2(), color = "onSurfaceVariant", size = 12)
                     }
                 }
             }
-            Box(modifier = fillWidth(), visible = hasRec(3)) {
-                Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = "surfaceVariant") {
+            // t80：点卡 = 高亮该药曲线（toggle；选中卡背景转 primaryContainer），ⓘ 开资料页。
+            Box(modifier = fillWidth(), visible = hasRec(3), onClick = { unchecked toggleChartHi(3) }) {
+                Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = cardBgOf(3)) {
                     Box(modifier = fillWidth().paddingHV(16, 12)) {
                         Box(modifier = fillWidth(), orientation = "horizontal") {
                             Box(modifier = width(10)) {}
                             Text(text = name3(), modifier = weight(1.0), size = 16, bold = true, color = "onSurface")
                             Text(text = dose3(), size = 16, bold = true, color = "primary")
+                            Box(modifier = paddingH(4), onClick = { unchecked openDocFor(3) }) {
+                                Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                            }
+                            Box(modifier = paddingH(8), visible = cardHiOf(3)) {
+                                Text(text = "● 高亮", size = 11, bold = true, color = "primary")
+                            }
                         }
                         Box(modifier = height(4)) {}
                         Text(text = time3(), color = "onSurfaceVariant", size = 12)
                     }
                 }
             }
-            Box(modifier = fillWidth(), visible = hasRec(4)) {
-                Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = "surfaceVariant") {
+            // t80：点卡 = 高亮该药曲线（toggle；选中卡背景转 primaryContainer），ⓘ 开资料页。
+            Box(modifier = fillWidth(), visible = hasRec(4), onClick = { unchecked toggleChartHi(4) }) {
+                Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = cardBgOf(4)) {
                     Box(modifier = fillWidth().paddingHV(16, 12)) {
                         Box(modifier = fillWidth(), orientation = "horizontal") {
                             Box(modifier = width(10)) {}
                             Text(text = name4(), modifier = weight(1.0), size = 16, bold = true, color = "onSurface")
                             Text(text = dose4(), size = 16, bold = true, color = "primary")
+                            Box(modifier = paddingH(4), onClick = { unchecked openDocFor(4) }) {
+                                Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                            }
+                            Box(modifier = paddingH(8), visible = cardHiOf(4)) {
+                                Text(text = "● 高亮", size = 11, bold = true, color = "primary")
+                            }
                         }
                         Box(modifier = height(4)) {}
                         Text(text = time4(), color = "onSurfaceVariant", size = 12)
                     }
                 }
             }
-            Box(modifier = fillWidth(), visible = hasRec(5)) {
-                Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = "surfaceVariant") {
+            // t80：点卡 = 高亮该药曲线（toggle；选中卡背景转 primaryContainer），ⓘ 开资料页。
+            Box(modifier = fillWidth(), visible = hasRec(5), onClick = { unchecked toggleChartHi(5) }) {
+                Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = cardBgOf(5)) {
                     Box(modifier = fillWidth().paddingHV(16, 12)) {
                         Box(modifier = fillWidth(), orientation = "horizontal") {
                             Box(modifier = width(10)) {}
                             Text(text = name5(), modifier = weight(1.0), size = 16, bold = true, color = "onSurface")
                             Text(text = dose5(), size = 16, bold = true, color = "primary")
+                            Box(modifier = paddingH(4), onClick = { unchecked openDocFor(5) }) {
+                                Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                            }
+                            Box(modifier = paddingH(8), visible = cardHiOf(5)) {
+                                Text(text = "● 高亮", size = 11, bold = true, color = "primary")
+                            }
                         }
                         Box(modifier = height(4)) {}
                         Text(text = time5(), color = "onSurfaceVariant", size = 12)
                     }
                 }
             }
-            Box(modifier = fillWidth(), visible = hasRec(6)) {
-                Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = "surfaceVariant") {
+            // t80：点卡 = 高亮该药曲线（toggle；选中卡背景转 primaryContainer），ⓘ 开资料页。
+            Box(modifier = fillWidth(), visible = hasRec(6), onClick = { unchecked toggleChartHi(6) }) {
+                Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = cardBgOf(6)) {
                     Box(modifier = fillWidth().paddingHV(16, 12)) {
                         Box(modifier = fillWidth(), orientation = "horizontal") {
                             Box(modifier = width(10)) {}
                             Text(text = name6(), modifier = weight(1.0), size = 16, bold = true, color = "onSurface")
                             Text(text = dose6(), size = 16, bold = true, color = "primary")
+                            Box(modifier = paddingH(4), onClick = { unchecked openDocFor(6) }) {
+                                Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                            }
+                            Box(modifier = paddingH(8), visible = cardHiOf(6)) {
+                                Text(text = "● 高亮", size = 11, bold = true, color = "primary")
+                            }
                         }
                         Box(modifier = height(4)) {}
                         Text(text = time6(), color = "onSurfaceVariant", size = 12)
                     }
                 }
             }
-            Box(modifier = fillWidth(), visible = hasRec(7)) {
-                Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = "surfaceVariant") {
+            // t80：点卡 = 高亮该药曲线（toggle；选中卡背景转 primaryContainer），ⓘ 开资料页。
+            Box(modifier = fillWidth(), visible = hasRec(7), onClick = { unchecked toggleChartHi(7) }) {
+                Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = cardBgOf(7)) {
                     Box(modifier = fillWidth().paddingHV(16, 12)) {
                         Box(modifier = fillWidth(), orientation = "horizontal") {
                             Box(modifier = width(10)) {}
                             Text(text = name7(), modifier = weight(1.0), size = 16, bold = true, color = "onSurface")
                             Text(text = dose7(), size = 16, bold = true, color = "primary")
+                            Box(modifier = paddingH(4), onClick = { unchecked openDocFor(7) }) {
+                                Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                            }
+                            Box(modifier = paddingH(8), visible = cardHiOf(7)) {
+                                Text(text = "● 高亮", size = 11, bold = true, color = "primary")
+                            }
                         }
                         Box(modifier = height(4)) {}
                         Text(text = time7(), color = "onSurfaceVariant", size = 12)
                     }
                 }
             }
-            Box(modifier = fillWidth(), visible = hasRec(8)) {
-                Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = "surfaceVariant") {
+            // t80：点卡 = 高亮该药曲线（toggle；选中卡背景转 primaryContainer），ⓘ 开资料页。
+            Box(modifier = fillWidth(), visible = hasRec(8), onClick = { unchecked toggleChartHi(8) }) {
+                Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = cardBgOf(8)) {
                     Box(modifier = fillWidth().paddingHV(16, 12)) {
                         Box(modifier = fillWidth(), orientation = "horizontal") {
                             Box(modifier = width(10)) {}
                             Text(text = name8(), modifier = weight(1.0), size = 16, bold = true, color = "onSurface")
                             Text(text = dose8(), size = 16, bold = true, color = "primary")
+                            Box(modifier = paddingH(4), onClick = { unchecked openDocFor(8) }) {
+                                Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                            }
+                            Box(modifier = paddingH(8), visible = cardHiOf(8)) {
+                                Text(text = "● 高亮", size = 11, bold = true, color = "primary")
+                            }
                         }
                         Box(modifier = height(4)) {}
                         Text(text = time8(), color = "onSurfaceVariant", size = 12)
                     }
                 }
             }
-            Box(modifier = fillWidth(), visible = hasRec(9)) {
-                Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = "surfaceVariant") {
+            // t80：点卡 = 高亮该药曲线（toggle；选中卡背景转 primaryContainer），ⓘ 开资料页。
+            Box(modifier = fillWidth(), visible = hasRec(9), onClick = { unchecked toggleChartHi(9) }) {
+                Card(modifier = fillWidth().paddingH(24).paddingV(6), cornerRadius = 12, elevation = 0, backgroundColor = cardBgOf(9)) {
                     Box(modifier = fillWidth().paddingHV(16, 12)) {
                         Box(modifier = fillWidth(), orientation = "horizontal") {
                             Box(modifier = width(10)) {}
                             Text(text = name9(), modifier = weight(1.0), size = 16, bold = true, color = "onSurface")
                             Text(text = dose9(), size = 16, bold = true, color = "primary")
+                            Box(modifier = paddingH(4), onClick = { unchecked openDocFor(9) }) {
+                                Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                            }
+                            Box(modifier = paddingH(8), visible = cardHiOf(9)) {
+                                Text(text = "● 高亮", size = 11, bold = true, color = "primary")
+                            }
                         }
                         Box(modifier = height(4)) {}
                         Text(text = time9(), color = "onSurfaceVariant", size = 12)
@@ -182,6 +252,8 @@ struct Home {
                 Text(text = "＋服用药物", size = 22, bold = true, color = "onSurface")
                 Text(text = "选择药物并填写剂量（mg）；代谢物条目仅资料页，不入选", size = 12, color = "onSurfaceVariant")
                 Text(text = "药物", size = 14, color = "onSurfaceVariant")
+                TextField(placeholder = "搜索药名/关键字", label = "搜索药物", text = pickQuery(), keyboard = "default",
+                    onChange = { t => unchecked setPickQuery(t) })
                 Box(modifier = fillWidth().height(240), scrollable = true) {
                     Box(modifier = fillWidth(), orientation = "vertical", spacing = 6) {
                     PickerRowsA()
@@ -359,6 +431,14 @@ struct Home {
                 Text(text = "资料来源：糖手册内置药物资料（与 .subl 同源；F≈ 为估算值）", size = 11, color = "onSurfaceVariant")
             }
         }
+        // t79 效应包详情抽屉（宿主态机 packOpenName/openPack/closePackSheet；PACKSHEET_HOST 标记在
+        // 同步脚本替换为 DshComposeHost.Subl_PackSheet()：头部分级 + 当前权重 + 教科书说明 +
+        // 包内效应按权重降序带来源）。
+        BottomSheet(visible = isPackOpen(), onDismiss = { unchecked closePackSheet() }) {
+            Box(modifier = fillWidth().paddingHV(24, 16)) {
+                Text(text = "PACKSHEET_HOST", size = 1, color = "primary")
+            }
+        }
         FloatingButton(icon = "add", text = "＋服用药物", color = "primary", onClick = { unchecked toggleForm() })
     }
 }
@@ -367,7 +447,7 @@ struct Home {
 @compose
 struct PickerRowsA {
     Box(modifier = fillWidth(), orientation = "vertical", spacing = 6) {
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(0) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(0) }, visible = pickRowVisible(0)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "氟伏沙明", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 15h · F=50% · 口服", size = 12, color = "onSurfaceVariant")
@@ -380,7 +460,7 @@ struct PickerRowsA {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(1) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(1) }, visible = pickRowVisible(1)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "帕罗西汀", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 24h · F=100% · 口服", size = 12, color = "onSurfaceVariant")
@@ -393,7 +473,7 @@ struct PickerRowsA {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(2) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(2) }, visible = pickRowVisible(2)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "氟西汀", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 96h · F≈60% · 口服", size = 12, color = "onSurfaceVariant")
@@ -406,7 +486,7 @@ struct PickerRowsA {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(3) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(3) }, visible = pickRowVisible(3)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "舍曲林", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 26h · F=44% · 口服", size = 12, color = "onSurfaceVariant")
@@ -419,7 +499,7 @@ struct PickerRowsA {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(4) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(4) }, visible = pickRowVisible(4)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "西酞普兰", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 35h · F=80% · 口服", size = 12, color = "onSurfaceVariant")
@@ -432,7 +512,7 @@ struct PickerRowsA {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(5) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(5) }, visible = pickRowVisible(5)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "艾司西酞普兰", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 30h · F=80% · 口服", size = 12, color = "onSurfaceVariant")
@@ -445,7 +525,7 @@ struct PickerRowsA {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(6) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(6) }, visible = pickRowVisible(6)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "地西泮", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 36h · F≈90% · 口服", size = 12, color = "onSurfaceVariant")
@@ -458,7 +538,7 @@ struct PickerRowsA {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(7) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(7) }, visible = pickRowVisible(7)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "艾司唑仑", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 17h · F≈100% · 口服", size = 12, color = "onSurfaceVariant")
@@ -471,7 +551,7 @@ struct PickerRowsA {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(8) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(8) }, visible = pickRowVisible(8)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "阿普唑仑", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 11h · F≈90% · 口服", size = 12, color = "onSurfaceVariant")
@@ -484,7 +564,7 @@ struct PickerRowsA {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(9) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(9) }, visible = pickRowVisible(9)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "氯硝西泮", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 30h · F≈90% · 口服", size = 12, color = "onSurfaceVariant")
@@ -497,7 +577,7 @@ struct PickerRowsA {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(10) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(10) }, visible = pickRowVisible(10)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "劳拉西泮", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 12h · F≈94% · 口服", size = 12, color = "onSurfaceVariant")
@@ -510,7 +590,7 @@ struct PickerRowsA {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(11) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(11) }, visible = pickRowVisible(11)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "咪达唑仑", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 3h · F=44% · 口服", size = 12, color = "onSurfaceVariant")
@@ -523,7 +603,7 @@ struct PickerRowsA {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(12) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(12) }, visible = pickRowVisible(12)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "吗啡", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 2h · F=34% · 口服", size = 12, color = "onSurfaceVariant")
@@ -536,7 +616,7 @@ struct PickerRowsA {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(13) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(13) }, visible = pickRowVisible(13)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "羟考酮", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 4h · F≈87% · 口服", size = 12, color = "onSurfaceVariant")
@@ -549,7 +629,7 @@ struct PickerRowsA {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(14) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(14) }, visible = pickRowVisible(14)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "芬太尼", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 17h · F≈92% · 透皮", size = 12, color = "onSurfaceVariant")
@@ -562,7 +642,7 @@ struct PickerRowsA {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(15) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(15) }, visible = pickRowVisible(15)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "可待因", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 3h · F≈60% · 口服", size = 12, color = "onSurfaceVariant")
@@ -575,7 +655,7 @@ struct PickerRowsA {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(16) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(16) }, visible = pickRowVisible(16)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "曲马多", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 6h · F=66% · 口服", size = 12, color = "onSurfaceVariant")
@@ -588,7 +668,7 @@ struct PickerRowsA {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(17) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(17) }, visible = pickRowVisible(17)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "哌替啶", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 4h · F≈50% · 口服", size = 12, color = "onSurfaceVariant")
@@ -601,7 +681,7 @@ struct PickerRowsA {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(18) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(18) }, visible = pickRowVisible(18)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "碳酸锂", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 24h · F=100% · 口服", size = 12, color = "onSurfaceVariant")
@@ -614,7 +694,7 @@ struct PickerRowsA {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(19) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(19) }, visible = pickRowVisible(19)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "丙戊酸", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 12h · F=90% · 口服", size = 12, color = "onSurfaceVariant")
@@ -632,7 +712,7 @@ struct PickerRowsA {
 @compose
 struct PickerRowsB {
     Box(modifier = fillWidth(), orientation = "vertical", spacing = 6) {
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(20) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(20) }, visible = pickRowVisible(20)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "卡马西平", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 12h · F=80% · 口服", size = 12, color = "onSurfaceVariant")
@@ -645,7 +725,7 @@ struct PickerRowsB {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(21) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(21) }, visible = pickRowVisible(21)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "拉莫三嗪", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 25h · F=98% · 口服", size = 12, color = "onSurfaceVariant")
@@ -658,7 +738,7 @@ struct PickerRowsB {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(22) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(22) }, visible = pickRowVisible(22)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "文拉法辛", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 5h · F=45% · 口服", size = 12, color = "onSurfaceVariant")
@@ -671,7 +751,7 @@ struct PickerRowsB {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(23) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(23) }, visible = pickRowVisible(23)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "度洛西汀", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 12h · F=50% · 口服", size = 12, color = "onSurfaceVariant")
@@ -684,7 +764,7 @@ struct PickerRowsB {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(24) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(24) }, visible = pickRowVisible(24)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "阿米替林", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 19h · F=45% · 口服", size = 12, color = "onSurfaceVariant")
@@ -697,7 +777,7 @@ struct PickerRowsB {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(25) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(25) }, visible = pickRowVisible(25)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "米氮平", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 30h · F=50% · 口服", size = 12, color = "onSurfaceVariant")
@@ -710,7 +790,7 @@ struct PickerRowsB {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(26) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(26) }, visible = pickRowVisible(26)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "安非他酮", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 21h · F=70% · 口服", size = 12, color = "onSurfaceVariant")
@@ -723,7 +803,7 @@ struct PickerRowsB {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(27) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(27) }, visible = pickRowVisible(27)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "曲唑酮", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 7h · F=65% · 口服", size = 12, color = "onSurfaceVariant")
@@ -736,7 +816,7 @@ struct PickerRowsB {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(28) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(28) }, visible = pickRowVisible(28)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "氯米帕明", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 26h · F=50% · 口服", size = 12, color = "onSurfaceVariant")
@@ -749,7 +829,7 @@ struct PickerRowsB {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(29) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(29) }, visible = pickRowVisible(29)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "哌甲酯", size = 16, bold = true, color = "onSurface")
                             Text(text = "精神药品（一类） · T½ 3h · F=30% · 口服", size = 12, color = "onSurfaceVariant")
@@ -762,7 +842,7 @@ struct PickerRowsB {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(30) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(30) }, visible = pickRowVisible(30)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "阿托莫西汀", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 5h · F=70% · 口服", size = 12, color = "onSurfaceVariant")
@@ -775,7 +855,7 @@ struct PickerRowsB {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(31) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(31) }, visible = pickRowVisible(31)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "多奈哌齐", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 70h · F=100% · 口服", size = 12, color = "onSurfaceVariant")
@@ -788,7 +868,7 @@ struct PickerRowsB {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(32) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(32) }, visible = pickRowVisible(32)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "卡巴拉汀", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 2h · F=40% · 口服", size = 12, color = "onSurfaceVariant")
@@ -801,7 +881,7 @@ struct PickerRowsB {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(33) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(33) }, visible = pickRowVisible(33)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "加兰他敏", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 7h · F=90% · 口服", size = 12, color = "onSurfaceVariant")
@@ -814,7 +894,7 @@ struct PickerRowsB {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(34) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(34) }, visible = pickRowVisible(34)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "丁螺环酮", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 2.5h · F=5% · 口服", size = 12, color = "onSurfaceVariant")
@@ -827,7 +907,7 @@ struct PickerRowsB {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(35) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(35) }, visible = pickRowVisible(35)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "苏沃瑞生", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 12h · F=70% · 口服", size = 12, color = "onSurfaceVariant")
@@ -840,7 +920,7 @@ struct PickerRowsB {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(36) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(36) }, visible = pickRowVisible(36)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "莱博瑞生", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 17h · F=65% · 口服", size = 12, color = "onSurfaceVariant")
@@ -853,7 +933,7 @@ struct PickerRowsB {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(37) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(37) }, visible = pickRowVisible(37)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "氯胺酮", size = 16, bold = true, color = "onSurface")
                             Text(text = "精神药品（一类） · T½ 2.5h · F=20% · 口服", size = 12, color = "onSurfaceVariant")
@@ -866,7 +946,7 @@ struct PickerRowsB {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(38) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(38) }, visible = pickRowVisible(38)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "裸盖菇素", size = 16, bold = true, color = "onSurface")
                             Text(text = "研究性物质 · T½ 1h · F=50% · 口服", size = 12, color = "onSurfaceVariant")
@@ -879,7 +959,7 @@ struct PickerRowsB {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(39) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(39) }, visible = pickRowVisible(39)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "苯海索", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 4h · F=70% · 口服", size = 12, color = "onSurfaceVariant")
@@ -897,7 +977,7 @@ struct PickerRowsB {
 @compose
 struct PickerRowsC {
     Box(modifier = fillWidth(), orientation = "vertical", spacing = 6) {
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(40) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(40) }, visible = pickRowVisible(40)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "苯扎托品", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 8h · F=50% · 口服", size = 12, color = "onSurfaceVariant")
@@ -910,7 +990,7 @@ struct PickerRowsC {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(41) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(41) }, visible = pickRowVisible(41)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "普拉克索", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 8h · F=90% · 口服", size = 12, color = "onSurfaceVariant")
@@ -923,7 +1003,7 @@ struct PickerRowsC {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(42) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(42) }, visible = pickRowVisible(42)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "金刚烷胺", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 15h · F=100% · 口服", size = 12, color = "onSurfaceVariant")
@@ -936,7 +1016,7 @@ struct PickerRowsC {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(43) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(43) }, visible = pickRowVisible(43)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "美金刚", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 70h · F=100% · 口服", size = 12, color = "onSurfaceVariant")
@@ -949,7 +1029,7 @@ struct PickerRowsC {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(44) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(44) }, visible = pickRowVisible(44)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "普瑞巴林", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 6.3h · F=90% · 口服", size = 12, color = "onSurfaceVariant")
@@ -962,7 +1042,7 @@ struct PickerRowsC {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(45) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(45) }, visible = pickRowVisible(45)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "雷美替胺", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 1.6h · F=2% · 口服", size = 12, color = "onSurfaceVariant")
@@ -975,7 +1055,7 @@ struct PickerRowsC {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(46) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(46) }, visible = pickRowVisible(46)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "奥氮平", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 30h · F=60% · 口服", size = 12, color = "onSurfaceVariant")
@@ -988,7 +1068,7 @@ struct PickerRowsC {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(47) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(47) }, visible = pickRowVisible(47)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "喹硫平", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 7h · F=10% · 口服", size = 12, color = "onSurfaceVariant")
@@ -1001,7 +1081,7 @@ struct PickerRowsC {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(48) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(48) }, visible = pickRowVisible(48)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "布洛芬", size = 16, bold = true, color = "onSurface")
                             Text(text = "非处方药 · T½ 2h · F=80% · 口服", size = 12, color = "onSurfaceVariant")
@@ -1014,7 +1094,7 @@ struct PickerRowsC {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(49) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(49) }, visible = pickRowVisible(49)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "塞来昔布", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 11h · F=30% · 口服", size = 12, color = "onSurfaceVariant")
@@ -1027,7 +1107,7 @@ struct PickerRowsC {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(50) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(50) }, visible = pickRowVisible(50)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "对乙酰氨基酚", size = 16, bold = true, color = "onSurface")
                             Text(text = "非处方药 · T½ 2.5h · F=70% · 口服", size = 12, color = "onSurfaceVariant")
@@ -1040,7 +1120,7 @@ struct PickerRowsC {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(51) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(51) }, visible = pickRowVisible(51)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "咖啡因", size = 16, bold = true, color = "onSurface")
                             Text(text = "精神活性物质 · T½ 5h · F=100% · 口服", size = 12, color = "onSurfaceVariant")
@@ -1053,7 +1133,7 @@ struct PickerRowsC {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(52) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(52) }, visible = pickRowVisible(52)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "乙醇", size = 16, bold = true, color = "onSurface")
                             Text(text = "精神活性物质 · T½ 4.5h · F=80% · 口服", size = 12, color = "onSurfaceVariant")
@@ -1066,7 +1146,7 @@ struct PickerRowsC {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(53) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(53) }, visible = pickRowVisible(53)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "槟榔碱", size = 16, bold = true, color = "onSurface")
                             Text(text = "精神活性物质 · T½ 0.5h · F=30% · 口服", size = 12, color = "onSurfaceVariant")
@@ -1079,7 +1159,7 @@ struct PickerRowsC {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(54) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(54) }, visible = pickRowVisible(54)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "尼古丁", size = 16, bold = true, color = "onSurface")
                             Text(text = "精神活性物质 · T½ 2h · F=40% · 口服", size = 12, color = "onSurfaceVariant")
@@ -1092,7 +1172,7 @@ struct PickerRowsC {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(55) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(55) }, visible = pickRowVisible(55)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "吸烟（烟草烟雾）", size = 16, bold = true, color = "onSurface")
                             Text(text = "精神活性物质 · T½ 2h · F=50% · 吸入·记录", size = 12, color = "onSurfaceVariant")
@@ -1105,7 +1185,7 @@ struct PickerRowsC {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(56) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(56) }, visible = pickRowVisible(56)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "环丙沙星", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 4h · F=70% · 口服", size = 12, color = "onSurfaceVariant")
@@ -1118,7 +1198,7 @@ struct PickerRowsC {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(57) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(57) }, visible = pickRowVisible(57)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "克拉霉素", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 3.5h · F=55% · 口服", size = 12, color = "onSurfaceVariant")
@@ -1131,7 +1211,7 @@ struct PickerRowsC {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(58) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(58) }, visible = pickRowVisible(58)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "利福平", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 3.5h · F=90% · 口服", size = 12, color = "onSurfaceVariant")
@@ -1144,7 +1224,7 @@ struct PickerRowsC {
                         }
                     }
 
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(59) }) {
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(59) }, visible = pickRowVisible(59)) {
                         Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
                             Text(text = "口服避孕药（炔雌醇/去氧孕烯）", size = 16, bold = true, color = "onSurface")
                             Text(text = "处方药 · T½ 17h · F=50% · 口服", size = 12, color = "onSurfaceVariant")
@@ -1153,6 +1233,58 @@ struct PickerRowsC {
                             Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
                         }
                         Box(modifier = paddingH(8), visible = isSel(59)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(60) }, visible = pickRowVisible(60)) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "纳洛酮", size = 16, bold = true, color = "onSurface")
+                            Text(text = "逆转剂 · 阿片类中毒 · T½ 1h · 鼻喷/IM", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(60) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(60)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(61) }, visible = pickRowVisible(61)) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "氟马西尼", size = 16, bold = true, color = "onSurface")
+                            Text(text = "逆转剂 · 苯二氮卓类 · T½ 1h · IV", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(61) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(61)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(62) }, visible = pickRowVisible(62)) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "毒扁豆碱", size = 16, bold = true, color = "onSurface")
+                            Text(text = "逆转剂 · 抗胆碱能危象 · T½ 1h · IV", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(62) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(62)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked pickDrugAt(63) }, visible = pickRowVisible(63)) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = "赛庚啶", size = 16, bold = true, color = "onSurface")
+                            Text(text = "逆转剂 · 血清素综合征 · T½ 8h · 口服", size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(4), onClick = { unchecked openDocFor(63) }) {
+                            Text(text = "ⓘ", size = 13, bold = true, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(63)) {
                             Text(text = "✓", size = 16, bold = true, color = "primary")
                         }
                     }

@@ -54,6 +54,87 @@ fun advLevel(score: Nat): Nat = if (score >= 7) 3 else if (score >= 5) 2 else if
 // 代谢相互作用阈值：提示 1 / 警告 3 / 危险 5。
 fun metabLevel(score: Nat): Nat = if (score >= 5) 3 else if (score >= 3) 2 else if (score >= 1) 1 else 0
 
+// ---------- t79 rev2：剂量量效模型（正/副作用权重随剂量提升） ----------
+//
+// 常用口服剂量（mg；未收录 0）。剂量 / 常用量 < 1.5 → 权重 +0；< 4 → +1；>= 4 → +2。
+// 与 DshComposeHost.typDoseOf 同表（宿主下版同步）。
+fun typDoseOf(n: Str): Rat = if (n == "氟伏沙明") 100.0
+    else if (n == "帕罗西汀") 20.0
+    else if (n == "氟西汀") 20.0
+    else if (n == "舍曲林") 50.0
+    else if (n == "西酞普兰") 20.0
+    else if (n == "艾司西酞普兰") 10.0
+    else if (n == "地西泮") 5.0
+    else if (n == "艾司唑仑") 1.0
+    else if (n == "阿普唑仑") 0.4
+    else if (n == "氯硝西泮") 0.5
+    else if (n == "劳拉西泮") 1.0
+    else if (n == "咪达唑仑") 15.0
+    else if (n == "吗啡") 10.0
+    else if (n == "羟考酮") 10.0
+    else if (n == "芬太尼") 0.1
+    else if (n == "可待因") 30.0
+    else if (n == "曲马多") 50.0
+    else if (n == "哌替啶") 50.0
+    else if (n == "碳酸锂") 400.0
+    else if (n == "丙戊酸") 500.0
+    else if (n == "卡马西平") 200.0
+    else if (n == "拉莫三嗪") 100.0
+    else if (n == "文拉法辛") 75.0
+    else if (n == "度洛西汀") 30.0
+    else if (n == "阿米替林") 50.0
+    else if (n == "米氮平") 30.0
+    else if (n == "安非他酮") 150.0
+    else if (n == "曲唑酮") 50.0
+    else if (n == "氯米帕明") 50.0
+    else if (n == "哌甲酯") 10.0
+    else if (n == "阿托莫西汀") 40.0
+    else if (n == "多奈哌齐") 5.0
+    else if (n == "卡巴拉汀") 3.0
+    else if (n == "加兰他敏") 8.0
+    else if (n == "丁螺环酮") 15.0
+    else if (n == "苏沃瑞生") 10.0
+    else if (n == "莱博瑞生") 5.0
+    else if (n == "氯胺酮") 50.0
+    else if (n == "裸盖菇素") 10.0
+    else if (n == "苯海索") 2.0
+    else if (n == "苯扎托品") 1.0
+    else if (n == "普拉克索") 0.5
+    else if (n == "金刚烷胺") 100.0
+    else if (n == "美金刚") 10.0
+    else if (n == "普瑞巴林") 75.0
+    else if (n == "雷美替胺") 8.0
+    else if (n == "奥氮平") 10.0
+    else if (n == "喹硫平") 100.0
+    else if (n == "布洛芬") 400.0
+    else if (n == "塞来昔布") 200.0
+    else if (n == "对乙酰氨基酚") 500.0
+    else if (n == "咖啡因") 100.0
+    else if (n == "乙醇") 14000.0
+    else if (n == "尼古丁") 1.0
+    else if (n == "环丙沙星") 500.0
+    else if (n == "克拉霉素") 250.0
+    else if (n == "利福平") 600.0
+    else if (n == "口服避孕药（炔雌醇/去氧孕烯）") 1.0
+    else if (n == "纳洛酮") 0.4
+    else if (n == "氟马西尼") 0.2
+    else if (n == "毒扁豆碱") 1.0
+    else if (n == "赛庚啶") 4.0
+    else 0.0
+fun doseBonusAt(dose: Rat, typ: Rat): Nat = if (typ <= 0.0) 0 else if (dose >= (typ * 4.0)) 2 else if (dose >= (typ * 1.5)) 1 else 0
+fun doseBonusOf(dose: Rat, name: Str): Nat = doseBonusAt(dose, typDoseOf(name))
+fun doseHead(doses: List[Rat]): Rat = when (doses) { is Cons(z, _) => z; else => 0.0 }
+fun doseTail(doses: List[Rat]): List[Rat] = when (doses) { is Cons(_, r2) => r2; else => emptyList() }
+fun doseAtOf(drugs: List[Drug], doses: List[Rat], n: Str): Rat = when (drugs) {
+    is Cons(d, rest) => if (d.name == n) doseHead(doses) else doseAtOf(rest, doseTail(doses), n)
+    else => 0.0
+}
+fun packDosesAt(ds: List[Drug], drugs: List[Drug], doses: List[Rat]): List[Rat] = when (ds) {
+    is Cons(d, rest) => cons(doseAtOf(drugs, doses, d.name), packDosesAt(rest, drugs, doses))
+    else => emptyList()
+}
+fun natSub(a: Nat, b: Nat): Nat = if (a >= b) a - b else 0
+
 // ---------- 不良反应预警 ----------
 
 // 条目计分表：名称 -> (权重合计, 条目数)。
@@ -203,15 +284,15 @@ fun effShortRewrite(s: Str): Str =
     else if (s == "骤停高剂量癫痫发作") "骤停癫痫发作"
     else s
 
-fun effEntries(d: Drug, idx: Nat): List[EffEnt] = append(
-    map(filter(d.acuteAdv) { r => isSubjective(r.name) }) { r => EffEnt(effShortName(r.name), idx, effFreqBase(r.level), true) },
-    map(filter(d.chronicAdv) { r => isSubjective(r.name) }) { r => EffEnt(effShortName(r.name), idx, effFreqBase(r.level), false) }
+fun effEntries(d: Drug, idx: Nat, dose: Rat): List[EffEnt] = append(
+    map(filter(d.acuteAdv) { r => isSubjective(r.name) }) { r => EffEnt(effShortName(r.name), idx, effFreqBase(r.level) + doseBonusOf(dose, d.name), true) },
+    map(filter(d.chronicAdv) { r => isSubjective(r.name) }) { r => EffEnt(effShortName(r.name), idx, effFreqBase(r.level) + doseBonusOf(dose, d.name), false) }
 )
 
-// 联用集全部词条（按下标尾递归展开）。
-fun effAll(drugs: List[Drug]): List[EffEnt] = effAllAt(drugs, 0)
-fun effAllAt(drugs: List[Drug], idx: Nat): List[EffEnt] = when (drugs) {
-    is Cons(d, rest) => append(effEntries(d, idx), effAllAt(rest, idx + 1))
+// 联用集全部词条（按下标尾递归展开；doses 与 drugs 同序平行，长度不足兜 0）。
+fun effAll(drugs: List[Drug], doses: List[Rat]): List[EffEnt] = effAllAt(drugs, doses, 0)
+fun effAllAt(drugs: List[Drug], doses: List[Rat], idx: Nat): List[EffEnt] = when (drugs) {
+    is Cons(d, rest) => append(effEntries(d, idx, doseHead(doses)), effAllAt(rest, doseTail(doses), idx + 1))
     else => emptyList()
 }
 
@@ -303,8 +384,8 @@ fun withdrawTagsOf(d: Drug): List[EffTag] =
 
 // 预警区呈现契约：词条流（排序后）+ 骤降戒断词条（withdrawn = 已判定骤降的药）。
 // 与宿主 DshComposeHost.effectTags() 同表同规则（宿主侧下版同步）。
-fun effectTags(drugs: List[Drug], withdrawn: List[Drug]): List[EffTag] {
-    var es: List[EffEnt] = effAll(drugs)
+fun effectTags(drugs: List[Drug], withdrawn: List[Drug], doses: List[Rat]): List[EffTag] {
+    var es: List[EffEnt] = effAll(drugs, doses)
     var adv: List[EffTag] = append(map(effNames(es)) { n => effTagOf(es, n) }, effPoisoningPack(drugs))
     var wd: List[EffTag] = withdrawn.fold(emptyList()) { acc, d => append(acc, withdrawTagsOf(d)) }
     return effSortTags(append(adv, wd))
@@ -315,8 +396,9 @@ fun effectTags(drugs: List[Drug], withdrawn: List[Drug]): List[EffTag] {
 // 加权结果并入现有效应词条流（不另起 UI）：profileEffectTags 产出的 EffTag 与
 // 联用/戒断词条合并后统一 effSortTags 排序（级降序 → 急性 → ◆），UI 侧复用
 // withdrawStream 同款单元格渲染。
-fun effectTagsWithProfile(drugs: List[Drug], withdrawn: List[Drug], p: Profile): List[EffTag] =
-    effSortTags(append(append(effectTags(drugs, withdrawn), profileEffectTags(p, drugs)), substanceInteractions(drugs)))
+fun effectTagsWithProfile(drugs: List[Drug], withdrawn: List[Drug], p: Profile, doses: List[Rat]): List[EffTag] =
+    effAbsorbTags(effSortTags(append(append(append(effectTags(drugs, withdrawn, doses), effAnticholinergicPack(drugs, doses, p)), profileEffectTags(p, drugs)), substanceInteractions(drugs))), drugs, doses, p)
+
 
 // ---------- t78：物质/药对相互作用预警（真实联用药对 → EffTag；与宿主同表） ----------
 //
@@ -382,3 +464,198 @@ fun maxLevelMetab(ts: List[Trigger]): Nat =
 
 // 两侧预警的总体最高等级（首页预警栏用）。
 fun maxAlertLevel(a: Alert, b: Alert): Nat = if (b.level > a.level) b.level else a.level
+
+
+// ---------- t79：效应包详情引擎（◆ 综合征 chip 点击展开；rev2 剂量加成 + 逆转剂 + 成员内聚） ----------
+//
+// 用户模型：
+//   1. ◆ 包 chip 可点击 → 详情（BottomSheet）：当前权重（跨药聚合实际数值，含画像加权、
+//      剂量加成与逆转剂减免）；三级分层 权重 3-5 轻度（黄）/ 6-8 中度（橙）/ >=9 重度（红）；
+//   2. 包内效应按各自贡献权重降序，每条显示来源（哪些药贡献、各贡献多少）；
+//   3. 包存在即 flash（急性包），慢性包不闪，普通词条急性判断不变；
+//   4. 剂量量效：剂量/常用量 <1.5× 权重 +0、<4× +1、>=4× +2（正/副作用同表）；
+//   5. 逆转剂入台账即降低对应包权重：纳洛酮 -4（阿片类中毒）、毒扁豆碱 -3（抗胆碱能
+//      综合征）、赛庚啶 -3（血清素综合征）；氟马西尼使阿片类中毒包中苯二氮卓贡献归零；
+//   6. 子效应不分家：包显示时其成员效应只随包出现（不另起 chip）；包至少有一个成员
+//      权重 > 0 才显示。
+struct PackCat(name: Str, keys: List[Str])
+struct PackMember(name: Str, weight: Nat, srcs: Str)
+struct PackInfo(name: Str, isAcute: Bool, weight: Nat, tier: Nat, rev: Str, desc: Str, members: List[PackMember])
+
+fun packTierOf(w: Nat): Nat = if (w >= 9) 3 else if (w >= 6) 2 else if (w >= 3) 1 else 0
+fun packTierName(t: Nat): Str = if (t == 3) "重度" else if (t == 2) "中度" else "轻度"
+
+// 双向子串命中（「潮红」⊆「皮肤干燥潮红」类反向包含）。
+fun kwHitOf(name: Str, kw: Str): Bool = if (tagHas(name, kw)) true else tagHas(kw, name)
+fun kwHitsAny(name: Str, keys: List[Str]): Bool = when (keys) {
+    is Cons(k, rest) => if (kwHitOf(name, k)) true else kwHitsAny(name, rest)
+    else => false
+}
+// 同一药对某成员（多关键词）的最大基准级（急性+慢性条目），叠加剂量加成。
+fun memKeysBase(rs: List[Rated], keys: List[Str], acc: Nat): Nat = when (rs) {
+    is Cons(r, rest) => if (kwHitsAny(r.name, keys)) memKeysBase(rest, keys, if (effFreqBase(r.level) > acc) effFreqBase(r.level) else acc) else memKeysBase(rest, keys, acc)
+    else => acc
+}
+fun memBaseOfDose(d: Drug, dose: Rat, keys: List[Str]): Nat = memKeysBase(append(d.acuteAdv, d.chronicAdv), keys, 0) + doseBonusOf(dose, d.name)
+
+// 来源串：仅计贡献 >0 的药，格式「药名 +权重，药名 +权重」。
+fun memSrc(srcs: Str, name: Str, b: Nat): Str = if (b == 0) srcs else if (srcs == "") concat(name, concat(" +", toStr(b))) else concat(srcs, concat("，", concat(name, concat(" +", toStr(b)))))
+// 成员行：跨药聚合权重 + 来源串（doses 与 ds 同序平行）。
+fun memberOfCat(cat: PackCat, drugs: List[Drug], doses: List[Rat]): PackMember = memberOfCatAt(cat, drugs, doses, 0, "")
+fun memberOfCatAt(cat: PackCat, drugs: List[Drug], doses: List[Rat], w: Nat, srcs: Str): PackMember = when (drugs) {
+    is Cons(d, rest) => memberOfCatStep(cat, d, rest, doseHead(doses), doseTail(doses), w, srcs)
+    else => PackMember(cat.name, w, srcs)
+}
+fun memberOfCatStep(cat: PackCat, d: Drug, rest: List[Drug], dz: Rat, drest: List[Rat], w: Nat, srcs: Str): PackMember {
+    var b: Nat = memBaseOfDose(d, dz, cat.keys)
+    return memberOfCatAt(cat, rest, drest, w + b, memSrc(srcs, d.name, b))
+}
+fun memberRowsOf(cats: List[PackCat], drugs: List[Drug], doses: List[Rat], acc: List[PackMember]): List[PackMember] = when (cats) {
+    is Cons(c, rest) => memberRowsOf(rest, drugs, doses, append(acc, cons(memberOfCat(c, drugs, doses), emptyList())))
+    else => acc
+}
+fun memberWeightSum(ms: List[PackMember], acc: Nat): Nat = when (ms) {
+    is Cons(m, rest) => memberWeightSum(rest, acc + m.weight)
+    else => acc
+}
+fun packMaxMember(ms: List[PackMember], acc: Nat): Nat = when (ms) {
+    is Cons(m, rest) => if (m.weight > acc) packMaxMember(rest, m.weight) else packMaxMember(rest, acc)
+    else => acc
+}
+// 包内效应按权重降序（插入排序，纯函数）。
+fun memberBefore(a: PackMember, b: PackMember): Bool = a.weight > b.weight
+fun memberInsert(xs: List[PackMember], m: PackMember): List[PackMember] = when (xs) {
+    is Cons(h2, rest) => if (memberBefore(m, h2)) cons(m, xs) else cons(h2, memberInsert(rest, m))
+    else => cons(m, emptyList())
+}
+fun packSortMembers(xs: List[PackMember]): List[PackMember] = when (xs) {
+    is Cons(m, rest) => memberInsert(packSortMembers(rest), m)
+    else => emptyList()
+}
+
+// 抗胆碱能毒理学八联（经典 anticholinergic toxidrome）。
+fun packCatsAntiCh(): List[PackCat] = cons(PackCat("瞳孔散大", strList("瞳孔散大")), cons(PackCat("视物模糊", strList("视物模糊,视力模糊")), cons(PackCat("口干", strList("口干")), cons(PackCat("尿潴留", strList("尿潴留")), cons(PackCat("肠鸣音减少", strList("肠鸣音")), cons(PackCat("心动过速", strList("心动过速,心率加快")), cons(PackCat("皮肤干燥潮红", strList("潮红,皮肤干燥")), cons(PackCat("谵妄", strList("谵妄")), emptyList()))))))))
+// 血清素综合征（Sternbach 标准）四联。
+fun packCatsSeroton(): List[PackCat] = cons(PackCat("震颤/阵挛", strList("震颤,阵挛,肌阵挛")), cons(PackCat("反射亢进", strList("反射亢进")), cons(PackCat("自主神经不稳", strList("出汗,心动过速,体温升高,发热,心悸")), cons(PackCat("精神状态改变", strList("激越,躁动,精神状态改变,烦躁,焦虑")), emptyList()))))
+// 阿片类中毒三联。
+fun packCatsOpioid(): List[PackCat] = cons(PackCat("意识抑制", strList("意识抑制,镇静,嗜睡,昏迷,昏睡,意识模糊")), cons(PackCat("呼吸抑制", strList("呼吸抑制")), cons(PackCat("瞳孔缩小", strList("瞳孔缩小,针尖样瞳孔")), emptyList())))
+
+// 画像加权：抗胆碱能负荷（年龄>=65/痴呆/认知障碍 各 +2，ACB 概念）。
+fun profCondOn(p: Profile, c: Str): Bool = contains(p.conds, c)
+fun profAcBoostAt(cs: List[Str], acc: Nat): Nat = when (cs) {
+    is Cons(c, rest) => profAcBoostAt(rest, if (c == "痴呆") acc + 2 else if (c == "认知障碍") acc + 2 else acc)
+    else => acc
+}
+fun profAcBoostOf(p: Profile): Nat = profAcBoostAt(p.conds, 0) + (if (p.age >= 65) 2 else 0)
+fun joinStrList(xs: List[Str], sep: Str): Str = when (xs) {
+    is Cons(x, rest) => if (x == "") joinStrList(rest, sep) else if (joinStrList(rest, sep) == "") x else concat(x, concat(sep, joinStrList(rest, sep)))
+    else => ""
+}
+fun profAcSrcOf(p: Profile): Str = joinStrList(cons(if (p.age >= 65) "年龄>=65 +2" else "", cons(if (profCondOn(p, "痴呆")) "痴呆 +2" else "", cons(if (profCondOn(p, "认知障碍")) "认知障碍 +2" else "", emptyList()))), "，")
+fun acBoostRow(p: Profile): List[PackMember] = if (profAcBoostOf(p) > 0) cons(PackMember("画像加权（抗胆碱能负荷）", profAcBoostOf(p), profAcSrcOf(p)), emptyList()) else emptyList()
+
+fun drugNamesOf(ds: List[Drug]): List[Str] = when (ds) {
+    is Cons(d, rest) => cons(d.name, drugNamesOf(rest))
+    else => emptyList()
+}
+
+// 抗胆碱能综合征包：触发 = 联用含抗胆碱能药；成员为经典八联跨药聚合 + 画像加权行；
+// 逆转剂：毒扁豆碱（胆碱酯酶抑制，升乙酰胆碱对抗毒蕈碱阻断）权重 -3。
+fun antiCholinergicPack(drugs: List[Drug], doses: List[Rat], p: Profile): PackInfo {
+    var ds: List[Drug] = filter(drugs) { d => classTagged(d, "抗胆碱能") }
+    var dzs: List[Rat] = packDosesAt(ds, drugs, doses)
+    var ms: List[PackMember] = packSortMembers(append(memberRowsOf(packCatsAntiCh(), ds, dzs, emptyList()), acBoostRow(p)))
+    var gross: Nat = memberWeightSum(ms, 0)
+    var red: Nat = if (nameIn(drugs, "毒扁豆碱")) 3 else 0
+    var w: Nat = natSub(gross, red)
+    var rev: Str = if (red > 0) "毒扁豆碱 −3" else ""
+    return PackInfo("抗胆碱能综合征", true, w, packTierOf(w), rev, antiChPackDesc(), ms)
+}
+fun antiChPackDesc(): Str = "抗胆碱能综合征（anticholinergic toxidrome）：抗胆碱能药过量或联用使毒蕈碱受体过度阻断。经典记忆口诀「干如骨头、红如甜菜、盲如蝙蝠、热如野兔、疯如帽匠」——瞳孔散大、视物模糊、口干、尿潴留、肠鸣音减少、心动过速、皮肤干燥潮红、谵妄。治疗以停药与支持为主，重度可考虑毒扁豆碱。"
+
+// 血清素综合征包：联用血清素能药 >=2 加重（+2/附加药），成员按 Sternbach 四联聚合；
+// 逆转剂：赛庚啶（5-HT2 拮抗）权重 -3。
+fun serotonergicPack(drugs: List[Drug], doses: List[Rat], p: Profile): PackInfo {
+    var ds: List[Drug] = filter(drugs) { d => classTagged(d, "血清素能") }
+    var dzs: List[Rat] = packDosesAt(ds, drugs, doses)
+    var combo: List[PackMember] = if (size(ds) >= 2) cons(PackMember("血清素能药物联用", 2 * (size(ds) - 1), joinNames(drugNamesOf(ds))), emptyList()) else emptyList()
+    var ms: List[PackMember] = packSortMembers(append(memberRowsOf(packCatsSeroton(), ds, dzs, emptyList()), combo))
+    var gross: Nat = memberWeightSum(ms, 0)
+    var red: Nat = if (nameIn(drugs, "赛庚啶")) 3 else 0
+    var w: Nat = natSub(gross, red)
+    var rev: Str = if (red > 0) "赛庚啶 −3" else ""
+    return PackInfo("血清素综合征", true, w, packTierOf(w), rev, serotonPackDesc(), ms)
+}
+fun serotonPackDesc(): Str = "血清素综合征（serotonin syndrome，Sternbach 诊断标准）：血清素能药物过量或联用 24h 内出现——震颤/阵挛（尤其下肢）、反射亢进、自主神经不稳（出汗、心动过速、体温升高）、精神状态改变（激越、躁动）。治疗为停用血清素能药与支持，重度用赛庚啶。"
+
+// 阿片类中毒包：阿片+苯二氮卓（或乙醇）联用协同（+2/附加药），成员按三联聚合；
+// 逆转剂：纳洛酮（μ 受体竞争性拮抗）权重 -4；氟马西尼（BZD 位点竞争性拮抗）使
+// 苯二氮卓类贡献与 μ 协同归零（竞争性拮抗「谁多谁赢」，教科书级事实）。
+fun opioidToxPack(drugs: List[Drug], doses: List[Rat], p: Profile): PackInfo {
+    var hasFlu: Bool = nameIn(drugs, "氟马西尼")
+    var ds: List[Drug] = append(filter(drugs) { d => classTagged(d, "阿片") }, filter(drugs) { d => if (hasFlu) false else classTagged(d, "苯二氮卓") })
+    var dzs: List[Rat] = packDosesAt(ds, drugs, doses)
+    var combo: List[PackMember] = if ((hasFlu == false) && (size(ds) >= 2)) cons(PackMember("μ 受体药效学协同", 2 * (size(ds) - 1), joinNames(drugNamesOf(ds))), emptyList()) else emptyList()
+    var ms: List[PackMember] = packSortMembers(append(memberRowsOf(packCatsOpioid(), ds, dzs, emptyList()), combo))
+    var gross: Nat = memberWeightSum(ms, 0)
+    var red: Nat = if (nameIn(drugs, "纳洛酮")) 4 else 0
+    var w: Nat = natSub(gross, red)
+    var rev: Str = concat(if (red > 0) "纳洛酮 −4" else "", if (hasFlu) "氟马西尼：苯二氮卓贡献归零" else "")
+    return PackInfo("阿片类中毒", true, w, packTierOf(w), rev, opioidPackDesc(), ms)
+}
+fun opioidPackDesc(): Str = "阿片类中毒（opioid toxidrome）三联：意识抑制、呼吸抑制、瞳孔缩小（针尖样瞳孔）。苯二氮卓类/乙醇联用为致死性呼吸抑制协同（FDA 黑框警告）；纳洛酮为 μ 受体竞争性拮抗的特效逆转剂，必要时重复给药。"
+
+// 通用包（药对/画像/戒断/其他综合征词条）：权重 = level ×3 换算（3→9 重度，2→6 中度，1→3 轻度）。
+fun genericPackInfo(n: Str, lv: Nat, ac: Bool): PackInfo {
+    var w: Nat = lv * 3
+    return PackInfo(n, ac, w, packTierOf(w), "", packDescOf(n), cons(PackMember("综合权重（词条级别 ×3 换算）", w, concat("level ", toStr(lv))), emptyList()))
+}
+
+// 包说明表（教科书级简述；未列入返回空串）。
+fun packDescOf(n: Str): Str = if (n == "乙醇×苯二氮卓类：呼吸抑制协同（药效学，禁止配伍）") "乙醇与苯二氮卓类均增强 GABA-A 受体抑制性传导，联用产生非叠加性呼吸抑制（药效学协同，FDA 黑框警告），过量致死风险显著升高。"
+    else if (n == "乙醇×阿片类：呼吸抑制协同（药效学，禁止配伍）") "乙醇与阿片类 μ 受体激动剂联用产生非叠加性呼吸抑制（药效学协同，FDA 黑框警告），过量致死风险显著升高。"
+    else if (n == "未成年×抗抑郁药：自杀冲动升级（黑框警告）") "美国 FDA 黑框警告：儿童、青少年与年轻成人开始抗抑郁药治疗的前数周自杀念头与自杀行为风险升高，须密切监测行为异常与自杀意念。"
+    else ""
+
+// 包详情分派：三个毒理学综合征走跨药聚合，其余走通用换算。
+fun packInfoOf(n: Str, drugs: List[Drug], doses: List[Rat], p: Profile, lv: Nat, ac: Bool): PackInfo =
+    if (n == "抗胆碱能综合征") antiCholinergicPack(drugs, doses, p)
+    else if (n == "血清素综合征") serotonergicPack(drugs, doses, p)
+    else if (n == "阿片类中毒") opioidToxPack(drugs, doses, p)
+    else genericPackInfo(n, lv, ac)
+
+// 包是否显示：至少一个成员权重 > 0。
+fun packDisplayed(n: Str, drugs: List[Drug], doses: List[Rat], p: Profile, lv: Nat): Bool =
+    packMaxMember(packInfoOf(n, drugs, doses, p, lv, true).members, 0) > 0
+
+// 毒理学包的成员关键词并集（供子效应内聚判定）。
+fun catKeysAt(cats: List[PackCat], acc: List[Str]): List[Str] = when (cats) {
+    is Cons(c, rest) => catKeysAt(rest, append(acc, c.keys))
+    else => acc
+}
+fun toxPackKeys(n: Str): List[Str] = if (n == "抗胆碱能综合征") catKeysAt(packCatsAntiCh(), emptyList())
+    else if (n == "血清素综合征") catKeysAt(packCatsSeroton(), emptyList())
+    else if (n == "阿片类中毒") catKeysAt(packCatsOpioid(), emptyList())
+    else emptyList()
+
+// 子效应内聚：词条若命中任一「已显示包」的成员关键词，则只随包出现，不单独分家。
+fun effMemberHiddenAt(name: Str, tags: List[EffTag], drugs: List[Drug], doses: List[Rat], p: Profile): Bool = when (tags) {
+    is Cons(t, rest) => if (t.pack && packDisplayed(t.name, drugs, doses, p, t.level) && kwHitsAny(name, toxPackKeys(t.name))) true else effMemberHiddenAt(name, rest, drugs, doses, p)
+    else => false
+}
+fun effKeepTag(t: EffTag, tags: List[EffTag], drugs: List[Drug], doses: List[Rat], p: Profile): Bool =
+    if (t.pack) packDisplayed(t.name, drugs, doses, p, t.level) else effMemberHiddenAt(t.name, tags, drugs, doses, p) == false
+fun effAbsorbTags(tags: List[EffTag], drugs: List[Drug], doses: List[Rat], p: Profile): List[EffTag] =
+    filter(tags) { t => effKeepTag(t, tags, drugs, doses, p) }
+
+// chip 呈现助手：包加「 · 轻度/中度/重度」后缀；包闪烁走急性属性（存在即闪）。
+fun packChipTier(tg: EffTag, drugs: List[Drug], doses: List[Rat], prof: Profile): Nat = if (tg.pack) packInfoOf(tg.name, drugs, doses, prof, tg.level, tg.acute).tier else 0
+fun packChipText(tg: EffTag, drugs: List[Drug], doses: List[Rat], prof: Profile): Str = if (tg.pack) concat(concat("◆ ", tg.name), concat(" · ", packTierName(packChipTier(tg, drugs, doses, prof)))) else tg.name
+fun packChipFlash(tg: EffTag, drugs: List[Drug], prof: Profile): Bool = if (tg.pack) packInfoOf(tg.name, drugs, emptyList(), prof, tg.level, tg.acute).isAcute else tg.acute
+
+// 抗胆碱能综合征 chip 注入（联用含抗胆碱能药且至少一个成员有权重时进词条流）。
+fun effAnticholinergicPack(drugs: List[Drug], doses: List[Rat], p: Profile): List[EffTag] =
+    if (anyTagged(drugs, "抗胆碱能")) {
+        var info: PackInfo = antiCholinergicPack(drugs, doses, p)
+        if (info.tier > 0) cons(EffTag("抗胆碱能综合征", info.tier, true, true), emptyList()) else emptyList()
+    } else emptyList()
