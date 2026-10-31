@@ -18,9 +18,18 @@ struct DoseRec(drug: Str, amount: Rat, time: Nat)
 
 fun msPerHour(): Nat = 3600000
 
-// 浓度曲线展示窗口（小时）：0..windowHours，步长 4h。
+// 浓度曲线展示窗口（小时）：0..windowHours。
 fun windowHours(): Nat = 48
-fun stepHours(): Nat = 4
+// 采样步长：10 分钟（亚小时精度，t81）。吸收相恰在服药后数小时内，4h 粗步长会把
+// 峰削成折线；全窗 10 分钟采样（48h ≈ 289 点）峰形圆滑且 Canvas 绘制量可承受。
+fun stepMinutes(): Nat = 10
+fun stepHours(): Rat = toRat(stepMinutes()) / 60.0
+// 采样点数（右闭含端点）：windowHours × 每小时步数。
+fun stepCount(): Nat = windowHours() * (60 / stepMinutes())
+// 轴刻度疏化（t81）：密集采样时可见刻度固定每 12h 一个（5 个标签，不挤轴）；
+// 分钟/小时自适应文案由宿主 Canvas 视口侧实现（缩放到窄窗时切 30m/10m 刻度）。
+fun tickEveryHours(): Nat = 12
+fun tickEvery(): Nat = tickEveryHours() * 60 / stepMinutes()
 
 // 窗口起点：now-window（固定 48 小时滑动回看窗——曲线始终展示「最近 48 小时」，
 // 记录按 (time - t0)/msPerHour 映射到 0..48 小时轴）。

@@ -116,17 +116,18 @@ check("Chart kind=line color=primary legend badge=估算",
   chartN.kind === "line" && chartN.color === "primary" && chartN.legend === true && chartN.badge === "估算",
   JSON.stringify({k: chartN.kind, c: chartN.color, l: chartN.legend, b: chartN.badge}));
 const pts = chartN.points.map(Number);
-check("13 个采样点（0..48h 步长 4）", pts.length === 13, "n=" + pts.length);
-check("刻度恰为 0/12/24/36/48（每 12h 一个）",
-  eq(chartN.labels.filter(x => x !== ""), ["0", "12", "24", "36", "48"]) && chartN.labels.length === 13,
+check("289 个采样点（0..48h 步长 10 分钟，t81）", pts.length === 289, "n=" + pts.length);
+check("刻度疏化：289 槽仅 0/12/24/36/48 可见（每 12h 一个，t81）",
+  eq(chartN.labels.filter(x => x !== ""), ["0", "12", "24", "36", "48"]) && chartN.labels.length === 289,
   JSON.stringify(chartN.labels));
 // 一级吸收一室模型（t74 rev1）：t=0 处吸收相起点浓度=0；24h 第二剂在其吸收起点贡献 0，
 // 只剩首剂残量（T½=15h, F=0.5, Tmax=5h：50·(15/13.71)·0.5^24/15 ≈ 18.05）。
 check("演示主线 pt0 = 0（一级吸收：服药时刻无吸收）", pts[0] === 0, pts[0]);
-check("pt24 = 首剂残量 ≈ 18.05（第二剂吸收起点贡献 0）", Math.abs(pts[6] - 18.05) < 0.05, pts[6]);
-check("pt24 后进入第二剂吸收相（pt28 > pt24 且 pt28 > 首剂峰 pt8）", pts[7] > pts[6] && pts[7] > pts[2], pts[7] + " vs " + pts[6] + "/" + pts[2]);
+check("pt24（索引 144）= 首剂残量 ≈ 18.05（第二剂吸收起点贡献 0；t81 10min 采样）", Math.abs(pts[144] - 18.05) < 0.05, pts[144]);
+check("pt24 后进入第二剂吸收相（pt28 索引 168 > pt24 且 > 首剂峰 pt8 索引 48）", pts[168] > pts[144] && pts[168] > pts[48], pts[168] + " vs " + pts[144] + "/" + pts[48]);
+check("t81 吸收相前 2h 连续上升（细步长下无平台跳削）", pts[0] === 0 && pts[1] > 0 && pts[12] > pts[1] && (function () { for (let i = 1; i <= 12; i++) if (pts[i] <= pts[i - 1]) return false; return true; })(), JSON.stringify(pts.slice(0, 13)));
 check("series 平铺且逐药（演示=氟伏沙明金色线）",
-  chartN.series.length === 1 && chartN.series[0].label === "氟伏沙明" && chartN.series[0].color === "#FFC107" && chartN.series[0].points.length === 13,
+  chartN.series.length === 1 && chartN.series[0].label === "氟伏沙明" && chartN.series[0].color === "#FFC107" && chartN.series[0].points.length === 289,
   JSON.stringify(chartN.series.map(s => [s.label, s.color, s.points.length])));
 check("总线 = 逐药分量逐点求和", eq(pts, chartN.series[0].points.map(Number)));
 

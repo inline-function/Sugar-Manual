@@ -47,7 +47,7 @@ function __smA(name, cond, extra) {
   __smA("Chart line", chartNode.kind === "line");
   __smA("Chart 主色 primary", chartNode.color === "primary", "got " + chartNode.color);
   __smA("Chart 撑满宽", (chartNode.modifiers || []).some((m) => m.tag === "FillWidth"), "got " + JSON.stringify((chartNode.modifiers || []).map((m) => m.tag)));
-  __smA("Chart 13 点", chartNode.points.length === 13, "got " + chartNode.points.length);
+  __smA("Chart 289 点（t81：48h ÷ 10min 右闭含端点）", chartNode.points.length === 289 && chartNode.series.length === 1 && chartNode.series[0].points.length === 289, "got " + chartNode.points.length + "/" + (chartNode.series[0] ? chartNode.series[0].points.length : -1));
   const texts0 = __smNodes(root0).filter((n) => n.tag === "Text").map((n) => n.text);
   __smA("预警无区标题", !texts0.includes("相互作用预警"));
   __smA("预警无组标题", !texts0.some((s) => String(s).indexOf("危险") === 0 || String(s).indexOf("警告") === 0));
@@ -191,9 +191,9 @@ function __smA(name, cond, extra) {
   __smA("卡给药时间/方式", cardTexts.some((s) => String(s).indexOf("给药时间 ") === 0 && String(s).indexOf(" · 口服") >= 0), "got " + JSON.stringify(cardTexts));
   __smA("记录区标题仍在", __smHasText(root3, "服药记录"));
   const chart3 = __smNodes(root3).find((n) => n.tag === "Chart");
-  __smA("曲线 13 点", chart3.points.length === 13);
+  __smA("曲线 289 点（t81）", chart3.points.length === 289);
   // 一级吸收模型下末点 ≈ 解析消除值（吸收相残余项随 T_a 快速归零，偏差 <1%）。
-  __smA("曲线末点≈2×F×0.5^(48÷T½)（一级吸收尾段）", Math.abs(chart3.points[12] - 0.5) < 0.01, "got " + chart3.points[12]);
+  __smA("曲线末点≈2×F×0.5^(48÷T½)（一级吸收尾段，t81 末点索引 288）", Math.abs(chart3.points[288] - 0.5) < 0.01, "got " + chart3.points[288]);
 
   // ---------- 取消 ----------
   const fab3 = __smNodes(root3).find((n) => n.tag === "FloatingButton");
@@ -348,6 +348,48 @@ function __smA(name, cond, extra) {
     const met = metaSeriesValues(doses, 96.0, MetaboForm("去甲氟西汀", 240, 1.0), 0.6, 0, 48, 4);
     return met[0] === 0 && met[12] > met[9] && met[9] > met[6] && met[6] > met[3];
   })());
+  // 【t81】10 分钟采样：步长 Rat / 点数 / 峰不削 / 峰时 / 刻度疏化 / E2E 刻度
+  __smA("t81 stepHours()=10/60（Rat 亚小时步长）", Math.abs(stepHours() - 10.0 / 60.0) < 1e-12, "got " + stepHours());
+  __smA("t81 采样点数 289（48h ÷ 10min 右闭含端点）", seriesValues([Dose(10.0, 0)], 2.0, absorbHalf(tmaxHours("1-2h"), 2.0), 0.34, 0, 48, stepHours()).length === 289, "got " + seriesValues([Dose(10.0, 0)], 2.0, absorbHalf(tmaxHours("1-2h"), 2.0), 0.34, 0, 48, stepHours()).length);
+  __smA("t81 峰不削：10min 采样最大值 ≈ 近解析峰（1% 容差）远高于 4h 粗步长", (function () {
+    const d = [Dose(10.0, 0)];
+    const ta = absorbHalf(tmaxHours("1-2h"), 2.0);
+    const fine = seriesValues(d, 2.0, ta, 0.34, 0, 48, stepHours());
+    const coarse = seriesValues(d, 2.0, ta, 0.34, 0, 48, 4);
+    const ref = seriesValues(d, 2.0, ta, 0.34, 0, 2, 0.01);
+    const mf = Math.max.apply(null, fine), mc = Math.max.apply(null, coarse), mr = Math.max.apply(null, ref);
+    return Math.abs(mf - mr) / mr < 0.01 && mf > mc * 1.2 && mc < mf;
+  })(), "");
+  __smA("t81 峰时 ≈ Tmax（1-2h 中值 1.5h，±30min）", (function () {
+    const d = [Dose(10.0, 0)];
+    const ta = absorbHalf(tmaxHours("1-2h"), 2.0);
+    const fine = seriesValues(d, 2.0, ta, 0.34, 0, 48, stepHours());
+    const mi = fine.indexOf(Math.max.apply(null, fine));
+    const th = mi * (10.0 / 60.0);
+    const analytic = peakTimeOf(ta, 2.0);
+    return Math.abs(th - analytic) <= 0.5 && Math.abs(analytic - 1.5) <= 0.05;
+  })(), "");
+  __smA("t81 吸收相峰前单调上升、峰时落在 Tmax（粗步长会把峰削成平台）", (function () {
+    const d = [Dose(10.0, 0)];
+    const ta = absorbHalf(tmaxHours("1-2h"), 2.0);
+    const fine = seriesValues(d, 2.0, ta, 0.34, 0, 48, stepHours());
+    const mi = fine.indexOf(Math.max.apply(null, fine));
+    if (mi <= 0 || Math.abs(mi * (10.0 / 60.0) - 1.5) > 0.5) return false;
+    for (let i = 1; i <= mi; i++) if (fine[i] <= fine[i - 1]) return false;
+    return fine[0] === 0 && fine[mi + 1] < fine[mi];
+  })(), "");
+  __smA("t81 轴标签疏化（289 槽仅 5 可见刻度 0/12/24/36/48）", (function () {
+    const lbs = chartLabels();
+    return lbs.length === 289 && JSON.stringify(lbs.filter((x) => x !== "")) === JSON.stringify(["0", "12", "24", "36", "48"]);
+  })(), "");
+  __smA("t81 总线 = 逐药分量逐点求和（含代谢物分量线，10min 采样）", (function () {
+    const L = core_collection__cons, E = core_collection__emptyList();
+    const xs = chartSeriesList(L(DoseRec("吗啡", 10.0, 0), E), [ddrug("吗啡")], 0, "");
+    const tot = totalPoints(xs);
+    if (xs.length < 1 || tot.length !== 289) return false;
+    return tot.every((v, i) => Math.abs(v - xs.reduce((s, x) => s + x.points[i], 0)) < 1e-9) && xs.every((x) => x.points.length === 289);
+  })(), "");
+
   __smA("α-羟基咪达唑仑不建模 / M6G 建模", (function () {
     const mz = midazolam().pk[0].activeForms;
     const mo = morphine().pk[0].activeForms;

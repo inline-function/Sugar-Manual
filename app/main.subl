@@ -546,9 +546,10 @@ fun pointsOf(xss: List[Series]): List[List[Rat]] = when (xss) {
 }
 fun totalPoints(seriesXs: List[Series]): List[Rat] = sumAllSeries(pointsOf(seriesXs))
 
-// X 轴刻度：与参考一致每 12h 一个（0/12/24/36/48），其余采样点留空。
-fun chartLabels(): List[Str] = map(range(0, (windowHours() / stepHours()) + 1)) { i => tickLabel(i) }
-fun tickLabel(i: Nat): Str = if (i % 3 == 0) toStr(i * stepHours()) else ""
+// X 轴刻度（t81）：10 分钟密集采样下疏化——可见刻度每 12h 一个
+// （0/12/24/36/48，与参考一致），其余采样点留空；标签数与窗口解耦，不随采样密度增长。
+fun chartLabels(): List[Str] = map(range(0, stepCount() + 1)) { i => tickLabel(i) }
+fun tickLabel(i: Nat): Str = if (i % tickEvery() == 0) toStr((i / tickEvery()) * tickEveryHours()) else ""
 
 // ---------- 维持-骤降戒断（t74 §2：warn.subl withdrawCrashed 的视图侧接入） ----------
 //

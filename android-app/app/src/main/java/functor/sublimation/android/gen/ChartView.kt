@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import kotlin.math.roundToInt
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -164,12 +165,14 @@ fun Subl_ConcentrationChart(
             fun hourToX(h: Float): Float = leftPad + ((h - viewStart) / viewSpan) * plotW
             fun concY(c: Float): Float = topPad + plotH - (c / maxConc).coerceIn(0f, 1f) * plotH
 
-            // X 刻度步长随视口自适应（>=36h→12h；>=18h→6h；>=9h→3h；否则 1h）
+            // X 刻度步长随视口自适应（t81：10 分钟数据下窄窗可切 30m/10m 细刻度）
             val tickStep = when {
                 viewSpan >= 36f -> 12f
                 viewSpan >= 18f -> 6f
                 viewSpan >= 9f -> 3f
-                else -> 1f
+                viewSpan >= 3f -> 1f
+                viewSpan >= 1.5f -> 0.5f       // 30m
+                else -> 1f / 6f                // 10m（与采样步长一致）
             }
             val xPaint = android.graphics.Paint().apply {
                 isAntiAlias = true
@@ -182,7 +185,9 @@ fun Subl_ConcentrationChart(
                 val px = hourToX(gx)
                 drawLine(gridColor, Offset(px, topPad), Offset(px, topPad + plotH), 1f)
                 drawIntoCanvas { c ->
-                    val hLabel = gx.toInt().toString() + "h"
+                    // t81：刻度文案分钟/小时自适应（整点时 h，否则 m）
+                    val hLabel = if (gx == gx.toInt().toFloat()) gx.toInt().toString() + "h"
+                        else (gx * 60f).roundToInt().toString() + "m"
                     c.nativeCanvas.drawText(hLabel, px, topPad + plotH + 18.dp.toPx(), xPaint)
                 }
                 gx += tickStep

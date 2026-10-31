@@ -72,15 +72,15 @@ fun concentrationAt(doses: List[Dose], tHalf: Rat, tAbs: Rat, bio: Rat, t: Rat):
     }
 
 // 折线数据序列（首页时间线折线图用）：[from, to] 每 step 小时采样一点（右闭含端点）。
-fun seriesValues(doses: List[Dose], tHalf: Rat, tAbs: Rat, bio: Rat, from: Nat, to: Nat, step: Nat): List[Rat] {
-    var n: Nat = (to - from) / step
-    return map(range(0, n + 1)) { i => concentrationAt(doses, tHalf, tAbs, bio, toRat(from + i * step)) }
+fun seriesValues(doses: List[Dose], tHalf: Rat, tAbs: Rat, bio: Rat, from: Nat, to: Nat, step: Rat): List[Rat] {
+    var n: Nat = ceil(toRat(to - from) / step)
+    return map(range(0, n + 1)) { i => concentrationAt(doses, tHalf, tAbs, bio, toRat(from) + toRat(i) * step) }
 }
 
 // 时间轴刻度（与 seriesValues 同采样点）。
-fun seriesLabels(from: Nat, to: Nat, step: Nat): List[Str] {
-    var n: Nat = (to - from) / step
-    return map(range(0, n + 1)) { i => concat(toStr(from + i * step), "h") }
+fun seriesLabels(from: Nat, to: Nat, step: Rat): List[Str] {
+    var n: Nat = ceil(toRat(to - from) / step)
+    return map(range(0, n + 1)) { i => concat(toStr(ceil(toRat(from) + toRat(i) * step)), "h") }
 }
 
 // ---------- 活性代谢物浓度（t74：母药消除 → 代谢物生成，链式消除卷积） ----------
@@ -109,9 +109,9 @@ fun metaLevelAt(doses: List[Dose], tHalfP: Rat, meta: MetaboForm, bio: Rat, t: R
     }
 
 // 代谢物折线序列（与 seriesValues 同采样：[from, to] 每 step 小时）。
-fun metaSeriesValues(doses: List[Dose], tHalfP: Rat, meta: MetaboForm, bio: Rat, from: Nat, to: Nat, step: Nat): List[Rat] {
-    var n: Nat = (to - from) / step
-    return map(range(0, n + 1)) { i => metaLevelAt(doses, tHalfP, meta, bio, toRat(from + i * step)) }
+fun metaSeriesValues(doses: List[Dose], tHalfP: Rat, meta: MetaboForm, bio: Rat, from: Nat, to: Nat, step: Rat): List[Rat] {
+    var n: Nat = ceil(toRat(to - from) / step)
+    return map(range(0, n + 1)) { i => metaLevelAt(doses, tHalfP, meta, bio, toRat(from) + toRat(i) * step) }
 }
 
 // 对数剂量-效应曲线（Emax 模型）：E(d) = d / (d + ED50)。

@@ -695,11 +695,13 @@ object DshComposeHost {
             else List(series[0].points.size) { i -> series.sumOf { it.points[i].toDouble() }.toFloat() }
         chartLabelsState.value = (-12..36 step 12).map { "${it}h" }
     }
-    /** -12h..+36h 每 1h 采样（t=0 为当前时间；供图表视口内裁剪绘制）；浓度取 1 位小数。 */
+    /** -12h..+36h 每 10 分钟采样（t81：与 JS stepHours()=1/6h 同构；t=0 为当前时间，
+     * 供图表视口内裁剪绘制，吸收相峰形圆滑）；浓度取 1 位小数。 */
     private fun pkSeries(doses: List<Pair<Double, Long>>, tHalf: Int, bio: Double): List<Float> =
-        (-12..36).map { t ->
+        (-720..2160 step 10).map { m ->
+            val t = m / 60.0
             val c = doses.fold(0.0) { acc, d ->
-                if (t >= d.second) acc + d.first * bio * Math.pow(0.5, (t - d.second).toDouble() / tHalf) else acc
+                if (t >= d.second) acc + d.first * bio * Math.pow(0.5, (t - d.second) / tHalf) else acc
             }
             Math.round(c * 10.0) / 10.0.toFloat()
         }
