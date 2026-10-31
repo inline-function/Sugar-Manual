@@ -248,7 +248,7 @@ const docOpend = findByTag(tree, "BottomSheet").filter(b => b.visible === true);
 check("t80 ⓘ 开资料页（BottomSheet visible）", docOpend.length === 1, "n=" + docOpend.length);
 check("t80 ⓘ 开资料页 → 该药资料且不改高亮",
   docOpend.length === 1 && flatten(docOpend[0], []).some(n => n.tag === "Text" && n.text === "帕罗西汀")
-    && flatten(docOpend[0], []).some(n => n.tag === "Text" && n.text === "过量（危险剂量）")
+    && flatten(docOpend[0], []).some(n => n.tag === "Text" && n.text === "处方药")
     && findByTag(tree, "Chart")[0].series[0].hi === false,
   JSON.stringify(flatten(docOpend[0], []).filter(n => n.tag === "Text").map(n => n.text).slice(0, 4)));
 callKey(docOpend[0].onDismiss);

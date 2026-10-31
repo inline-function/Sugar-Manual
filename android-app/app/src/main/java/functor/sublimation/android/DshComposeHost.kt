@@ -3,6 +3,12 @@ package functor.sublimation.android
 import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -11,7 +17,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -22,6 +30,11 @@ import functor.sublimation.android.gen.SublSeries
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.Alignment
 import org.json.JSONObject
 
 /**
@@ -127,7 +140,8 @@ object DshComposeHost {
 
 
     /** 选药行序 → 药名（与 home.subl 表单行 pickDrugAt(0..9) 一一对应）。 */
-    private val drugNames = listOf("氟伏沙明", "帕罗西汀", "氟西汀", "舍曲林", "西酞普兰", "艾司西酞普兰", "地西泮", "艾司唑仑", "阿普唑仑", "氯硝西泮", "劳拉西泮", "咪达唑仑", "吗啡", "羟考酮", "芬太尼", "可待因", "曲马多", "哌替啶", "碳酸锂", "丙戊酸", "卡马西平", "拉莫三嗪", "文拉法辛", "度洛西汀", "阿米替林", "米氮平", "安非他酮", "曲唑酮", "氯米帕明", "哌甲酯", "阿托莫西汀", "多奈哌齐", "卡巴拉汀", "加兰他敏", "丁螺环酮", "苏沃瑞生", "莱博瑞生", "氯胺酮", "裸盖菇素", "苯海索", "苯扎托品", "普拉克索", "金刚烷胺", "美金刚", "普瑞巴林", "雷美替胺", "奥氮平", "喹硫平", "布洛芬", "塞来昔布", "对乙酰氨基酚", "咖啡因", "乙醇", "槟榔碱", "尼古丁", "吸烟（烟草烟雾）", "环丙沙星", "克拉霉素", "利福平", "口服避孕药（炔雌醇/去氧孕烯）")
+    /** t79 rev2：60 → 64，尾部追加逆转剂（行序与 home.subl pickDrugAt(60..63) 一致）。 */
+    private val drugNames = listOf("氟伏沙明", "帕罗西汀", "氟西汀", "舍曲林", "西酞普兰", "艾司西酞普兰", "地西泮", "艾司唑仑", "阿普唑仑", "氯硝西泮", "劳拉西泮", "咪达唑仑", "吗啡", "羟考酮", "芬太尼", "可待因", "曲马多", "哌替啶", "碳酸锂", "丙戊酸", "卡马西平", "拉莫三嗪", "文拉法辛", "度洛西汀", "阿米替林", "米氮平", "安非他酮", "曲唑酮", "氯米帕明", "哌甲酯", "阿托莫西汀", "多奈哌齐", "卡巴拉汀", "加兰他敏", "丁螺环酮", "苏沃瑞生", "莱博瑞生", "氯胺酮", "裸盖菇素", "苯海索", "苯扎托品", "普拉克索", "金刚烷胺", "美金刚", "普瑞巴林", "雷美替胺", "奥氮平", "喹硫平", "布洛芬", "塞来昔布", "对乙酰氨基酚", "咖啡因", "乙醇", "槟榔碱", "尼古丁", "吸烟（烟草烟雾）", "环丙沙星", "克拉霉素", "利福平", "口服避孕药（炔雌醇/去氧孕烯）", "纳洛酮", "氟马西尼", "毒扁豆碱", "赛庚啶")
     /** t78：药库名单（按主要分类分组顺序，含代谢物条目）；openLibDoc(k) 的下标基准。 */
     private val drugAllNames = listOf("碳酸锂", "丙戊酸", "卡马西平", "拉莫三嗪", "奥氮平", "喹硫平", "多奈哌齐", "卡巴拉汀", "加兰他敏", "美金刚", "氟伏沙明", "帕罗西汀", "氟西汀", "舍曲林", "西酞普兰", "艾司西酞普兰", "文拉法辛", "度洛西汀", "阿米替林", "米氮平", "安非他酮", "曲唑酮", "氯米帕明", "地西泮", "阿普唑仑", "氯硝西泮", "劳拉西泮", "丁螺环酮", "普瑞巴林", "哌甲酯", "阿托莫西汀", "艾司唑仑", "咪达唑仑", "苏沃瑞生", "莱博瑞生", "雷美替胺", "苯海索", "苯扎托品", "普拉克索", "金刚烷胺", "吗啡", "羟考酮", "芬太尼", "可待因", "曲马多", "哌替啶", "氯胺酮", "布洛芬", "塞来昔布", "对乙酰氨基酚", "裸盖菇素", "咖啡因", "乙醇", "槟榔碱", "尼古丁", "吸烟（烟草烟雾）", "环丙沙星", "克拉霉素", "利福平", "口服避孕药（炔雌醇/去氧孕烯）", "去甲氟西汀", "O-去甲基文拉法辛", "去甲西酞普兰", "M6G（吗啡-6-葡萄糖醛酸）")
     /** per-drug 资料页文本（由 41 个 .subl 药物资料生成；与 main.subl 资料页同源，F≈=估算值）。 */
@@ -195,6 +209,10 @@ object DshComposeHost {
         "去甲氟西汀" -> "处方药（代谢物）\n标签：仅代谢物，活性代谢物，SSRI（血清素能）\n\n去甲氟西汀是氟西汀的 N-去甲基化活性代谢物，选择性 5-HT 再摄取抑制活性与母药相当，半衰期极长（约 7-15 天），是氟西汀长效作用与换药洗脱困难的原因。代谢物不可直接作为口服药物使用（无单独制剂），本库条目仅作资料页。\n\n【药效】SSRI。【酶】经 CYP2D6 进一步氧化。【联用】参考氟西汀；因半衰期超长，换用 MAOI 需间隔至少 5 周。"
         "O-去甲基文拉法辛" -> "处方药（代谢物）\n标签：仅代谢物，活性代谢物，SNRI（血清素能、去甲肾上腺素能）\n\nO-去甲基文拉法辛（ODV）是文拉法辛经 CYP2D6 的活性代谢物，SNRI 活性强于母药（已作为独立药物去甲文拉法辛开发）。半衰期约 11h。代谢物不可直接作为口服药物使用，本库条目仅作资料页。\n\n【药效】5-HT 与 NE 再摄取抑制。【酶】原型经肾排泄（约 55%）。【联用】参考文拉法辛：CYP2D6 抑制剂（帕罗西汀、氟西汀）影响生成；剂量相关血压升高。"
         "去甲西酞普兰" -> "处方药（代谢物）\n标签：仅代谢物，活性代谢物，西酞普兰代谢物\n\n去甲西酞普兰是西酞普兰的主要 N-去甲基活性代谢物，5-HT 再摄取抑制活性弱于母药，半衰期约 50h，参与艾司西酞普兰的疗效与撤药反应。QT 延长风险低于母药。代谢物不可直接作为口服药物使用，本库条目仅作资料页。\n\n【药效】弱 SSRI。【酶】经 CYP2C19 进一步氧化。【联用】参考西酞普兰：CYP2C19 弱代谢者影响生成；与 QT 延长药物合用仍需谨慎。"
+        "纳洛酮" -> "处方药\n标签：逆转剂，μ受体竞争性拮抗剂\n\n纳洛酮为阿片受体竞争性拮抗剂（μ/κ/δ），用于逆转阿片类过量所致呼吸抑制与意识抑制。起效快（静脉/肌肉 2-3 分钟、鼻喷 2-5 分钟），血浆半衰期短于多数阿片激动剂，作用消退后中毒可复现，必要时重复给药。对阿片依赖者可诱发急性戒断。\n\n【逆转对象】阿片类中毒包权重 −4\n【常用量】0.4 mg（鼻喷/IM）\n【急性不良反应】常见 · 戒断反应、恶心、心动过速"
+        "氟马西尼" -> "处方药\n标签：逆转剂，GABA-A受体别构位点竞争性拮抗剂\n\n氟马西尼竞争性拮抗苯二氮卓识别位点（GABA-A 受体别构位点），逆转苯二氮卓类过度镇静与呼吸抑制。半衰期约 1 小时，短于多数苯二氮卓类，作用消退后镇静可复现；苯二氮卓依赖者使用可诱发戒断与癫痫。\n\n【逆转对象】阿片类中毒包中苯二氮卓贡献归零\n【常用量】0.2 mg（静脉）\n【急性不良反应】常见 · 癫痫发作（BZD依赖者）"
+        "毒扁豆碱" -> "处方药\n标签：逆转剂，乙酰胆碱酯酶抑制剂\n\n毒扁豆碱为可逆性乙酰胆碱酯酶抑制剂（叔胺类，可透过血脑屏障），用于重度抗胆碱能谵妄的逆转诊断与治疗。可致胆碱能副反应（唾液分泌、出汗、心动过缓、肠绞痛），哮喘、心脏病、肠梗阻患者慎用。\n\n【逆转对象】抗胆碱能综合征包权重 −3\n【常用量】1 mg（缓慢静脉）\n【急性不良反应】常见 · 唾液分泌增多、出汗、心动过缓"
+        "赛庚啶" -> "处方药\n标签：逆转剂，5-HT2受体拮抗剂，抗组胺剂\n\n赛庚啶为 5-HT2 受体拮抗剂兼强效 H1 抗组胺作用，口服用于血清素综合征的辅助逆转（病例报告与专家共识推荐）。抗组胺作用带来镇静、口干等抗胆碱能样副反应。\n\n【逆转对象】血清素综合征包权重 −3\n【常用量】4 mg\n【急性不良反应】十分常见 · 镇静"
         "M6G（吗啡-6-葡萄糖醛酸）" -> "处方药（代谢物）\n标签：仅代谢物，活性代谢物，阿片能，镇痛药\n\nM6G 是吗啡经 UGT2B7 的主要活性代谢物，μ 受体激动活性强于吗啡本身且半衰期更长，在肾衰竭者蓄积可致呼吸抑制显著延长（吗啡肾衰蓄积的主要机制之一）。代谢物不可直接作为口服药物使用，本库条目仅作资料页。吗啡口服首过中约一半转化为 M6G 与 M3G；可待因代谢亦经此途径（CYP2D6 生成吗啡后经 UGT2B7）。\n\n【药效】μ 受体完全激动。【酶】肾小球滤过排泄（不经 CYP450）。【联用】参考吗啡：与苯二氮卓/乙醇合用呼吸抑制协同；肾衰竭者蓄积。"
         else -> "（未知药物）"
     }
@@ -241,6 +259,147 @@ object DshComposeHost {
     // ---------- 主观效应词条流（与 warn.subl effectTags 同引擎：急性/慢性不良反应跨药聚合） ----------
     // 词条（呈现契约）：name 短文字 / level 1-3（白→黄→红）/ acute 急性→flash / pack 综合征包（◆）。
     data class EffectTag(val name: String, val level: Int, val acute: Boolean, val pack: Boolean)
+    // ---------- t79 效应包详情（与 warn.subl packInfoOf 同引擎：权重/三级分层/成员排序+来源） ----------
+    data class PackMember(val name: String, val weight: Int, val srcs: String)
+    data class PackInfo(val name: String, val isAcute: Boolean, val weight: Int, val tier: Int, val rev: String, val desc: String, val members: List<PackMember>)
+    // t79 rev2：选药搜索框（药物抽屉内），与 main.subl pickQuery 同源
+    private val drugQueryState = mutableStateOf("")
+    private val packOpenName = mutableStateOf("")
+    private val packOpenLevel = mutableStateOf(3)
+    private val packOpenAcute = mutableStateOf(true)
+    private val packAntichDrugs = setOf("苯海索", "苯扎托品", "阿米替林", "氯米帕明")   // 抗胆碱能标签药
+    private val packSerotonDrugs = setOf("氟伏沙明", "帕罗西汀", "氟西汀", "舍曲林", "西酞普兰", "艾司西酞普兰",
+        "文拉法辛", "度洛西汀", "曲唑酮", "氯米帕明", "米氮平", "阿米替林", "奥氮平", "喹硫平", "曲马多", "丁螺环酮", "裸盖菇素")
+    fun packTierOf(w: Int): Int = when { w >= 9 -> 3; w >= 6 -> 2; w >= 3 -> 1; else -> 0 }
+    fun packTierName(t: Int): String = when (t) { 3 -> "重度"; 2 -> "中度"; else -> "轻度" }
+    private fun packCellBg(t: Int): Int = when (t) { 3 -> 0xF5D32F2F; 2 -> 0xF5FF9800; 1 -> 0xF5FFEE58; else -> 0xF5ECEFF1 }.toInt()
+    private fun packCellFg(t: Int): Int = if (t >= 2) 0xFFFFFFFF.toInt() else 0xFF4E342E.toInt()
+    private fun packBgOf(w: Int): Int = packCellBg(packTierOf(w))
+    private fun kwHit(a: String, b: String): Boolean = a.contains(b) || b.contains(a)
+    /** 频率基准级换算（与 warn.subl effFreqBase 同口径：十分常见/常见→2-3，少见/罕见→1）。 */
+    private fun effBase(lv: Int): Int = when (lv) { 4 -> 3; 3 -> 2; 2 -> 2; else -> 1 }
+    private fun memBaseOfDrug(drug: String, keys: List<String>): Int {
+        var best = 0
+        advTable[drug]?.forEach { e -> if (keys.any { kwHit(e.name, it) } && effBase(e.level) > best) best = effBase(e.level) }
+        return best + doseBonusOf(drug)
+    }
+    private fun packMemberRows(names: Set<String>, keys: List<List<String>>, displayNames: List<String>, filter: (String) -> Boolean, extra: List<PackMember> = emptyList()): List<PackMember> {
+        val rows = ArrayList<PackMember>()
+        keys.indices.forEach { i ->
+            var w = 0; val sb = StringBuilder()
+            names.filter(filter).sorted().forEach { d ->
+                val m = memBaseOfDrug(d, keys[i])
+                if (m > 0) { w += m; if (sb.isNotEmpty()) sb.append("，"); sb.append("$d +$m") }
+            }
+            rows.add(PackMember(displayNames[i], w, sb.toString()))
+        }
+        rows.addAll(extra)
+        return rows.sortedByDescending { it.weight }
+    }
+    private fun packWeightSum(ms: List<PackMember>): Int = ms.sumOf { it.weight }
+    // ---------- t79 rev2 剂量量效模型（与 warn.subl typDoseOf/doseBonusAt 同表：常用量；<1.5× +0 / <4× +1 / >=4× +2）。 ----------
+    private val typDose = mapOf(
+        "氟伏沙明" to 100.0, "帕罗西汀" to 20.0, "氟西汀" to 20.0, "舍曲林" to 50.0, "西酞普兰" to 20.0, "艾司西酞普兰" to 10.0,
+        "地西泮" to 5.0, "艾司唑仑" to 1.0, "阿普唑仑" to 0.4, "氯硝西泮" to 0.5, "劳拉西泮" to 1.0, "咪达唑仑" to 15.0,
+        "吗啡" to 10.0, "羟考酮" to 10.0, "芬太尼" to 0.1, "可待因" to 30.0, "曲马多" to 50.0, "哌替啶" to 50.0,
+        "碳酸锂" to 400.0, "丙戊酸" to 500.0, "卡马西平" to 200.0, "拉莫三嗪" to 100.0, "文拉法辛" to 75.0, "度洛西汀" to 30.0,
+        "阿米替林" to 50.0, "米氮平" to 30.0, "安非他酮" to 150.0, "曲唑酮" to 50.0, "氯米帕明" to 50.0,
+        "哌甲酯" to 10.0, "阿托莫西汀" to 40.0, "多奈哌齐" to 5.0, "卡巴拉汀" to 3.0, "加兰他敏" to 8.0, "丁螺环酮" to 15.0,
+        "苏沃瑞生" to 10.0, "莱博瑞生" to 5.0, "氯胺酮" to 50.0, "裸盖菇素" to 10.0,
+        "苯海索" to 2.0, "苯扎托品" to 1.0, "普拉克索" to 0.5, "金刚烷胺" to 100.0, "美金刚" to 10.0,
+        "普瑞巴林" to 75.0, "雷美替胺" to 8.0, "奥氮平" to 10.0, "喹硫平" to 100.0,
+        "布洛芬" to 400.0, "塞来昔布" to 200.0, "对乙酰氨基酚" to 500.0, "咖啡因" to 100.0, "乙醇" to 14000.0, "尼古丁" to 1.0,
+        "环丙沙星" to 500.0, "克拉霉素" to 250.0, "利福平" to 600.0, "口服避孕药（炔雌醇/去氧孕烯）" to 1.0,
+        "纳洛酮" to 0.4, "氟马西尼" to 0.2, "毒扁豆碱" to 1.0, "赛庚啶" to 4.0
+    )
+    private fun doseBonusOf(drug: String): Int {
+        val typ = typDose[drug] ?: return 0
+        val dose = recListState.value.firstOrNull { it.name == drug }?.amount?.trim()?.toDoubleOrNull() ?: return 0
+        return if (dose >= typ * 4.0) 2 else if (dose >= typ * 1.5) 1 else 0
+    }
+
+    /** 画像加权（抗胆碱能负荷 ACB：痴呆/认知障碍/年龄>=65 各 +2）。 */
+    private fun acBoost(): Pair<Int, String>? {
+        var w = 0; val sb = StringBuilder()
+        profCondsState.value.sorted().forEach { c -> if (c.contains("痴呆") || c.contains("认知障碍")) { w += 2; if (sb.isNotEmpty()) sb.append("，"); sb.append("$c +2") } }
+        val age = profAgeState.value.trim().toIntOrNull() ?: 0
+        if (age >= 65) { w += 2; if (sb.isNotEmpty()) sb.append("，"); sb.append("年龄>=65 +2") }
+        return if (w > 0) w to sb.toString() else null
+    }
+    private val acKeys = listOf("瞳孔散大", "视物模糊", "口干", "尿潴留", "肠鸣音", "心动过速", "潮红", "谵妄")
+    private val acCatNames = listOf("瞳孔散大", "视物模糊", "口干", "尿潴留", "肠鸣音减少", "心动过速", "皮肤干燥潮红", "谵妄")
+    private val serKeys = listOf(listOf("震颤", "阵挛", "肌阵挛"), listOf("反射亢进"), listOf("出汗", "心动过速", "体温升高", "发热", "心悸"), listOf("激越", "躁动", "精神状态改变", "烦躁", "焦虑"))
+    private val serCatNames = listOf("震颤/阵挛", "反射亢进", "自主神经不稳", "精神状态改变")
+    private val opKeys = listOf(listOf("意识抑制", "镇静", "嗜睡", "昏迷", "昏睡", "意识模糊"), listOf("呼吸抑制"), listOf("瞳孔缩小", "针尖样瞳孔"))
+    private val opCatNames = listOf("意识抑制", "呼吸抑制", "瞳孔缩小")
+    private fun antiCholinergicPack(names: Set<String>): PackInfo {
+        val boost = acBoost()
+        val members = packMemberRows(names, acKeys.map { k -> listOf(k) }, acCatNames, { it in packAntichDrugs },
+            if (boost != null) listOf(PackMember("画像加权（抗胆碱能负荷）", boost.first, boost.second)) else emptyList())
+        val gross = packWeightSum(members)
+        val red = if ("毒扁豆碱" in names) 3 else 0     // t79 rev2 逆转剂：胆碱酯酶抑制，升 ACh 对抗蕈毒碱阻断
+        val w = if (gross >= red) gross - red else 0
+        return PackInfo("抗胆碱能综合征", true, w, packTierOf(w), if (red > 0) "毒扁豆碱 −3" else "", antiChPackDesc, members)
+    }
+    private fun serotonergicPack(names: Set<String>): PackInfo {
+        val ds = names.filter { it in packSerotonDrugs }
+        val combo = if (ds.size >= 2) listOf(PackMember("血清素能药物联用", 2 * (ds.size - 1), ds.sorted().joinToString("，"))) else emptyList()
+        val rows = ArrayList<PackMember>()
+        serKeys.indices.forEach { i ->
+            var w = 0; val sb = StringBuilder()
+            ds.sorted().forEach { d -> val m = memBaseOfDrug(d, serKeys[i]); if (m > 0) { w += m; if (sb.isNotEmpty()) sb.append("，"); sb.append("$d +$m") } }
+            rows.add(PackMember(serCatNames[i], w, sb.toString()))
+        }
+        val all0 = rows + combo
+        val red = if ("赛庚啶" in names) 3 else 0          // t79 rev2 逆转剂：5-HT2 拮抗
+        val gross0 = all0.sumOf { it.weight }
+        val w0 = if (gross0 >= red) gross0 - red else 0
+        return PackInfo("血清素综合征", true, w0, packTierOf(w0), if (red > 0) "赛庚啶 −3" else "", serotonPackDesc, all0.sortedByDescending { it.weight })
+    }
+    private fun opioidToxPack(names: Set<String>): PackInfo {
+        val hasFlu = "氟马西尼" in names               // t79 rev2：BZD 位点竞争性拮抗 → 苯二氮卓贡献归零
+        val ds = names.filter { drugOpioid.containsKey(it) || (it in drugBzd && !hasFlu) }.toSet()
+        val combo = if (!hasFlu && ds.size >= 2) listOf(PackMember("μ 受体药效学协同", 2 * (ds.size - 1), ds.sorted().joinToString("，"))) else emptyList()
+        val rows = ArrayList<PackMember>()
+        opKeys.indices.forEach { i ->
+            var w = 0; val sb = StringBuilder()
+            ds.sorted().forEach { d -> val m = memBaseOfDrug(d, opKeys[i]); if (m > 0) { w += m; if (sb.isNotEmpty()) sb.append("，"); sb.append("$d +$m") } }
+            rows.add(PackMember(opCatNames[i], w, sb.toString()))
+        }
+        val all1 = rows + combo
+        val red1 = if ("纳洛酮" in names) 4 else 0       // t79 rev2 逆转剂：μ 受体竞争性拮抗
+        val gross1 = all1.sumOf { it.weight }
+        val w1 = if (gross1 >= red1) gross1 - red1 else 0
+        val rev1 = (if (red1 > 0) "纳洛酮 −4" else "") + if (hasFlu) "氟马西尼：苯二氮卓贡献归零" else ""
+        return PackInfo("阿片类中毒", true, w1, packTierOf(w1), rev1, opioidPackDesc, all1.sortedByDescending { it.weight })
+    }
+    private fun genericPack(name: String, lv: Int, acute: Boolean): PackInfo {
+        val w = lv * 3
+        return PackInfo(name, acute, w, packTierOf(w), "", packDescText(name), listOf(PackMember("综合权重（词条级别 ×3 换算）", w, "level $lv")))
+    }
+    private fun packDescText(n: String): String = when {
+        n.startsWith("乙醇×苯二氮卓类") -> "乙醇与苯二氮卓类均增强 GABA-A 受体抑制性传导，联用产生非叠加性呼吸抑制（药效学协同，FDA 黑框警告），过量致死风险显著升高。"
+        n.startsWith("乙醇×阿片类") -> "乙醇与阿片类 μ 受体激动剂联用产生非叠加性呼吸抑制（药效学协同，FDA 黑框警告），过量致死风险显著升高。"
+        n.startsWith("未成年×抗抑郁药") -> "美国 FDA 黑框警告：儿童、青少年与年轻成人开始抗抑郁药治疗的前数周自杀念头与自杀行为风险升高，须密切监测行为异常与自杀意念。"
+        else -> ""
+    }
+    private val antiChPackDesc = "抗胆碱能综合征（anticholinergic toxidrome）：抗胆碱能药过量或联用使毒蕈碱受体过度阻断。经典记忆口诀「干如骨头、红如甜菜、盲如蝙蝠、热如野兔、疯如帽匠」——瞳孔散大、视物模糊、口干、尿潴留、肠鸣音减少、心动过速、皮肤干燥潮红、谵妄。治疗以停药与支持为主，重度可考虑毒扁豆碱。"
+    private val serotonPackDesc = "血清素综合征（serotonin syndrome，Sternbach 诊断标准）：血清素能药物过量或联用 24h 内出现——震颤/阵挛（尤其下肢）、反射亢进、自主神经不稳（出汗、心动过速、体温升高）、精神状态改变（激越、躁动）。治疗为停用血清素能药与支持，重度用赛庚啶。"
+    private val opioidPackDesc = "阿片类中毒（opioid toxidrome）三联：意识抑制、呼吸抑制、瞳孔缩小（针尖样瞳孔）。苯二氮卓类/乙醇联用为致死性呼吸抑制协同（FDA 黑框警告）；纳洛酮为特效拮抗，必要时重复给药。"
+    fun packInfoOfName(name: String, lv: Int, acute: Boolean): PackInfo {
+        val names = recListState.value.map { it.name }.toSet()
+        return when (name) {
+            "抗胆碱能综合征" -> antiCholinergicPack(names)
+            "血清素综合征" -> serotonergicPack(names)
+            "阿片类中毒" -> opioidToxPack(names)
+            else -> genericPack(name, lv, acute)
+        }
+    }
+    /** 包 chip 呈现助手（tier 后缀/配色/存在即闪）——与 main.subl packChip* 同口径。 */
+    fun packTierOfTag(tg: EffectTag): Int = if (tg.pack) packInfoOfName(tg.name, tg.level, tg.acute).tier else 0
+    fun packChipText(tg: EffectTag): String = if (tg.pack) "◆ " + tg.name + " · " + packTierName(packTierOfTag(tg)) else tg.name
+    fun packFlash(tg: EffectTag): Boolean = if (tg.pack) packInfoOfName(tg.name, tg.level, tg.acute).isAcute else tg.acute
+
     private data class AdvEnt(val name: String, val level: Int, val acute: Boolean)
     /** 41 药急性/慢性不良反应频率表（与 app 各药物的 subl 数据同源；由 t75 扩充，脚本生成勿手改）。 */
     private val advTable: Map<String, List<AdvEnt>> = mapOf(
@@ -304,6 +463,11 @@ object DshComposeHost {
         "奥氮平" to listOf(AdvEnt("嗜睡", 4, true), AdvEnt("体重增加", 3, true), AdvEnt("直立性低血压", 2, true), AdvEnt("代谢综合征", 2, false), AdvEnt("锥体外系症状", 1, false)),
         "喹硫平" to listOf(AdvEnt("嗜睡", 4, true), AdvEnt("头晕", 3, true), AdvEnt("口干", 2, true), AdvEnt("体重增加", 3, false), AdvEnt("血脂异常", 2, false), AdvEnt("QT延长", 2, false)),
         "口服避孕药（炔雌醇/去氧孕烯）" to listOf(AdvEnt("恶心", 3, true), AdvEnt("乳房胀痛", 2, true), AdvEnt("情绪波动", 2, true), AdvEnt("静脉血栓", 2, false)),
+        // t79 rev2 逆转剂（急性副反应最小集；tags 不含阿片/苯二氮/血清素能/抗胆碱能，不进毒理学包成员）
+        "纳洛酮" to listOf(AdvEnt("戒断反应", 3, true), AdvEnt("恶心", 2, true), AdvEnt("心动过速", 2, true)),
+        "氟马西尼" to listOf(AdvEnt("癫痫发作", 2, true)),
+        "毒扁豆碱" to listOf(AdvEnt("唾液分泌增多", 3, true), AdvEnt("心动过缓", 2, true)),
+        "赛庚啶" to listOf(AdvEnt("镇静", 3, true)),
     )
     private val serotonergic = setOf("氟伏沙明", "帕罗西汀", "氟西汀", "舍曲林", "西酞普兰", "艾司西酞普兰", "曲马多", "哌替啶")
     /** 非主观效应根词（t73 清洗：与 warn.subl isSubjective 同表）——客观体征/生理/行为后果/长期状态剔除。 */
@@ -367,7 +531,8 @@ object DshComposeHost {
         }
         val tags = ArrayList<EffectTag>()
         byName.forEach { (name, list) ->
-            val base = list.maxOf { it.second.level }
+            // t79 rev2：频率基准级 + 该药剂量加成（与 warn.subl effEntries 同口径）
+            val base = list.maxOf { e -> effBase(e.second.level) + doseBonusOf(names.elementAt(e.first)) }
             val drugs = list.map { it.first }.distinct().size
             val level = if (base + drugs >= 4) 3 else base + drugs - 1
             tags.add(EffectTag(name, level, list.any { it.second.acute }, name == "血清素综合征" || name == "阿片类中毒"))
@@ -387,13 +552,38 @@ object DshComposeHost {
         if (drugOpioid.keys.any { it in names } && drugBzd.any { it in names }) {
             tags.add(EffectTag("阿片类中毒", 3, acute = true, pack = true))
         }
+        // t79 抗胆碱能综合征包镜像（联用含抗胆碱能标签药且 tier>0 → level=tier 的急性包）
+        if (packAntichDrugs.any { it in names }) {
+            val acInfo = antiCholinergicPack(names)
+            if (acInfo.weight >= 3) tags.add(EffectTag("抗胆碱能综合征", acInfo.tier, true, true))
+        }
         tags.addAll(profileTagsHost())
-        return tags.sortedWith(
+        // t79 rev2 子效应内聚：包至少一个成员权重 > 0 才显示；成员效应只随已显示的毒理学包出现
+        val acFlat = acKeys
+        val serFlat = serKeys.flatten()
+        val opFlat = opKeys.flatten()
+        val toxKeySets = listOf("抗胆碱能综合征" to acFlat, "血清素综合征" to serFlat, "阿片类中毒" to opFlat)
+        fun packDisplayed(nm: String): Boolean {
+            val info = packInfoOfName(nm, 3, true)
+            val tox = nm == "抗胆碱能综合征" || nm == "血清素综合征" || nm == "阿片类中毒"
+            return !tox || ((info.members.maxOfOrNull { it.weight } ?: 0) > 0)
+        }
+        val displayed = HashSet<String>()
+        tags.filter { it.pack }.forEach { tg -> if (packDisplayed(tg.name)) displayed.add(tg.name) }
+        val hidden = HashSet<String>()
+        displayed.forEach { p -> toxKeySets.firstOrNull { it.first == p }?.second?.forEach { k -> hidden.add(k) } }
+        val kept = tags.filter { tg ->
+            if (tg.pack) tg.name in displayed
+            else !hidden.any { kwHit(tg.name, it) }
+        }
+        return kept.sortedWith(
             compareByDescending<EffectTag> { it.level }.thenByDescending { it.acute }.thenByDescending { it.pack }
         )
     }
     fun attachEnv(ctx: android.content.Context) { appCtx = ctx; loadProfileState(); refreshRecList(); recomputeChart() }
     // ---------- 浓度图（与 JS chartSeriesList/PkEngine 同公式：C(t)=Σ D·F·0.5^(t/T½)；窗口 -12h..+36h 步长 1h，t=0=现在；t75 新药沿用 host 旧式峰值模型，与 JS 模型差异见 compose 同步说明） ----------
+    // t80 曲线高亮（点记录卡 toggle；session 态，不随 ledger 持久化）
+    private val chartHiState = mutableStateOf("")
     private val chartSeriesState = mutableStateOf<List<SublSeries>>(emptyList())
     private val chartTotalState = mutableStateOf<List<Float>>(emptyList())
     private val chartLabelsState = mutableStateOf<List<String>>(emptyList())
@@ -485,10 +675,11 @@ object DshComposeHost {
             }
         } catch (e: Throwable) { Log.w(tag, "recomputeChart: " + e.message) }
         val names = recs.map { it.first }.toSet()
+        val hiName = chartHiState.value          // t80 高亮药
         val series = ArrayList<SublSeries>()
         if (recs.isEmpty()) {
             series.add(SublSeries("氟伏沙明", Color(0xFFFFC107),
-                pkSeries(listOf(100.0 to -24L, 100.0 to 0L), 15, 0.5)))  // 演示：24h 前一剂 + 当前一剂
+                pkSeries(listOf(100.0 to -24L, 100.0 to 0L), 15, 0.5), hiName == "氟伏沙明"))  // 演示：24h 前一剂 + 当前一剂
         } else {
             // recentDrugs：台账内首次出现序
             val seen = LinkedHashSet<String>()
@@ -496,7 +687,7 @@ object DshComposeHost {
             for (name in seen) {
                 val (th, f) = drugParams(name)
                 val doses = recs.filter { it.first == name }.map { it.second to (it.third - now) / 3600000L }
-                series.add(SublSeries(name, Color(drugColorOf(name)), pkSeries(doses, th, f)))
+                series.add(SublSeries(name, Color(drugColorOf(name)), pkSeries(doses, th, f), hiName == name))
             }
         }
         chartSeriesState.value = series
@@ -518,12 +709,24 @@ object DshComposeHost {
         "isSettingsOpen" -> settingsOpen.value
         "isListOpen" -> drugListOpen.value
         "isDocOpen" -> docNameState.value.isNotEmpty()
+        "isPackOpen" -> packOpenName.value.isNotEmpty()
         "hasRec" -> {
             val k = args.getOrNull(0) as? Int ?: 0
             k >= 0 && k < recListState.value.size && k < 10
         }
         "noRec" -> recListState.value.isEmpty()
+        // t80：记录卡 k 的药是否为当前曲线高亮药（选中卡内置「● 高亮」标记）
+        "cardHiOf" -> {
+            val k = args.getOrNull(0) as? Int ?: 0
+            k >= 0 && k < recListState.value.size && recListState.value[k].name == chartHiState.value
+        }
         "isSel" -> (args.getOrNull(0) as? Int) == selectedDrug.value
+        "pickRowVisible" -> {
+            val k = args.getOrNull(0) as? Int ?: 0
+            val nm = drugNames.getOrNull(k)
+            val q = drugQueryState.value.trim()
+            nm != null && (q.isEmpty() || nm.contains(q) || q.contains(nm))
+        }
         "profOn" -> profCondNames.getOrNull(args.getOrNull(0) as? Int ?: 0) in profCondsState.value
         "sexIs" -> sexNames.getOrNull(args.getOrNull(0) as? Int ?: 0) == profSexState.value
         else -> { Log.w(tag, "boolArg 未知路由: " + name); false }
@@ -531,12 +734,26 @@ object DshComposeHost {
     /** 字符串态读：curDose（剂量输入）、doseErr（校验错误）、呼吸抑制风险、记录列表槽位。 */
     fun strArg(name: String, vararg args: Any?): String = when (name) {
         "curDose" -> doseTextState.value
+        "chartHi" -> chartHiState.value
+        // t80：记录卡选中态底色（槽位 k ↔ 该药 == 当前高亮药 → primaryContainer）
+        "cardBgOf" -> {
+            val k = args.getOrNull(0) as? Int ?: 0
+            if (k in 0 until 10 && k < recListState.value.size && recListState.value[k].name == chartHiState.value) "primaryContainer" else "surfaceVariant"
+        }
+        "pickQuery" -> drugQueryState.value
         "doseErr" -> doseErrState.value
         "docName" -> docNameState.value
         "docBody" -> drugDocText(docNameState.value)
+        "packTitle" -> packTitleText()
+        "packWeightText" -> packWeightLine()
         "profAge" -> profAgeState.value
         "profName" -> profCondNames.getOrNull(args.getOrNull(0) as? Int ?: 0) ?: ""
         "sexName" -> sexNames.getOrNull(args.getOrNull(0) as? Int ?: 0) ?: ""
+        "packMemberRow" -> {
+            val k = args.getOrNull(0) as? Int ?: 0
+            val info = packInfoOfName(packOpenName.value, packOpenLevel.value, packOpenAcute.value)
+            info.members.getOrNull(k)?.let { m -> m.name + " · 权重 " + m.weight + "　" + if (m.srcs.isEmpty()) "（当前无药贡献）" else m.srcs } ?: ""
+        }
         else -> {
             // 记录卡槽位：name_k / dose_k / time_k
             val k = name.removePrefix("name").removePrefix("dose").removePrefix("time").toIntOrNull()
@@ -565,18 +782,30 @@ object DshComposeHost {
                 saveProfileState()
                 recomputeChart()
             }
+            "setPickQuery" -> drugQueryState.value = v     // t79 rev2 选药搜索（仅态变更，重组即可见）
             else -> Log.w(tag, "actText 未知路由: " + name)
         }
+    }
+    /** 包详情头部「◆ name · tier」与权重行。 */
+    private fun packTitleText(): String {
+        if (packOpenName.value.isEmpty()) return ""
+        val info = packInfoOfName(packOpenName.value, packOpenLevel.value, packOpenAcute.value)
+        return "◆ " + info.name + " · " + packTierName(info.tier)
+    }
+    private fun packWeightLine(): String {
+        if (packOpenName.value.isEmpty()) return ""
+        val info = packInfoOfName(packOpenName.value, packOpenLevel.value, packOpenAcute.value)
+        return "当前权重 " + info.weight + "（含画像加权与剂量加成），分级 " + packTierName(info.tier) + if (info.isAcute) "，急性包 → 始终闪烁" else "，慢性包不闪烁"
     }
     /** 交互动作（onClick → 宿主态机；与 main.subl 的 JS 逻辑同语义，storage 同源）。 */
     fun act(name: String, args: List<Any?> = emptyList()) {
         when (name) {
             "toggleForm" -> {
                 formOpen.value = !formOpen.value
-                if (formOpen.value) { selectedDrug.value = -1; doseTextState.value = ""; doseErrState.value = "" }
+                if (formOpen.value) { selectedDrug.value = -1; doseTextState.value = ""; doseErrState.value = ""; drugQueryState.value = "" }
             }
             "cancelForm" -> {
-                formOpen.value = false; selectedDrug.value = -1; doseTextState.value = ""; doseErrState.value = ""
+                formOpen.value = false; selectedDrug.value = -1; doseTextState.value = ""; doseErrState.value = ""; drugQueryState.value = ""
             }
             "pickDrugAt" -> {
                 selectedDrug.value = (args.getOrNull(0) as? Int) ?: 0
@@ -598,6 +827,19 @@ object DshComposeHost {
                 drugListOpen.value = false
             }
             "closeDoc" -> docNameState.value = ""
+            "openPack" -> {
+                packOpenName.value = (args.getOrNull(0) as? String) ?: ""
+                packOpenLevel.value = (args.getOrNull(1) as? Int) ?: 3
+                packOpenAcute.value = (args.getOrNull(2) as? Boolean) ?: true
+            }
+            "closePackSheet" -> packOpenName.value = ""
+            // t80：点记录卡 toggle 该药曲线高亮（k 为记录槽位）
+            "toggleChartHi" -> {
+                val k = args.getOrNull(0) as? Int
+                val n = if (k != null) recListState.value.getOrNull(k)?.name else (args.getOrNull(0) as? String)
+                if (n.isNullOrEmpty()) { Log.w(tag, "toggleChartHi 无对应药: " + args) }
+                else { chartHiState.value = if (chartHiState.value == n) "" else n; recomputeChart() }
+            }
             "toggleProfCond" -> {
                 val k = args.getOrNull(0) as? Int ?: 0
                 val c = profCondNames.getOrNull(k) ?: return
@@ -638,7 +880,7 @@ object DshComposeHost {
                 refreshRecList()
                 recomputeChart()
                 toast("已记录服药")
-                formOpen.value = false; selectedDrug.value = -1; doseTextState.value = ""; doseErrState.value = ""
+                formOpen.value = false; selectedDrug.value = -1; doseTextState.value = ""; doseErrState.value = ""; drugQueryState.value = ""
             }
         }
     }
@@ -671,6 +913,59 @@ object DshComposeHost {
     fun slotKeys(): List<String> = status.keys.toList()
     /** 调试：某槽当前值。 */
     fun slotValue(key: String): Any? = status[key]?.value
+    /** 自绘底部抽屉（t79 rev2）：点遮罩退出 + 系统返回退出 + 抽屉空击不关闭 + 无下滑手势。
+     *  替代 M3 ModalBottomSheet——M3 1.3.1 上 confirmValueChange 只能同时废掉「下滑收回」与「点遮罩退出」二者，
+     *  且发射器把抽屉挂在外层 Column 里（fillMaxSize 够不到全屏），故用全屏 Dialog 自绘遮罩+抽屉。 */
+    @Composable
+    fun DshSheet(onDismiss: () -> Unit, content: @Composable () -> Unit) {
+        val sheetInteraction = remember { MutableInteractionSource() }
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = onDismiss,
+            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.55f)).clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onDismiss
+            )) {
+                Column(modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
+                    .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .imePadding()
+                    .clickable(interactionSource = sheetInteraction, indication = null) { }
+                ) { content() }
+            }
+        }
+    }
+
+    /** t79 效应包详情抽屉（@compose 同步脚本把 home 的 PACKSHEET_HOST 标记替换为本组合）：
+     *  头部「◆ name · 分级」+ 当前权重（含画像加权）+ 教科书说明 + 包内效应按权重降序（每行带来源）。 */
+    @Composable
+    fun Subl_PackSheet(modifier: Modifier = Modifier) {
+        val name = packOpenName.value
+        if (name.isEmpty()) return
+        val info = packInfoOfName(name, packOpenLevel.value, packOpenAcute.value)
+        Column(
+            modifier = modifier.fillMaxWidth().verticalScroll(rememberScrollState())
+        ) {
+            Text(text = "◆ " + info.name + " · " + packTierName(info.tier), color = Color(0xFF6750A4), fontSize = 18.0.sp, fontWeight = FontWeight.Bold)
+            Text(text = "当前权重 " + info.weight + "（含画像加权与剂量加成），分级 " + packTierName(info.tier) + if (info.isAcute) "，急性包 → 始终闪烁" else "，慢性包不闪烁",
+                color = Color(packCellFg(info.tier)), fontSize = 14.0.sp, fontWeight = FontWeight.Bold)
+            if (info.rev.isNotEmpty()) {
+                Text(text = "逆转剂：" + info.rev, color = Color(0xFF6750A4), fontSize = 13.0.sp, fontWeight = FontWeight.Bold)
+            }
+            Text(text = info.desc, color = Color(0xFF49454F), fontSize = 12.0.sp)
+            Text(text = "包内效应（按权重排序 · 来源）", color = Color(0xFF6750A4), fontSize = 13.0.sp, fontWeight = FontWeight.Bold)
+            info.members.forEach { m ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color(packBgOf(m.weight))).padding(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Text(text = m.name + " · 权重 " + m.weight + "　" + if (m.srcs.isEmpty()) "（当前无药贡献）" else m.srcs,
+                        color = Color(packCellFg(packTierOf(m.weight))), fontSize = 13.0.sp)
+                }
+            }
+        }
+    }
     /** 预警标签流（@compose 同步脚本把 home 的 EFFECTTAGS_HOST 标记替换为本组合）：
      *  FlowRow 流式换行；三级配色 白（少见/罕见）→ 黄（常见）→ 红（十分常见/聚合加深）；
      *  急性词条 flash（gen.Modifier.flash，650ms 透明度循环），慢性不闪；综合征包加 ◆ 前缀。 */
@@ -683,21 +978,24 @@ object DshComposeHost {
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             tags.forEach { tg ->
-                val bg = when (tg.level) {
+                val info = if (tg.pack) packInfoOfName(tg.name, tg.level, tg.acute) else null
+                val bg = if (info != null) packCellBg(info.tier) else when (tg.level) {
                     3 -> 0xF5D32F2F.toInt()   // 红：十分常见 / 聚合加深
                     2 -> 0xF5FFEE58.toInt()   // 黄：常见
                     else -> 0xF5ECEFF1.toInt()// 白：少见 / 罕见
                 }
-                val fg = if (tg.level == 3) 0xFFFFFFFF.toInt() else 0xFF4E342E.toInt()
+                val fg = if (info != null) packCellFg(info.tier) else if (tg.level == 3) 0xFFFFFFFF.toInt() else 0xFF4E342E.toInt()
+                val flash = if (info != null) info.isAcute else tg.acute  // t79：包存在即闪（急性属性），慢包不闪
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(12.dp))
                         .background(Color(bg))
+                        .then(if (info != null) Modifier.clickable { act("openPack", listOf(tg.name, tg.level, tg.acute)) } else Modifier)
                         .padding(horizontal = 12.dp, vertical = 5.dp)
-                        .then(if (tg.acute) Modifier.flash() else Modifier)
+                        .then(if (flash) Modifier.flash() else Modifier)
                 ) {
                     Text(
-                        text = (if (tg.pack) "◆ " else "") + tg.name,
+                        text = if (info != null) "◆ " + tg.name + " · " + packTierName(info.tier) else tg.name,
                         color = Color(fg),
                         fontSize = 13.0.sp,
                         fontWeight = FontWeight.Bold
