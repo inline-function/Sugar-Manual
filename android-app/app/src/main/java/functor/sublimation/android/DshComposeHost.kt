@@ -525,8 +525,14 @@ object DshComposeHost {
 
     // ---------- 主观效应词条流（与 warn.subl effectTags 同引擎：急性/慢性不良反应跨药聚合） ----------
     // 词条（呈现契约）：name 短文字 / level 1-3（白→黄→红）/ acute 急性→flash / pack 综合征包（◆）。
-    /** t85 pos=true 为正性（治疗/欣快）效应，标签流以绿色区分。 */
-    data class EffectTag(val name: String, val level: Int, val acute: Boolean, val pack: Boolean, val pos: Boolean = false)
+    /**
+     * 标签前缀规约（t86）：
+     * pack  → ◆（效应包，原样保留）
+     * pos   → ↑（正性主观效应）
+     * 普通负面 → ↓
+     * neuro → +（递质亢进驱动）/ -（递质抑制驱动）；此时不带 ↓
+     */
+    data class EffectTag(val name: String, val level: Int, val acute: Boolean, val pack: Boolean, val pos: Boolean = false, val neuro: Int = 0)
     // ---------- t79 效应包详情（与 warn.subl packInfoOf 同引擎：权重/三级分层/成员排序+来源） ----------
     data class PackMember(val name: String, val weight: Int, val srcs: String)
     data class PackInfo(val name: String, val isAcute: Boolean, val weight: Int, val tier: Int, val rev: String, val desc: String, val members: List<PackMember>)
@@ -743,7 +749,8 @@ object DshComposeHost {
     }
     /** 包 chip 呈现助手（tier 后缀/配色/存在即闪）——与 main.subl packChip* 同口径。 */
     fun packTierOfTag(tg: EffectTag): Int = if (tg.pack) packInfoOfName(tg.name, tg.level, tg.acute).tier else 0
-    fun packChipText(tg: EffectTag): String = if (tg.pack) "◆ " + tg.name + " · " + packTierName(packTierOfTag(tg)) else tg.name
+    fun packChipText(tg: EffectTag): String = if (tg.pack) "◆ " + tg.name + " · " + packTierName(packTierOfTag(tg))
+        else when { tg.neuro > 0 -> "+ " + tg.name; tg.neuro < 0 -> "- " + tg.name; tg.pos -> "↑ " + tg.name; else -> "↓ " + tg.name }
     fun packFlash(tg: EffectTag): Boolean = if (tg.pack) packInfoOfName(tg.name, tg.level, tg.acute).isAcute else tg.acute
 
     /** pos=true 为正性（治疗性/主观欣快）效应；level 仍为频率基准（权重换算同口径）。 */
@@ -963,9 +970,8 @@ object DshComposeHost {
             }
         }
         // t83 用户自定义效应包：按包关键词扫描台账各药 advList，命中症状行级别求和 → 过阈值显示
-        // t84 酶动力学相互作用（底物浓度↑/↓）与递质驱动效应（递质总权重过门槛 → 主观效应/包）
+        // t86 酶动力学不再进效应流（抑制/诱导改挂用药标签箭头后缀，见 enzSuffix）
         val ns = recListState.value.map { it.name }.toSet()
-        enzymeInteracts(ns).forEach { tags.add(it) }
         val (neuroTags, packBoosts) = neuroDrives(neuroTotals(ns))
         neuroTags.forEach { tags.add(it) }
         customPacksState.value.forEach { pk ->
@@ -1610,7 +1616,7 @@ object DshComposeHost {
                         .clip(RoundedCornerShape(topStart = 2.5.dp, topEnd = 2.5.dp, bottomStart = 2.5.dp, bottomEnd = 2.5.dp))
                         .background(Color(drugColorOf(r.name))))
                     Spacer(modifier = Modifier.width(8.dp))
-                    androidx.compose.material3.Text(text = r.name, modifier = Modifier.weight(1.0f), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = FontWeight.Bold)
+                    androidx.compose.material3.Text(text = r.name + enzSuffix(r.name), modifier = Modifier.weight(1.0f), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = FontWeight.Bold)
                     androidx.compose.material3.Text(text = r.amount + " mg", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = FontWeight.Bold)
                     if (hi) {
                         androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
@@ -2090,7 +2096,8 @@ object DshComposeHost {
         }
         return out
     }
-    /** 递质总权重 → 驱动主观效应词条与效应包（门槛 threshold，超过即生效）。 */
+    /** 递质总权重 → 驱动主观效应词条与效应包（门槛 threshold，超过即生效）。
+     *  t86 前缀：亢进（兴奋性递质累积/高权重）→ +；抑制类（拮抗/阻断，如多巴胺能拮抗）→ -。 */
     private fun neuroDrives(totals: Map<String, Int>): Pair<List<EffectTag>, List<Pair<String, Int>>> {
         val tagsOut = ArrayList<EffectTag>()
         val packBoosts = ArrayList<Pair<String, Int>>()
@@ -2102,12 +2109,22 @@ object DshComposeHost {
                 if (map.pack.isNotEmpty()) packBoosts.add(map.pack to boost)
                 if (map.effects.isNotEmpty()) {
                     val lvl = (1 + over / 2).coerceAtMost(3)
-                    map.effects.forEach { eff -> tagsOut.add(EffectTag(n + "亢进·" + eff, lvl, false, false)) }
+                    val inhibited = n.contains("拮抗") || n.contains("阻断")
+                    val neuroSign = if (inhibited) -1 else 1
+                    map.effects.forEach { eff -> tagsOut.add(EffectTag(eff, lvl, false, false, false, neuroSign)) }
                 }
             }
         }
         return tagsOut to packBoosts
     }
+    /** t86 酶方向后缀：他药对该药底物酶的净抑制 → ↑ / 诱导 → ↓ / 无影响 → ""。 */
+    fun enzSuffix(drug: String): String {
+        val ns = recListState.value.map { it.name }.toSet()
+        if (!ns.contains(drug)) return ""
+        val f = enzymeFold(drug, ns)
+        return when { f >= 1.3 -> " ↑"; f <= 0.7 -> " ↓"; else -> "" }
+    }
+
     /** 递质驱动对指定包的权重加成（threshold 之上每超 2 加 1）。 */
     private fun neuroBoostFor(packName: String): Int {
         val ns = recListState.value.map { it.name }.toSet()
@@ -2197,17 +2214,23 @@ object DshComposeHost {
         ) {
             tags.forEach { tg ->
                 val info = if (tg.pack) packInfoOfName(tg.name, tg.level, tg.acute) else null
-                val bg = if (info != null) packCellBg(info.tier) else if (tg.pos) when (tg.level) {
+                val bg = if (info != null) packCellBg(info.tier) else if (tg.pos || tg.neuro > 0) when (tg.level) {
                     3 -> 0xF52E7D32.toInt()   // 深绿：正性强效应（欣快等急性）
                     2 -> 0xF5A5D6A7.toInt()   // 浅绿：正性中效应
                     else -> 0xF5E8F5E9.toInt()// 极浅绿：正性轻效应
+                } else if (tg.neuro < 0) when (tg.level) {
+                    3 -> 0xF5455A64.toInt()   // 深灰蓝：递质抑制强效应
+                    2 -> 0xF5B0BEC5.toInt()   // 灰蓝：递质抑制中效应
+                    else -> 0xF5ECEFF1.toInt()
                 } else when (tg.level) {
                     3 -> 0xF5D32F2F.toInt()   // 红：十分常见 / 聚合加深
                     2 -> 0xF5FFEE58.toInt()   // 黄：常见
                     else -> 0xF5ECEFF1.toInt()// 白：少见 / 罕见
                 }
-                val fg = if (info != null) packCellFg(info.tier) else if (tg.pos && tg.level == 3) 0xFFFFFFFF.toInt()
-                    else if (tg.pos) 0xFF1B5E20.toInt()
+                val fg = if (info != null) packCellFg(info.tier) else if ((tg.pos || tg.neuro > 0) && tg.level == 3) 0xFFFFFFFF.toInt()
+                    else if (tg.pos || tg.neuro > 0) 0xFF1B5E20.toInt()
+                    else if (tg.neuro < 0 && tg.level == 3) 0xFFFFFFFF.toInt()
+                    else if (tg.neuro < 0) 0xFF263238.toInt()
                     else if (tg.level == 3) 0xFFFFFFFF.toInt() else 0xFF4E342E.toInt()
                 val flash = if (info != null) info.isAcute else tg.acute  // t79：包存在即闪（急性属性），慢包不闪
                 Box(
@@ -2219,7 +2242,8 @@ object DshComposeHost {
                         .then(if (flash) Modifier.flash() else Modifier)
                 ) {
                     Text(
-                        text = if (info != null) "◆ " + tg.name + " · " + packTierName(info.tier) else if (tg.pos) "＋ " + tg.name else tg.name,
+                        text = if (info != null) "◆ " + tg.name + " · " + packTierName(info.tier)
+                        else when { tg.neuro > 0 -> "+ " + tg.name; tg.neuro < 0 -> "- " + tg.name; tg.pos -> "↑ " + tg.name; else -> "↓ " + tg.name },
                         color = Color(fg),
                         fontSize = 13.0.sp,
                         fontWeight = FontWeight.Bold
