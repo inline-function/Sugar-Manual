@@ -16,6 +16,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -115,7 +116,7 @@ class MainActivity : ComponentActivity() {
                     if (DshComposeHost.manualOpen()) {
                         androidx.activity.compose.BackHandler { DshComposeHost.act("closeManual") }
                         androidx.compose.foundation.layout.Column(
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
                         ) {
                             androidx.compose.material3.TopAppBar(
                                 title = { Text("简化版引论") },

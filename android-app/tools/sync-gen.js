@@ -29,7 +29,7 @@ if (!src.includes(EFFECT_OLD) || !src.includes(PACK_OLD)) throw new Error("sync-
 src = src.replace(EFFECT_OLD, EFFECT_NEW).replace(PACK_OLD, PACK_NEW);
 
 // 2) 下标注入（strArg("profName") → strArg("profName", 0..)，按出现次序）
-for (const name of ["profName", "sexName"]) {
+for (const name of ["profName", "sexName", "effName"]) {
   const lit = 'strArg("' + name + '")';
   if (!src.includes(lit)) continue;
   const parts = src.split(lit);

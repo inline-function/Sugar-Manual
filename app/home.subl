@@ -14,9 +14,6 @@ struct Home {
             TextButton(onClick = { unchecked openDrugList() }) {
                 Icon(name = "info", size = 22, tint = "onPrimary")
             }
-            TextButton(onClick = { unchecked openManual() }) {
-                Icon(name = "menuBook", size = 22, tint = "onPrimary")
-            }
             TextButton(onClick = { unchecked openSettingsDialog() }) {
                 Icon(name = "settings", size = 22, tint = "onPrimary")
             }
@@ -349,7 +346,7 @@ struct Home {
         BottomSheet(visible = isSettingsOpen(), onDismiss = { unchecked closeSettings() }) {
             Box(modifier = fillWidth().paddingHV(24, 16), orientation = "vertical", spacing = 8) {
                 Text(text = "设置 · 个人画像", size = 22, bold = true, color = "onSurface")
-                Text(text = "先天/已有疾病、年龄、性别 → 预警引擎对不良反应词条加权（加权词条进入下方效应词条流，不另起界面）。", size = 12, color = "onSurfaceVariant")
+                Text(text = "年龄/性别/先天疾病/情感障碍/神经多样性/人格/病史 → 预警引擎对不良反应词条加权；下方「效应过滤」可屏蔽不想看的档位。", size = 12, color = "onSurfaceVariant")
                 Box(modifier = fillWidth().height(480), scrollable = true) {
                     Box(modifier = fillWidth(), orientation = "vertical", spacing = 10) {
                         Text(text = "个人信息", size = 15, bold = true, color = "primary")
@@ -379,7 +376,7 @@ struct Home {
                 }
             }
                         }
-                        Text(text = "先天疾病", size = 15, bold = true, color = "primary")
+                        Text(text = "先天性疾病", size = 15, bold = true, color = "primary")
             Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(0) }) {
                 Box(modifier = weight(1.0)) {
                     Text(text = profName(0), size = 14, color = "onSurface")
@@ -388,7 +385,6 @@ struct Home {
                     Text(text = "✓", size = 16, bold = true, color = "primary")
                 }
             }
-                        Text(text = "已有疾病", size = 15, bold = true, color = "primary")
             Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(1) }) {
                 Box(modifier = weight(1.0)) {
                     Text(text = profName(1), size = 14, color = "onSurface")
@@ -397,6 +393,7 @@ struct Home {
                     Text(text = "✓", size = 16, bold = true, color = "primary")
                 }
             }
+                        Text(text = "情感障碍", size = 15, bold = true, color = "primary")
             Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(2) }) {
                 Box(modifier = weight(1.0)) {
                     Text(text = profName(2), size = 14, color = "onSurface")
@@ -413,6 +410,7 @@ struct Home {
                     Text(text = "✓", size = 16, bold = true, color = "primary")
                 }
             }
+                        Text(text = "神经多样性", size = 15, bold = true, color = "primary")
             Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(4) }) {
                 Box(modifier = weight(1.0)) {
                     Text(text = profName(4), size = 14, color = "onSurface")
@@ -429,6 +427,7 @@ struct Home {
                     Text(text = "✓", size = 16, bold = true, color = "primary")
                 }
             }
+                        Text(text = "人格相关", size = 15, bold = true, color = "primary")
             Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(6) }) {
                 Box(modifier = weight(1.0)) {
                     Text(text = profName(6), size = 14, color = "onSurface")
@@ -437,6 +436,7 @@ struct Home {
                     Text(text = "✓", size = 16, bold = true, color = "primary")
                 }
             }
+                        Text(text = "已有疾病", size = 15, bold = true, color = "primary")
             Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(7) }) {
                 Box(modifier = weight(1.0)) {
                     Text(text = profName(7), size = 14, color = "onSurface")
@@ -482,6 +482,121 @@ struct Home {
                     Text(text = profName(12), size = 14, color = "onSurface")
                 }
                 Box(modifier = paddingH(8), visible = profOn(12)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(13) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = profName(13), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = profOn(13)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(14) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = profName(14), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = profOn(14)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(15) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = profName(15), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = profOn(15)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(16) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = profName(16), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = profOn(16)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+                        Text(text = "特殊状态", size = 15, bold = true, color = "primary")
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(17) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = profName(17), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = profOn(17)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+                        Text(text = "效应过滤", size = 15, bold = true, color = "primary")
+                        Text(text = "关掉的档位不进入下方效应词条流（默认全开）。", size = 12, color = "onSurfaceVariant")
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleEff(0) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = effName(0), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = effOn(0)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleEff(1) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = effName(1), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = effOn(1)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleEff(2) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = effName(2), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = effOn(2)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleEff(3) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = effName(3), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = effOn(3)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleEff(4) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = effName(4), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = effOn(4)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleEff(5) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = effName(5), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = effOn(5)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleEff(6) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = effName(6), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = effOn(6)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleEff(7) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = effName(7), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = effOn(7)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleEff(8) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = effName(8), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = effOn(8)) {
                     Text(text = "✓", size = 16, bold = true, color = "primary")
                 }
             }

@@ -241,16 +241,36 @@ object DshComposeHost {
     private val doseErrState = mutableStateOf("")
     private val settingsOpen = mutableStateOf(false)
     // ---- t77 个人画像（与 profile.subl 同源；SharedPreferences 键 sm_conds/sm_age/sm_sex） ----
-    private val profCondNames = listOf("蚕豆病（G6PD缺乏）", "高血压", "青光眼", "肝功能不全", "肾功能不全", "癫痫",
-        "心律失常史", "糖尿病", "消化性溃疡", "物质使用障碍史", "痴呆/认知障碍", "孕期/哺乳期", "双相情感障碍")
+    // t89 画像分组：先天性疾病 / 情感障碍 / 神经多样性 / 人格相关 / 已有疾病 / 特殊状态（与 home.subl 分组同序）
+    private val profCondNames = listOf(
+        "蚕豆病（G6PD缺乏）", "先天性心脏病", "双相情感障碍", "抑郁症", "ADHD", "孤独症谱系", "人格解体",
+        "高血压", "青光眼", "肝功能不全", "肾功能不全", "癫痫", "心律失常史", "糖尿病", "消化性溃疡",
+        "物质使用障碍史", "痴呆/认知障碍", "孕期/哺乳期")
     private val sexNames = listOf("男", "女", "其他")
+    // t89 效应过滤器：轻/中/重 × 急/慢 主观效应（0-5）+ 轻/中/重 效应包（6-8）；默认全开
+    private val effFilterNames = listOf("轻度急性主观效应", "轻度慢性主观效应", "中度急性主观效应", "中度慢性主观效应", "重度急性主观效应", "重度慢性主观效应", "轻度效应包", "中度效应包", "重度效应包")
+    private val effFilterState = mutableStateOf(List(9) { true })
+    private fun loadEffFilter() {
+        val s = appCtx?.getSharedPreferences("dsh-storage", 0)?.getString("sm_effilter", "") ?: ""
+        if (s.length == 9) effFilterState.value = s.map { it == '1' }
+    }
+    private fun saveEffFilter() {
+        appCtx?.getSharedPreferences("dsh-storage", 0)?.edit()
+            ?.putString("sm_effilter", effFilterState.value.joinToString("") { if (it) "1" else "0" })?.apply()
+    }
+    /** 标签是否通过效应过滤器（级 0 或越界按「无档」放行）。 */
+    private fun effAllowed(tg: EffectTag): Boolean {
+        val lvl = tg.level.coerceIn(1, 3)
+        val idx = if (tg.pack) 6 + (lvl - 1) else (lvl - 1) * 2 + (if (tg.acute) 0 else 1)
+        return effFilterState.value.getOrElse(idx) { true }
+    }
     private val profCondsState = mutableStateOf(setOf<String>())
     private val profAgeState = mutableStateOf("")
     private val profSexState = mutableStateOf("男")
     private fun loadProfileState() {
         val sp = appCtx?.getSharedPreferences("dsh-storage", 0) ?: return
         profCondsState.value = (sp.getString("sm_conds", "") ?: "").split(",").filter { it.isNotEmpty() }.toSet()
-        profAgeState.value = sp.getString("sm_age", "") ?: ""
+        profAgeState.value = sp.getString("sm_age", "18") ?: ""
         val s = sp.getString("sm_sex", "") ?: ""
         profSexState.value = if (s.isNotEmpty()) s else "男"
     }
@@ -835,42 +855,43 @@ object DshComposeHost {
     /** t88 病史加权：病史 × 台账药 → 额外主观效应词条（权重直接入效应流）。 */
     private data class CondBoost(val cond: String, val drugKeys: List<String>, val effect: String, val level: Int, val acute: Boolean, val why: String)
     private val condBoostTable = listOf(
-        CondBoost("双相情感障碍", listOf("氟伏沙明", "帕罗西汀", "氟西汀", "舍曲林", "西酞普兰", "艾司西酞普兰", "文拉法辛", "度洛西汀", "阿米替林", "氯米帕明", "曲唑酮", "米氮平"), "躁狂", 3, false, "抗抑郁药诱发躁狂/轻躁狂转换风险（五朵金花尤其）"),
-        CondBoost("双相情感障碍", listOf("哌甲酯", "安非他酮"), "躁狂", 2, true, "兴奋剂/NDRI 诱发躁狂转换"),
-        CondBoost("双相情感障碍", listOf("碳酸锂", "丙戊酸", "卡马西平", "拉莫三嗪", "奥氮平", "喹硫平"), "稳定情绪", 1, false, "心境稳定剂覆盖可对冲转换风险（权重增长记）"),
-        CondBoost("癫痫", listOf("安非他酮"), "癫痫", 3, true, "安非他酮降低惊厥阈值（剂量依赖）"),
-        CondBoost("癫痫", listOf("氯米帕明", "阿米替林"), "癫痫", 2, true, "TCA 降低惊厥阈值"),
-        CondBoost("青光眼", listOf("阿米替林", "氯米帕明", "苯海索", "苯扎托品", "奥氮平", "喹硫平"), "闭角型青光眼急性发作", 3, true, "抗胆碱能致瞳孔散大、房角关闭"),
-        CondBoost("肾功能不全", listOf("碳酸锂"), "锂中毒", 3, false, "肾小球滤过率下降致锂蓄积"),
+        CondBoost("双相情感障碍", listOf("氟伏沙明", "帕罗西汀", "氟西汀", "舍曲林", "西酞普兰", "艾司西酞普兰", "文拉法辛", "度洛西汀", "阿米替林", "氯米帕明", "曲唑酮", "米氮平"), "躁狂转换", 3, false, "抗抑郁药诱发躁狂/轻躁狂转换风险"),
+        CondBoost("双相情感障碍", listOf("哌甲酯", "安非他酮"), "躁狂转换", 2, true, "兴奋剂/NDRI 诱发躁狂转换"),
+        CondBoost("双相情感障碍", listOf("碳酸锂", "丙戊酸", "卡马西平", "拉莫三嗪", "奥氮平", "喹硫平"), "情绪稳定", 1, false, "心境稳定剂覆盖可对冲转换风险"),
+        CondBoost("癫痫", listOf("安非他酮"), "癫痫发作", 3, true, "安非他酮降低惊厥阈值"),
+        CondBoost("癫痫", listOf("氯米帕明", "阿米替林"), "癫痫发作", 2, true, "TCA 降低惊厥阈值"),
+        CondBoost("青光眼", listOf("阿米替林", "氯米帕明", "苯海索", "苯扎托品", "奥氮平", "喹硫平"), "青光眼发作", 3, true, "抗胆碱能致房角关闭"),
+        CondBoost("肾功能不全", listOf("碳酸锂"), "锂中毒风险", 3, false, "肾小球滤过率下降致锂蓄积"),
         CondBoost("肝功能不全", listOf("丙戊酸", "卡马西平"), "肝损加重", 2, false, "经肝代谢的心境稳定剂需监测转氨酶"),
-        CondBoost("痴呆/认知障碍", listOf("阿米替林", "氯米帕明", "苯海索", "苯扎托品", "奥氮平", "喹硫平"), "谵妄", 3, true, "抗胆碱能负荷加重老年谵妄"),
-        CondBoost("孕期/哺乳期", listOf("帕罗西汀", "氟西汀"), "新生儿撤药/综合征", 2, true, "SSRI 妊娠晚期暴露致新生儿适应不良综合征"),
-        CondBoost("物质使用障碍史", listOf("吗啡", "羟考酮", "芬太尼", "可待因", "曲马多", "哌替啶", "地西泮", "艾司唑仑", "阿普唑仑", "氯硝西泮", "劳拉西泮", "咪达唑仑"), "成瘾倾向加重", 2, false, "阿片/BZD 用于成瘾史者依赖风险倍增")
+        CondBoost("痴呆/认知障碍", listOf("阿米替林", "氯米帕明", "苯海索", "苯扎托品", "奥氮平", "喹硫平"), "谵妄发作", 3, true, "抗胆碱能负荷加重老年谵妄"),
+        CondBoost("孕期/哺乳期", listOf("帕罗西汀", "氟西汀"), "新生儿撤药", 2, true, "SSRI 妊娠晚期暴露致新生儿适应不良综合征"),
+        CondBoost("物质使用障碍史", listOf("吗啡", "羟考酮", "芬太尼", "可待因", "曲马多", "哌替啶", "地西泮", "艾司唑仑", "阿普唑仑", "氯硝西泮", "劳拉西泮", "咪达唑仑"), "成瘾倾向", 2, false, "阿片/BZD 用于成瘾史者依赖风险倍增")
     )
     private fun condBoostTags(names: Set<String>): List<EffectTag> {
         val out = ArrayList<EffectTag>()
         condBoostTable.forEach { r ->
             if (profCondsState.value.any { c -> c == r.cond || c.contains(r.cond) || r.cond.contains(c) }) {
                 val hit = names.firstOrNull { d -> r.drugKeys.any { kw -> kwHit(d, kw) } }
-                if (hit != null) out.add(EffectTag(r.effect + "（" + r.why + "）", r.level, r.acute, false))
+                if (hit != null) out.add(EffectTag(r.effect, r.level, r.acute, false))
             }
         }
         return out
     }
 
     private val profRulesHost = listOf(
-        ProfRuleHost("蚕豆病（G6PD缺乏）", listOf("阿司匹林", "伯氨喹", "磺胺", "呋喃妥因", "亚甲蓝", "维生素K3", "萘啶酸", "氯霉素"), "溶血风险（G6PD 氧化应激）", 3, true, true),
-        ProfRuleHost("青光眼", listOf("苯海索", "苯扎托品", "阿米替林", "氯米帕明", "抗胆碱能"), "青光眼发作风险（抗胆碱能）", 3, true, true),
-        ProfRuleHost("孕期/哺乳期", listOf("碳酸锂", "丙戊酸", "卡马西平", "苯二氮卓"), "胎儿致畸/新生儿风险（妊娠 D 级）", 3, false, true),
-        ProfRuleHost("癫痫", listOf("氯胺酮", "曲马多"), "癫痫发作风险（降阈值）", 3, true, false),
-        ProfRuleHost("肾功能不全", listOf("碳酸锂"), "锂蓄积中毒风险（肾排泄）", 3, false, false),
-        ProfRuleHost("心律失常史", listOf("西酞普兰", "艾司西酞普兰", "阿米替林", "氯米帕明"), "QT 延长/心律失常风险", 2, false, false),
-        ProfRuleHost("高血压", listOf("哌甲酯", "中枢兴奋剂", "文拉法辛", "度洛西汀", "阿司匹林", "NSAIDs"), "血压升高风险", 2, false, false),
-        ProfRuleHost("肝功能不全", listOf("丙戊酸", "卡马西平", "对乙酰氨基酚", "阿司匹林", "酒精"), "肝损加重（监测转氨酶）", 2, false, false),
-        ProfRuleHost("消化性溃疡", listOf("阿司匹林", "布洛芬", "NSAIDs"), "黏膜损伤/出血风险", 2, true, false),
-        ProfRuleHost("物质使用障碍史", listOf("阿片", "苯二氮卓", "哌甲酯", "中枢兴奋剂"), "依赖/误用风险", 2, false, false),
-        ProfRuleHost("痴呆/认知障碍", listOf("苯海索", "苯扎托品", "抗胆碱能", "苯二氮卓"), "谵妄/认知下降风险（Beers）", 2, false, false),
-        ProfRuleHost("糖尿病", listOf("米氮平", "奥氮平", "喹硫平"), "体重增加/血糖波动风险", 1, false, false)
+        // t89 label 统一短名（≤8 字、无括号；标签文本只显示 label，不带「病史×药：」前缀）
+        ProfRuleHost("蚕豆病（G6PD缺乏）", listOf("阿司匹林", "伯氨喹", "磺胺", "呋喃妥因", "亚甲蓝", "维生素K3", "萘啶酸", "氯霉素"), "溶血风险", 3, true, true),
+        ProfRuleHost("青光眼", listOf("苯海索", "苯扎托品", "阿米替林", "氯米帕明", "抗胆碱能"), "青光眼发作", 3, true, true),
+        ProfRuleHost("孕期/哺乳期", listOf("碳酸锂", "丙戊酸", "卡马西平", "苯二氮卓"), "胎儿致畸", 3, false, true),
+        ProfRuleHost("癫痫", listOf("氯胺酮", "曲马多"), "癫痫发作", 3, true, false),
+        ProfRuleHost("肾功能不全", listOf("碳酸锂"), "锂中毒风险", 3, false, false),
+        ProfRuleHost("心律失常史", listOf("西酞普兰", "艾司西酞普兰", "阿米替林", "氯米帕明"), "心律失常", 2, false, false),
+        ProfRuleHost("高血压", listOf("哌甲酯", "中枢兴奋剂", "文拉法辛", "度洛西汀", "阿司匹林", "NSAIDs"), "血压升高", 2, false, false),
+        ProfRuleHost("肝功能不全", listOf("丙戊酸", "卡马西平", "对乙酰氨基酚", "阿司匹林", "酒精"), "肝损加重", 2, false, false),
+        ProfRuleHost("消化性溃疡", listOf("阿司匹林", "布洛芬", "NSAIDs"), "出血风险", 2, true, false),
+        ProfRuleHost("物质使用障碍史", listOf("阿片", "苯二氮卓", "哌甲酯", "中枢兴奋剂"), "依赖误用", 2, false, false),
+        ProfRuleHost("痴呆/认知障碍", listOf("苯海索", "苯扎托品", "抗胆碱能", "苯二氮卓"), "认知下降", 2, false, false),
+        ProfRuleHost("糖尿病", listOf("米氮平", "奥氮平", "喹硫平"), "体重增加", 1, false, false)
     )
     // 药品类别标签镜像（tags 不在宿主侧，按分类集合还原关键词命中）。
     private fun hostClassKeys(name: String): Set<String> = when {
@@ -892,15 +913,16 @@ object DshComposeHost {
         profRulesHost.forEach { r ->
             if (r.cond in profCondsState.value) {
                 val first = names.firstOrNull { profMatchHost(it, r.keys) }
-                if (first != null) tags.add(EffectTag(r.cond + "×" + first + "：" + r.label, r.level, r.acute, r.pack))
+                if (first != null) tags.add(EffectTag(r.label, r.level, r.acute, r.pack))
             }
         }
         val age = profAgeState.value.trim().toIntOrNull() ?: 0
-        if (age in 1..17 && names.any { it in drugSsri || it in drugAntidepress }) {
-            tags.add(EffectTag("未成年×抗抑郁药：自杀冲动升级（黑框警告）", 3, true, true))
+        // t89 未成年/年轻成人黑框警告仅在年龄 <25 时显示（默认 18 岁）；65+ 仅高龄时显示
+        if (age in 1..24 && names.any { it in drugSsri || it in drugAntidepress }) {
+            tags.add(EffectTag("自杀动机增强", 3, true, false))
         }
         if (age >= 65 && names.any { it in drugBzd }) {
-            tags.add(EffectTag("65+×苯二氮卓：跌倒/认知风险（Beers）", 1, false, false))
+            tags.add(EffectTag("跌倒风险", 1, false, false))
         }
         return tags
     }
@@ -1021,14 +1043,14 @@ object DshComposeHost {
             else !hidden.any { kwHit(tg.name, it) }
         }
         // t87 标签排序：1) level 严重→轻 2) 急性→慢性 3) 正面（pos/递质亢进）→负面（递质抑制）→普通负性 4) 效应包→独立效应
-        return kept.sortedWith(
+        return kept.filter { effAllowed(it) }.sortedWith(
             compareByDescending<EffectTag> { it.level }
                 .thenByDescending { it.acute }
                 .thenByDescending { if (it.pos || it.neuro > 0) 2 else if (it.neuro < 0) 1 else 0 }
                 .thenByDescending { it.pack }
         )
     }
-    fun attachEnv(ctx: android.content.Context) { appCtx = ctx; loadProfileState(); refreshRecList(); loadCustomDrugs(); loadCustomPacks(); recomputeChart() }
+    fun attachEnv(ctx: android.content.Context) { appCtx = ctx; loadProfileState(); refreshRecList(); loadCustomDrugs(); loadCustomPacks(); recomputeChart(); loadEffFilter() }
     /** t83 Activity 单开：宿主 object 为进程级单例，第二个 Activity 复用同一实例；仅当上下文缺失时补。 */
     fun attachEnvIfMissing(ctx: android.content.Context) { if (appCtx == null) attachEnv(ctx) }
     // ---------- t88 内置代谢物表（去甲氟西汀等；代谢物曲线与母药联动高亮） ----------
@@ -1245,6 +1267,7 @@ object DshComposeHost {
             nm != null && (q.isEmpty() || nm.contains(q) || q.contains(nm))
         }
         "profOn" -> profCondNames.getOrNull(args.getOrNull(0) as? Int ?: 0) in profCondsState.value
+        "effOn" -> effFilterState.value.getOrElse(args.getOrNull(0) as? Int ?: 0) { true }
         // t82 自定义药选药槽
         "hasCustomPick" -> customDrugsState.value.isNotEmpty()
         "customPickVisible" -> {
@@ -1279,6 +1302,7 @@ object DshComposeHost {
         "packWeightText" -> packWeightLine()
         "profAge" -> profAgeState.value
         "profName" -> profCondNames.getOrNull(args.getOrNull(0) as? Int ?: 0) ?: ""
+        "effName" -> effFilterNames.getOrNull(args.getOrNull(0) as? Int ?: 0) ?: ""
         "sexName" -> sexNames.getOrNull(args.getOrNull(0) as? Int ?: 0) ?: ""
         "packMemberRow" -> {
             val k = args.getOrNull(0) as? Int ?: 0
@@ -1509,6 +1533,16 @@ object DshComposeHost {
                 val c = profCondNames.getOrNull(k) ?: return
                 profCondsState.value = if (c in profCondsState.value) profCondsState.value - c else profCondsState.value + c
                 saveProfileState()
+            }
+            // t89 效应过滤开关（9 档；默认全开）
+            "toggleEff" -> {
+                val k = args.getOrNull(0) as? Int ?: 0
+                if (k in 0..8) {
+                    val cur = effFilterState.value.toMutableList()
+                    cur[k] = !cur[k]
+                    effFilterState.value = cur
+                    saveEffFilter()
+                }
             }
             "setSex" -> {
                 val k = args.getOrNull(0) as? Int ?: 0
