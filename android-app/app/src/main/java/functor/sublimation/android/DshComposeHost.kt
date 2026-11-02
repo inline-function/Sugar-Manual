@@ -1240,7 +1240,7 @@ object DshComposeHost {
             val c = doses.fold(0.0) { acc, d ->
                 if (t >= d.second) acc + d.first * bio * Math.pow(0.5, (t - d.second) / tHalf.toDouble()) else acc
             }
-            Math.round(c * 10.0) / 10.0.toFloat()
+            c.toFloat()
         }
     /** 布尔态读：isFormOpen/isSettingsOpen/isDocOpen/isSel(k)。 */
     fun boolArg(name: String, vararg args: Any?): Boolean = when (name) {
