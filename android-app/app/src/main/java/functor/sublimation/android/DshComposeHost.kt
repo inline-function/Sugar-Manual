@@ -990,8 +990,12 @@ object DshComposeHost {
             if (tg.pack) tg.name in displayed || customPacksState.value.any { p -> tg.name.startsWith(p.name) }
             else !hidden.any { kwHit(tg.name, it) }
         }
+        // t87 标签排序：1) level 严重→轻 2) 急性→慢性 3) 正面（pos/递质亢进）→负面（递质抑制）→普通负性 4) 效应包→独立效应
         return kept.sortedWith(
-            compareByDescending<EffectTag> { it.level }.thenByDescending { it.acute }.thenByDescending { it.pack }
+            compareByDescending<EffectTag> { it.level }
+                .thenByDescending { it.acute }
+                .thenByDescending { if (it.pos || it.neuro > 0) 2 else if (it.neuro < 0) 1 else 0 }
+                .thenByDescending { it.pack }
         )
     }
     fun attachEnv(ctx: android.content.Context) { appCtx = ctx; loadProfileState(); refreshRecList(); loadCustomDrugs(); loadCustomPacks(); recomputeChart() }
