@@ -291,7 +291,7 @@ object DshComposeHost {
     private fun memBaseOfDrug(drug: String, keys: List<String>): Int {
         var best = 0
         advTable[drug]?.forEach { e -> if (keys.any { kwHit(e.name, it) } && effBase(e.level) > best) best = effBase(e.level) }
-        return best + doseBonusOf(drug)
+        return best
     }
     private fun packMemberRows(names: Set<String>, keys: List<List<String>>, displayNames: List<String>, filter: (String) -> Boolean, extra: List<PackMember> = emptyList()): List<PackMember> {
         val rows = ArrayList<PackMember>()
@@ -318,14 +318,36 @@ object DshComposeHost {
         "苏沃瑞生" to 10.0, "莱博瑞生" to 5.0, "氯胺酮" to 50.0, "裸盖菇素" to 10.0,
         "苯海索" to 2.0, "苯扎托品" to 1.0, "普拉克索" to 0.5, "金刚烷胺" to 100.0, "美金刚" to 10.0,
         "普瑞巴林" to 75.0, "雷美替胺" to 8.0, "奥氮平" to 10.0, "喹硫平" to 100.0,
+        // t82 补全：逆转剂/解热镇痛/精神活性/相互作用药 —— 缺表时 odWeight=0（剂量维度盲区，
+        // 例如 10000mg 赛庚啶本应是强抗胆碱能负荷过量）。乙醇按克数换 mg（1 标准饮品 ≈ 14g）。
+        "赛庚啶" to 4.0, "纳洛酮" to 0.4, "氟马西尼" to 0.5, "毒扁豆碱" to 1.0,
+        "布洛芬" to 400.0, "塞来昔布" to 200.0, "对乙酰氨基酚" to 500.0, "咖啡因" to 200.0,
+        "乙醇" to 14000.0, "尼古丁" to 7.0, "环丙沙星" to 500.0, "克拉霉素" to 500.0, "利福平" to 600.0,
         "布洛芬" to 400.0, "塞来昔布" to 200.0, "对乙酰氨基酚" to 500.0, "咖啡因" to 100.0, "乙醇" to 14000.0, "尼古丁" to 1.0,
         "环丙沙星" to 500.0, "克拉霉素" to 250.0, "利福平" to 600.0, "口服避孕药（炔雌醇/去氧孕烯）" to 1.0,
         "纳洛酮" to 0.4, "氟马西尼" to 0.2, "毒扁豆碱" to 1.0, "赛庚啶" to 4.0
     )
-    private fun doseBonusOf(drug: String): Int {
-        val typ = typDose[drug] ?: return 0
-        val dose = recListState.value.firstOrNull { it.name == drug }?.amount?.trim()?.toDoubleOrNull() ?: return 0
-        return if (dose >= typ * 4.0) 2 else if (dose >= typ * 1.5) 1 else 0
+    // ---------- t82 剂量量效模型（用户需求：过量倍数 → 毒理学效应包权重） ----------
+    // 复用 typDose 常用量表：amount / typDose = 过量倍数。
+    // 档位：<1.5× 0（治疗窗）/ <4× 1 轻度 / <10× 2 中度 / ≥10× 3 重度。
+    // 例：1000mg 氟伏沙明（常用 100mg）= 10× → 中度 +2；10000mg 芬太尼（0.1mg）= 10^5× → 重度 +3。
+    /** 相对常用量的过量倍数（无 typDose / 无剂量 → 0 不计）。 */
+    private fun odRatio(drug: String): Double {
+        val typ = typDose[drug] ?: return 0.0
+        val dose = recListState.value.firstOrNull { it.name == drug }?.amount?.trim()?.toDoubleOrNull() ?: return 0.0
+        return dose / typ
+    }
+    /** 过量权重（0-3：轻/中/重度急性过量）。 */
+    private fun odWeight(drug: String): Int {
+        val r = odRatio(drug)
+        return when { r >= 10.0 -> 3; r >= 4.0 -> 2; r >= 1.5 -> 1; else -> 0 }
+    }
+    /** 包成员来源串：药名 + 倍数 + 档位（如「氟伏沙明 10.0× 急性过量）」。 */
+    private fun odLine(drug: String): String {
+        val r = odRatio(drug)
+        val w = odWeight(drug)
+        val tag = if (w >= 3) "重度" else if (w >= 2) "中度" else "轻度"
+        return String.format("%s %.1f×（急性过量·%s）", drug, r, tag)
     }
 
     /** 画像加权（抗胆碱能负荷 ACB：痴呆/认知障碍/年龄>=65 各 +2）。 */
@@ -346,10 +368,12 @@ object DshComposeHost {
         val boost = acBoost()
         val members = packMemberRows(names, acKeys.map { k -> listOf(k) }, acCatNames, { it in packAntichDrugs },
             if (boost != null) listOf(PackMember("画像加权（抗胆碱能负荷）", boost.first, boost.second)) else emptyList())
-        val gross = packWeightSum(members)
+        // t82：剂量过量加权行
+        val odAc = names.filter { it in packAntichDrugs }.mapNotNull { d -> val w = odWeight(d); if (w > 0) PackMember("抗胆碱能负荷过量", w, odLine(d)) else null }
+        val gross = packWeightSum(members + odAc)
         val red = if ("毒扁豆碱" in names) 3 else 0     // t79 rev2 逆转剂：胆碱酯酶抑制，升 ACh 对抗蕈毒碱阻断
         val w = if (gross >= red) gross - red else 0
-        return PackInfo("抗胆碱能综合征", true, w, packTierOf(w), if (red > 0) "毒扁豆碱 −3" else "", antiChPackDesc, members)
+        return PackInfo("抗胆碱能综合征", true, w, packTierOf(w), if (red > 0) "毒扁豆碱 −3" else "", antiChPackDesc, members + odAc)
     }
     private fun serotonergicPack(names: Set<String>): PackInfo {
         val ds = names.filter { it in packSerotonDrugs }
@@ -360,7 +384,9 @@ object DshComposeHost {
             ds.sorted().forEach { d -> val m = memBaseOfDrug(d, serKeys[i]); if (m > 0) { w += m; if (sb.isNotEmpty()) sb.append("，"); sb.append("$d +$m") } }
             rows.add(PackMember(serCatNames[i], w, sb.toString()))
         }
-        val all0 = rows + combo
+        // t82：剂量过量加权行（每药 amount/typDose 倍数 → 包权重；与联用行同求和）
+        val odSer = ds.mapNotNull { d -> val w = odWeight(d); if (w > 0) PackMember("急性过量加权（血清素能）", w, odLine(d)) else null }
+        val all0 = rows + combo + odSer
         val red = if ("赛庚啶" in names) 3 else 0          // t79 rev2 逆转剂：5-HT2 拮抗
         val gross0 = all0.sumOf { it.weight }
         val w0 = if (gross0 >= red) gross0 - red else 0
@@ -376,7 +402,9 @@ object DshComposeHost {
             ds.sorted().forEach { d -> val m = memBaseOfDrug(d, opKeys[i]); if (m > 0) { w += m; if (sb.isNotEmpty()) sb.append("，"); sb.append("$d +$m") } }
             rows.add(PackMember(opCatNames[i], w, sb.toString()))
         }
-        val all1 = rows + combo
+        // t82：剂量过量加权行（仅阿片：μ 激动剂单药超大剂量即阿片中毒三联，不必联用）
+        val odOp = ds.filter { drugOpioid.containsKey(it) }.mapNotNull { d -> val w = odWeight(d); if (w > 0) PackMember("μ 激动剂急性过量", w, odLine(d)) else null }
+        val all1 = rows + combo + odOp
         val red1 = if ("纳洛酮" in names) 4 else 0       // t79 rev2 逆转剂：μ 受体竞争性拮抗
         val gross1 = all1.sumOf { it.weight }
         val w1 = if (gross1 >= red1) gross1 - red1 else 0
@@ -541,11 +569,14 @@ object DshComposeHost {
         }
         val tags = ArrayList<EffectTag>()
         byName.forEach { (name, list) ->
-            // t79 rev2：频率基准级 + 该药剂量加成（与 warn.subl effEntries 同口径）
-            val base = list.maxOf { e -> effBase(e.second.level) + doseBonusOf(names.elementAt(e.first)) }
+            // t82：包名词条（血清素综合征/阿片类中毒/抗胆碱能综合征）交包通路统一管理 ——
+            // 包权重含逆转剂减权与剂量过量行，词条通路不经减权会与包结果冲突、误导「逆转剂无效」。
+            if (name == "血清素综合征" || name == "阿片类中毒" || name == "抗胆碱能综合征") return@forEach
+            // t79 rev2：频率基准级 + 该药剂量加成（t82 与包剂量行同口径 odWeight）
+            val base = list.maxOf { e -> effBase(e.second.level) + odWeight(names.elementAt(e.first)) }
             val drugs = list.map { it.first }.distinct().size
             val level = if (base + drugs >= 4) 3 else base + drugs - 1
-            tags.add(EffectTag(name, level, list.any { it.second.acute }, name == "血清素综合征" || name == "阿片类中毒"))
+            tags.add(EffectTag(name, level, list.any { it.second.acute }, false))
         }
         // t78 物质/药对相互作用镜像（与 warn.subl substanceInteractions 同表；◆ 为 3 级禁止配伍包）
         val si = ArrayList<EffectTag>()
@@ -559,8 +590,17 @@ object DshComposeHost {
         if ("槟榔碱" in names && drugAntipsych.any { it in names }) si.add(EffectTag("槟榔碱×抗精神病药：锥体外系症状加重风险", 2, false, false))
         if ("利福平" in names && "喹硫平" in names) si.add(EffectTag("利福平×喹硫平：血药浓度显著下降（CYP3A4 强诱导）", 2, false, false))
         tags.addAll(si)
-        if (drugOpioid.keys.any { it in names } && drugBzd.any { it in names }) {
-            tags.add(EffectTag("阿片类中毒", 3, acute = true, pack = true))
+        // t82：阿片类中毒触发 = 阿片∩BZD 联用（原通路）OR 任一阿片急性过量 ≥ 轻度（μ 激动剂单药超大剂量）
+        if ((drugOpioid.keys.any { it in names } && drugBzd.any { it in names }) ||
+            drugOpioid.keys.any { it in names && odWeight(it) >= 1 }) {
+            val oi = opioidToxPack(names)
+            if (oi.weight >= 3) tags.add(EffectTag("阿片类中毒", oi.tier, acute = true, pack = true))
+        }
+        // t82：血清素综合征触发 = 任一血清素能药急性过量 ≥ 轻度；标签等级 = 逆转剂减权后的包 tier。
+        // 阈值 weight >= 3（tier ≥ 1，与抗胆碱能包同口径）——残余 < 3 视为不构成综合征级。
+        if (tags.none { it.name == "血清素综合征" } && packSerotonDrugs.any { it in names && odWeight(it) >= 1 }) {
+            val si = serotonergicPack(names)
+            if (si.weight >= 3) tags.add(EffectTag("血清素综合征", si.tier, acute = true, pack = true))
         }
         // t79 抗胆碱能综合征包镜像（联用含抗胆碱能标签药且 tier>0 → level=tier 的急性包）
         if (packAntichDrugs.any { it in names }) {
