@@ -776,15 +776,29 @@ object DshComposeHost {
                 cd.withdraw.forEach { e -> tags.add(EffectTag(e.name, if (e.acute) 2 else 1, e.acute, false)) }
             }
         }
+        // t83 用户自定义效应包：按包关键词扫描台账各药 advList，命中症状行级别求和 → 过阈值显示
+        customPacksState.value.forEach { pk ->
+            val names = recListState.value.map { it.name }.toSet()
+            val members = ArrayList<PackMember>()
+            val keyGroups = pk.keys.map { listOf(it) }
+            names.sorted().forEach { d ->
+                val m = memBaseOfDrug(d, pk.keys)
+                if (m > 0) members.add(PackMember(d, m, "$d 症状词条命中"))
+            }
+            val w = packWeightSum(members)
+            if (w >= pk.threshold) tags.add(EffectTag(pk.name + " · " + packTierOf(w), w, false, true))
+        }
         val kept = tags.filter { tg ->
-            if (tg.pack) tg.name in displayed
+            if (tg.pack) tg.name in displayed || customPacksState.value.any { p -> tg.name.startsWith(p.name) }
             else !hidden.any { kwHit(tg.name, it) }
         }
         return kept.sortedWith(
             compareByDescending<EffectTag> { it.level }.thenByDescending { it.acute }.thenByDescending { it.pack }
         )
     }
-    fun attachEnv(ctx: android.content.Context) { appCtx = ctx; loadProfileState(); refreshRecList(); loadCustomDrugs(); recomputeChart() }
+    fun attachEnv(ctx: android.content.Context) { appCtx = ctx; loadProfileState(); refreshRecList(); loadCustomDrugs(); loadCustomPacks(); recomputeChart() }
+    /** t83 Activity 单开：宿主 object 为进程级单例，第二个 Activity 复用同一实例；仅当上下文缺失时补。 */
+    fun attachEnvIfMissing(ctx: android.content.Context) { if (appCtx == null) attachEnv(ctx) }
     // ---------- 浓度图（与 JS chartSeriesList/PkEngine 同公式：C(t)=Σ D·F·0.5^(t/T½)；窗口 -12h..+36h 步长 1h，t=0=现在；t75 新药沿用 host 旧式峰值模型，与 JS 模型差异见 compose 同步说明） ----------
     // t80 曲线高亮（点记录卡 toggle；session 态，不随 ledger 持久化）
     private val chartHiState = mutableStateOf("")
@@ -1015,6 +1029,9 @@ object DshComposeHost {
             "setCdOverName" -> cdOverNameState.value = v
             "setCdWithName" -> cdWithNameState.value = v
             "setCdMetaboName" -> cdMetaboNameState.value = v
+            "setCpName" -> cpNameState.value = v
+            "setCpKeys" -> cpKeysState.value = v
+            "setCpThresh" -> { cpThreshState.value = ((v.toIntOrNull() ?: 3)).coerceIn(1, 9) }
             else -> Log.w(tag, "actText 未知路由: " + name)
         }
     }
@@ -1082,16 +1099,17 @@ object DshComposeHost {
             }
             // ---------- t82 自定义药物 ----------
             "openCustomDrugs" -> {
-                customMgrOpen.value = true; cdErrState.value = ""; cdCatsState.value = ArrayList()
-                cdRouteIdx.value = 0; cdAdvDraft.value = ArrayList(); cdOverDraft.value = ArrayList(); cdWithDraft.value = ArrayList(); cdMetaboDraft.value = ArrayList()
-                cdAdvNameState.value = ""; cdOverNameState.value = ""; cdWithNameState.value = ""; cdMetaboNameState.value = ""; cdEnWeight.value = 1; cdEnAcute.value = true
+                // t83 单开 Activity（返回键即退出，不再用全屏 DshSheet）
+                val ctx = appCtx
+                if (ctx != null) {
+                    val it2 = android.content.Intent(ctx, CustomDrugActivity::class.java)
+                    it2.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                    ctx.startActivity(it2)
+                }
+                resetCdForm()
             }
-            "closeCustomDrugs" -> {
-                customMgrOpen.value = false
-                cdNameState.value = ""; cdHalfState.value = ""; cdBioState.value = ""; cdTypState.value = ""; cdErrState.value = ""; cdCatsState.value = ArrayList()
-                cdRouteIdx.value = 0; cdAdvDraft.value = ArrayList(); cdOverDraft.value = ArrayList(); cdWithDraft.value = ArrayList(); cdMetaboDraft.value = ArrayList()
-                cdAdvNameState.value = ""; cdOverNameState.value = ""; cdWithNameState.value = ""; cdMetaboNameState.value = ""
-            }
+            "closeCustomDrugs" -> { customMgrOpen.value = false; resetCdForm() }
+
             "pickCdColor" -> { cdColorState.value = presetColors.getOrNull((args.getOrNull(0) as? Int) ?: 0) ?: 0xFFFFC107.toInt() }
             "customPickAt" -> {
                 val k = (args.getOrNull(0) as? Int) ?: 0
@@ -1134,6 +1152,17 @@ object DshComposeHost {
             "delCdMetabo" -> {
                 val idx = (args.getOrNull(0) as? Int) ?: -1
                 if (idx in cdMetaboDraft.value.indices) { cdMetaboDraft.value.removeAt(idx); cdMetaboDraft.value = ArrayList(cdMetaboDraft.value) }
+            }
+            "commitCustomPack" -> commitCustomPack()
+            "askDelPack" -> { pendingDelPack.value = (args.getOrNull(0) as? Int) ?: -1 }
+            "cancelDelPack" -> { pendingDelPack.value = -1 }
+            "confirmDelPack" -> {
+                val i = pendingDelPack.value
+                if (i in customPacksState.value.indices) {
+                    customPacksState.value.removeAt(i)
+                    saveCustomPacks()
+                }
+                pendingDelPack.value = -1
             }
             "commitCustomDrug" -> commitCustomDrug()
             "askDelCustom" -> pendingDelCustom.value = (args.getOrNull(0) as? Int) ?: -1
@@ -1222,6 +1251,17 @@ object DshComposeHost {
         appCtx?.getSharedPreferences("dsh-storage", 0)?.edit()?.putString("ledger", v)?.apply()
     }
     /** t82 提交自定义药：校验（非空名 / 不与内置或已建重名 / T½>0 / F 0..100% / 常用量>0）→ 入表并持久化。 */
+    private fun commitCustomPack() {
+        val nm = cpNameState.value.trim()
+        val keys = cpKeysState.value.split(",", "，", "、").map { it.trim() }.filter { it.isNotEmpty() }
+        if (nm.isEmpty()) { cpErrState.value = "包名不能为空"; return }
+        if (keys.isEmpty()) { cpErrState.value = "至少一个症状关键词"; return }
+        if (customPacksState.value.any { it.name == nm }) { cpErrState.value = "已有效应包同名"; return }
+        customPacksState.value.add(CustomPack(nm, keys, cpThreshState.value.coerceIn(1, 9)))
+        saveCustomPacks()
+        cpNameState.value = ""; cpKeysState.value = ""; cpErrState.value = ""
+    }
+
     private fun commitCustomDrug() {
         val nm = cdNameState.value.trim()
         val th = cdHalfState.value.trim().toDoubleOrNull()
@@ -1404,10 +1444,8 @@ object DshComposeHost {
 
     @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
     @Composable
-    fun Subl_CustomDrugSheet() {
-        if (!customMgrOpen.value) return
-        DshSheet(onDismiss = { act("closeCustomDrugs") }, sheetFraction = 0f) {
-            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp).verticalScroll(rememberScrollState()), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)) {
+    fun Subl_CustomDrugMgr(modifier: Modifier = Modifier) {
+        androidx.compose.foundation.layout.Column(modifier = modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 16.dp).verticalScroll(rememberScrollState()), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)) {
                 androidx.compose.material3.Text(text = "自定义药物", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 androidx.compose.material3.Text(text = "与内置药同引擎：药代 + 给药途径 + 效应词条 + 效应包，全部参与预警/曲线。", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 // ---- 药代 + 剂量 ----
@@ -1515,8 +1553,96 @@ object DshComposeHost {
                         dismissButton = { androidx.compose.material3.TextButton(onClick = { act("cancelDelCustom") }) { androidx.compose.material3.Text(text = "取消") } }
                     )
                 }
+                // ---- t83 自定义效应包 ----
+                androidx.compose.material3.HorizontalDivider()
+                androidx.compose.material3.Text(text = "自定义效应包", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                androidx.compose.material3.Text(text = "关键词命中台账各药症状词条即累加权重，过阈值在主页生成「包 · 档位」标签（同内置三包）。", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                customPacksState.value.forEachIndexed { i, pk ->
+                    androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).combinedClickable(onClick = {}, onLongClick = { act("askDelPack", listOf(i)) }).padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                        androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1.0f)) {
+                            androidx.compose.material3.Text(text = pk.name, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                            androidx.compose.material3.Text(text = "阈值 " + pk.threshold + " · 关键词 " + pk.keys.joinToString("/"), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        androidx.compose.material3.Text(text = "长按删除", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    androidx.compose.material3.OutlinedTextField(
+                        value = cpNameState.value, onValueChange = { actText("setCpName", it) },
+                        label = { androidx.compose.material3.Text("包名") }, singleLine = true,
+                        modifier = Modifier.weight(1.0f))
+                    androidx.compose.material3.OutlinedTextField(
+                        value = cpThreshState.value.toString(), onValueChange = { actText("setCpThresh", it) },
+                        label = { androidx.compose.material3.Text("阈值") }, singleLine = true, keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                        modifier = Modifier.width(90.dp))
+                }
+                androidx.compose.material3.OutlinedTextField(
+                    value = cpKeysState.value, onValueChange = { actText("setCpKeys", it) },
+                    label = { androidx.compose.material3.Text("症状关键词（逗号分隔，如 震颤,反射亢进）") }, singleLine = true,
+                    modifier = Modifier.fillMaxWidth())
+                androidx.compose.material3.Button(onClick = { act("commitCustomPack") }, modifier = Modifier.fillMaxWidth()) {
+                    androidx.compose.material3.Text(text = "＋ 添加效应包")
+                }
+                if (cpErrState.value.isNotEmpty()) {
+                    androidx.compose.material3.Text(text = cpErrState.value, fontSize = 13.sp, color = MaterialTheme.colorScheme.error)
+                }
+                // 包删除确认
+                if (pendingDelPack.value >= 0 && pendingDelPack.value < customPacksState.value.size) {
+                    val pk = customPacksState.value[pendingDelPack.value]
+                    androidx.compose.material3.AlertDialog(
+                        onDismissRequest = { pendingDelPack.value = -1 },
+                        title = { androidx.compose.material3.Text(text = "删除效应包", fontWeight = FontWeight.Bold) },
+                        text = { androidx.compose.material3.Text(text = "确认删除「" + pk.name + "」？其标签将不再显示，药物与记录不受影响。") },
+                        confirmButton = { androidx.compose.material3.TextButton(onClick = { act("confirmDelPack") }) { androidx.compose.material3.Text(text = "删除", color = MaterialTheme.colorScheme.error) } },
+                        dismissButton = { androidx.compose.material3.TextButton(onClick = { act("cancelDelPack") }) { androidx.compose.material3.Text(text = "取消") } }
+                    )
+                }
             }
+    }
+
+    // ---------- t83 自定义效应包（用户定义：包名 + 症状关键词组 + 显示阈值） ----------
+    data class CustomPack(val name: String, val keys: List<String>, val threshold: Int)
+    private val customPacksState = mutableStateOf(ArrayList<CustomPack>())
+    private val cpNameState = mutableStateOf("")
+    private val cpKeysState = mutableStateOf("")   // 关键词逗号分隔
+    private val cpThreshState = mutableStateOf(3)
+    private val cpErrState = mutableStateOf("")
+    private val pendingDelPack = mutableStateOf(-1)
+
+    private fun loadCustomPacks() {
+        val ctx = appCtx ?: return
+        try {
+            val raw = ctx.getSharedPreferences("dsh-storage", android.content.Context.MODE_PRIVATE).getString("customPacks", "") ?: ""
+            if (raw.isEmpty()) return
+            val a = org.json.JSONArray(raw)
+            val out = ArrayList<CustomPack>()
+            for (i in 0 until a.length()) {
+                val o = a.optJSONObject(i) ?: continue
+                val keys = (o.opt("keys") as? org.json.JSONArray)?.let { k -> (0 until k.length()).mapNotNull { k.opt(it) as? String } } ?: emptyList()
+                out.add(CustomPack(o.opt("name") as? String ?: "", keys, (o.opt("threshold") as? Number)?.toInt() ?: 3))
+            }
+            customPacksState.value = out
+        } catch (e: Exception) { /* 格式损坏忽略 */ }
+    }
+    private fun saveCustomPacks() {
+        val ctx = appCtx ?: return
+        val a = org.json.JSONArray()
+        customPacksState.value.forEach { d ->
+            val o = org.json.JSONObject()
+            o.put("name", d.name); o.put("keys", org.json.JSONArray(d.keys)); o.put("threshold", d.threshold)
+            a.put(o)
         }
+        ctx.getSharedPreferences("dsh-storage", android.content.Context.MODE_PRIVATE).edit().putString("customPacks", a.toString()).apply()
+    }
+
+        /** t83 重置自定义药物表单（开关 Activity / 提交 / 取消共用）。 */
+    private fun resetCdForm() {
+        customMgrOpen.value = false
+        cdNameState.value = ""; cdHalfState.value = ""; cdBioState.value = ""; cdTypState.value = ""; cdErrState.value = ""
+        cdCatsState.value = ArrayList(); cdRouteIdx.value = 0
+        cdAdvDraft.value = ArrayList(); cdOverDraft.value = ArrayList(); cdWithDraft.value = ArrayList(); cdMetaboDraft.value = ArrayList()
+        cdAdvNameState.value = ""; cdOverNameState.value = ""; cdWithNameState.value = ""; cdMetaboNameState.value = ""
+        cdEnWeight.value = 1; cdEnAcute.value = true
     }
 
     /** t82 长按记录卡的删除确认框（pendingDelete >= 0 时显示；确认后删该条并刷新曲线）。 */

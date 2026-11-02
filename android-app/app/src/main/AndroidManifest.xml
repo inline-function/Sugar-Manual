@@ -9,6 +9,9 @@
         android:icon="@mipmap/ic_launcher"
         android:theme="@style/Theme.Sublimation"
         android:usesCleartextTraffic="true">
+                <activity
+            android:name=".CustomDrugActivity"
+            android:exported="false" />
         <activity
             android:name=".MainActivity"
             android:exported="true">
