@@ -31,9 +31,12 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.Alignment
 import org.json.JSONObject
 
@@ -919,18 +922,28 @@ object DshComposeHost {
      *  替代 M3 ModalBottomSheet——M3 1.3.1 上 confirmValueChange 只能同时废掉「下滑收回」与「点遮罩退出」二者，
      *  且发射器把抽屉挂在外层 Column 里（fillMaxSize 够不到全屏），故用全屏 Dialog 自绘遮罩+抽屉。 */
     @Composable
-    fun DshSheet(onDismiss: () -> Unit, content: @Composable () -> Unit) {
+    fun DshSheet(onDismiss: () -> Unit, sheetFraction: Float = 0f, content: @Composable () -> Unit) {
         val sheetInteraction = remember { MutableInteractionSource() }
+        // sheetFraction：抽屉最小高度占屏高比例（0 = 包裹内容）。用户口径「拉到顶上 1:3 处」
+        // → 上沿在屏幕顶部下方 1/3，即 sheetFraction = 2/3。内容更高时仍自然撑开（heightIn 只设下限）。
+        val sheetMinH = if (sheetFraction > 0f) {
+            val cfg = androidx.compose.ui.platform.LocalConfiguration.current
+            cfg.screenHeightDp.dp.times(sheetFraction)
+        } else 0.dp
         androidx.compose.ui.window.Dialog(
             onDismissRequest = onDismiss,
             properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
         ) {
-            Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.55f)).clickable(
+            // Dialog 窗口按内容 wrap（fillMaxSize 够不到全屏，遮罩只盖到抽屉顶），
+            // 用 requiredHeight 强制占满整屏，窗口 wrap 到这个高度后自然铺满。
+            val fullH = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp
+            Box(modifier = Modifier.fillMaxWidth().requiredHeight(fullH).background(Color.Black.copy(alpha = 0.32f)).clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 onClick = onDismiss
             )) {
                 Column(modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
+                    .heightIn(min = sheetMinH)
                     .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
                     .background(MaterialTheme.colorScheme.surface)
                     .imePadding()

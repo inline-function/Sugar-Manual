@@ -6,6 +6,7 @@
  *   2) Home.kt: strArg("profName")/strArg("sexName") 按出现次序注入下标（宿主按 key+i 取值）；
  *   3) Home.kt: 5 处 ModalBottomSheet(…, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true))
  *      → 宿主 DshSheet（自绘抽屉：点遮罩/系统返回退出、无下滑手势——用户要求 t79 rev2）；
+ *      服药表单抽屉（cancelForm）额外注入 sheetFraction = 2f/3f（用户要求：抽屉上沿拉到屏幕顶部下方 1/3 处）；
  *   4) PickerRowsA/B/C.kt、LibRowsA/B/C/D.kt、GeneratedCompose.kt 逐字复制。
  * 用法：node android-app/tools/sync-gen.js
  */
@@ -37,9 +38,18 @@ for (const name of ["profName", "sexName"]) {
 }
 
 // 3) ModalBottomSheet → DshSheet（5 处，onDismissRequest→onDismiss，去 sheetState）
-for (const route of ["cancelForm", "closeSettings", "closeDrugList", "closeDoc", "closePackSheet"]) {
+// 服用药物表单抽屉单独注入 sheetFraction = 2f/3f（用户要求：抽屉上沿拉到屏幕顶部下方 1/3 处，
+// 即抽屉高 = 2/3 屏高下限；内容更高时 DshSheet 的 heightIn 仍自然撑开）
+for (const route of ["closeSettings", "closeDrugList", "closeDoc", "closePackSheet"]) {
   const mbsCall = 'androidx.compose.material3.ModalBottomSheet(onDismissRequest = { functor.sublimation.android.DshComposeHost.act("' + route + '") }, sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true))';
   const sheetCall = 'functor.sublimation.android.DshComposeHost.DshSheet(onDismiss = { functor.sublimation.android.DshComposeHost.act("' + route + '") })';
+  if (src.split(mbsCall).length - 1 !== 1) throw new Error("sync-gen: ModalBottomSheet 调用未唯一匹配: " + route);
+  src = src.split(mbsCall).join(sheetCall);
+}
+{
+  const route = "cancelForm";
+  const mbsCall = 'androidx.compose.material3.ModalBottomSheet(onDismissRequest = { functor.sublimation.android.DshComposeHost.act("' + route + '") }, sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true))';
+  const sheetCall = 'functor.sublimation.android.DshComposeHost.DshSheet(onDismiss = { functor.sublimation.android.DshComposeHost.act("' + route + '") }, sheetFraction = 2f / 3f)';
   if (src.split(mbsCall).length - 1 !== 1) throw new Error("sync-gen: ModalBottomSheet 调用未唯一匹配: " + route);
   src = src.split(mbsCall).join(sheetCall);
 }
