@@ -269,7 +269,38 @@ object DshComposeHost {
     // ---------- t82 自定义药物（用户自建：名字 + 半衰期 + 生物利用度 + 常用量 + 曲线色） ----------
     // 与内置药同引擎：可服药（选药索引 100+k）、浓度曲线（drugParams）、过量判定（odRatio）、
     // 记录卡色块条（drugColorOf）。存 storage 键 "customDrugs"。
-    data class CustomDrug(val name: String, val tHalf: Double, val bio: Double, val typ: Double, val color: Int)
+    /** t82 自定义药效应机制：药理分类（多选）→ 继承该分类效应词条模板 + 进入对应综合征包。
+     * 例：自定义「曲马多样药」选 阿片能+血清素能 → 同时进入阿片类中毒与血清素综合征包，
+     * 词条流出现呼吸抑制/震颤等，剂量过量再按 odWeight 给包加权。 */
+    data class CustomDrug(val name: String, val tHalf: Double, val bio: Double, val typ: Double, val color: Int, val cats: List<Int>)
+    // 药理分类 id
+    private val CAT_SER = 0; private val CAT_OPI = 1; private val CAT_BZD = 2
+    private val CAT_ANTICH = 3; private val CAT_STIM = 4; private val CAT_ANTIPSY = 5
+    private val catNames = listOf("血清素能", "阿片能（μ 激动）", "苯二氮卓类", "抗胆碱能", "中枢兴奋剂", "抗精神病")
+    /** 分类 → 效应词条模板（AdvEnt）；level 频率基准、acute 急性。 */
+    private val catAdvTemplates = mapOf(
+        CAT_SER to listOf(AdvEnt("血清素综合征", 1, true), AdvEnt("恶心", 2, false), AdvEnt("震颤", 2, false), AdvEnt("失眠", 2, false), AdvEnt("头晕", 2, false), AdvEnt("激越", 1, false)),
+        CAT_OPI to listOf(AdvEnt("呼吸抑制", 2, true), AdvEnt("镇静", 2, false), AdvEnt("嗜睡", 2, false), AdvEnt("便秘", 1, false), AdvEnt("瞳孔缩小", 1, false), AdvEnt("恶心呕吐", 2, false)),
+        CAT_BZD to listOf(AdvEnt("嗜睡", 2, false), AdvEnt("头晕", 1, false), AdvEnt("呼吸抑制", 1, true), AdvEnt("依赖风险", 1, false), AdvEnt("运动失调", 1, false)),
+        CAT_ANTICH to listOf(AdvEnt("口干", 2, false), AdvEnt("视物模糊", 2, false), AdvEnt("便秘", 1, false), AdvEnt("尿潴留", 1, false), AdvEnt("谵妄", 2, true), AdvEnt("心动过速", 1, false)),
+        CAT_STIM to listOf(AdvEnt("失眠", 2, true), AdvEnt("焦虑", 2, false), AdvEnt("心悸", 2, false), AdvEnt("震颤", 1, false), AdvEnt("食欲抑制", 1, false)),
+        CAT_ANTIPSY to listOf(AdvEnt("锥体外系症状", 2, false), AdvEnt("镇静", 2, false), AdvEnt("代谢综合征", 1, false), AdvEnt("体位性低血压", 1, false))
+    )
+    /** 分类 → 所属综合征包（药物集合归属）。 */
+    private val catPackMap = mapOf(CAT_SER to 1, CAT_OPI to 2, CAT_BZD to 3, CAT_ANTICH to 4)
+    /** 词条查询统一入口：内置表为主，自定义药按其分类模板拼接。 */
+    private fun advList(name: String): List<AdvEnt> {
+        advTable[name]?.let { return it }
+        val cd = customByName(name) ?: return emptyList()
+        val out = ArrayList<AdvEnt>()
+        cd.cats.forEach { c -> catAdvTemplates[c]?.forEach { e -> if (out.none { it.name == e.name }) out.add(e) } }
+        return out
+    }
+    /** 自定义药分类归属判断（包成员与相互作用镜像用）。 */
+    private fun isSerotonergic(n: String): Boolean = n in packSerotonDrugs || (customByName(n)?.cats?.contains(CAT_SER) == true)
+    private fun isOpioid(n: String): Boolean = drugOpioid.containsKey(n) || (customByName(n)?.cats?.contains(CAT_OPI) == true)
+    private fun isBzd(n: String): Boolean = n in drugBzd || (customByName(n)?.cats?.contains(CAT_BZD) == true)
+    private fun isAnticholinergic(n: String): Boolean = n in packAntichDrugs || (customByName(n)?.cats?.contains(CAT_ANTICH) == true)
     private val customDrugsState = mutableStateOf(ArrayList<CustomDrug>())
     /** 自定义药在选药列表的索引基（与内置 drugNames 下标隔离）。 */
     private val customIdxBase = 100
@@ -282,6 +313,7 @@ object DshComposeHost {
     private val cdTypState = mutableStateOf("")
     private val cdColorState = mutableStateOf(0xFFFFC107.toInt())
     private val cdErrState = mutableStateOf("")
+    private val cdCatsState = mutableStateOf(ArrayList<Int>())
     private val pendingDelCustom = mutableStateOf(-1)
     private fun loadCustomDrugs() {
         val ctx = appCtx ?: return
@@ -295,7 +327,8 @@ object DshComposeHost {
                     (o.opt("tHalf") as? Number)?.toDouble() ?: 0.0,
                     (o.opt("bio") as? Number)?.toDouble() ?: 0.0,
                     (o.opt("typ") as? Number)?.toDouble() ?: 0.0,
-                    (o.opt("color") as? Number)?.toInt() ?: 0xFFFFC107.toInt()))
+                    (o.opt("color") as? Number)?.toInt() ?: 0xFFFFC107.toInt(),
+                    (o.opt("cats") as? org.json.JSONArray)?.let { a -> (0 until a.length()).map { a.optInt(it) } } ?: emptyList()))
             }
             customDrugsState.value = out
         } catch (e: Throwable) { Log.w(tag, "loadCustomDrugs: " + e.message) }
@@ -307,6 +340,7 @@ object DshComposeHost {
         customDrugsState.value.forEach { d ->
             val o = org.json.JSONObject()
             o.put("name", d.name); o.put("tHalf", d.tHalf); o.put("bio", d.bio); o.put("typ", d.typ); o.put("color", d.color)
+            o.put("cats", org.json.JSONArray(d.cats))
             arr.put(o)
         }
         ctx.getSharedPreferences("dsh-storage", 0).edit().putString("customDrugs", arr.toString()).apply()
@@ -338,7 +372,7 @@ object DshComposeHost {
     private fun effBase(lv: Int): Int = when (lv) { 4 -> 3; 3 -> 2; 2 -> 2; else -> 1 }
     private fun memBaseOfDrug(drug: String, keys: List<String>): Int {
         var best = 0
-        advTable[drug]?.forEach { e -> if (keys.any { kwHit(e.name, it) } && effBase(e.level) > best) best = effBase(e.level) }
+        advList(drug).forEach { e -> if (keys.any { kwHit(e.name, it) } && effBase(e.level) > best) best = effBase(e.level) }
         return best
     }
     private fun packMemberRows(names: Set<String>, keys: List<List<String>>, displayNames: List<String>, filter: (String) -> Boolean, extra: List<PackMember> = emptyList()): List<PackMember> {
@@ -417,14 +451,14 @@ object DshComposeHost {
         val members = packMemberRows(names, acKeys.map { k -> listOf(k) }, acCatNames, { it in packAntichDrugs },
             if (boost != null) listOf(PackMember("画像加权（抗胆碱能负荷）", boost.first, boost.second)) else emptyList())
         // t82：剂量过量加权行
-        val odAc = names.filter { it in packAntichDrugs }.mapNotNull { d -> val w = odWeight(d); if (w > 0) PackMember("抗胆碱能负荷过量", w, odLine(d)) else null }
+        val odAc = names.filter { isAnticholinergic(it) }.mapNotNull { d -> val w = odWeight(d); if (w > 0) PackMember("抗胆碱能负荷过量", w, odLine(d)) else null }
         val gross = packWeightSum(members + odAc)
         val red = if ("毒扁豆碱" in names) 3 else 0     // t79 rev2 逆转剂：胆碱酯酶抑制，升 ACh 对抗蕈毒碱阻断
         val w = if (gross >= red) gross - red else 0
         return PackInfo("抗胆碱能综合征", true, w, packTierOf(w), if (red > 0) "毒扁豆碱 −3" else "", antiChPackDesc, members + odAc)
     }
     private fun serotonergicPack(names: Set<String>): PackInfo {
-        val ds = names.filter { it in packSerotonDrugs }
+        val ds = names.filter { isSerotonergic(it) }
         val combo = if (ds.size >= 2) listOf(PackMember("血清素能药物联用", 2 * (ds.size - 1), ds.sorted().joinToString("，"))) else emptyList()
         val rows = ArrayList<PackMember>()
         serKeys.indices.forEach { i ->
@@ -442,7 +476,7 @@ object DshComposeHost {
     }
     private fun opioidToxPack(names: Set<String>): PackInfo {
         val hasFlu = "氟马西尼" in names               // t79 rev2：BZD 位点竞争性拮抗 → 苯二氮卓贡献归零
-        val ds = names.filter { drugOpioid.containsKey(it) || (it in drugBzd && !hasFlu) }.toSet()
+        val ds = names.filter { isOpioid(it) || (isBzd(it) && !hasFlu) }.toSet()
         val combo = if (!hasFlu && ds.size >= 2) listOf(PackMember("μ 受体药效学协同", 2 * (ds.size - 1), ds.sorted().joinToString("，"))) else emptyList()
         val rows = ArrayList<PackMember>()
         opKeys.indices.forEach { i ->
@@ -613,7 +647,7 @@ object DshComposeHost {
         // name -> (药品下标, 条目) —— 仅主观效应（呼吸抑制为用户特令保留项）
         val byName = HashMap<String, MutableList<Pair<Int, AdvEnt>>>()
         names.forEachIndexed { idx, n ->
-            advTable[n]?.filter { isSubjective(it.name) }?.forEach { e -> byName.getOrPut(e.name) { ArrayList() }.add(idx to e) }
+            advList(n).filter { isSubjective(it.name) }.forEach { e -> byName.getOrPut(e.name) { ArrayList() }.add(idx to e) }
         }
         val tags = ArrayList<EffectTag>()
         byName.forEach { (name, list) ->
@@ -631,22 +665,22 @@ object DshComposeHost {
         if ("环丙沙星" in names && "咖啡因" in names) si.add(EffectTag("环丙沙星×咖啡因：咖啡因清除下降（CYP1A2 抑制）失眠焦虑风险", 2, false, false))
         if (drugBzd.any { it in names } && "克拉霉素" in names) si.add(EffectTag("克拉霉素×苯二氮卓类：过度镇静风险（CYP3A4 抑制）", 2, true, false))
         if ("利福平" in names && "口服避孕药（炔雌醇/去氧孕烯）" in names) si.add(EffectTag("利福平×口服避孕药：避孕失败风险（CYP3A4 强诱导）", 2, false, false))
-        if (drugBzd.any { it in names } && "乙醇" in names) si.add(EffectTag("乙醇×苯二氮卓类：呼吸抑制协同（药效学，禁止配伍）", 3, true, true))
-        if (drugOpioid.keys.any { it in names } && "乙醇" in names) si.add(EffectTag("乙醇×阿片类：呼吸抑制协同（药效学，禁止配伍）", 3, true, true))
+        if (names.any { isBzd(it) } && "乙醇" in names) si.add(EffectTag("乙醇×苯二氮卓类：呼吸抑制协同（药效学，禁止配伍）", 3, true, true))
+        if (names.any { isOpioid(it) } && "乙醇" in names) si.add(EffectTag("乙醇×阿片类：呼吸抑制协同（药效学，禁止配伍）", 3, true, true))
         if ("吸烟（烟草烟雾）" in names && "咖啡因" in names) si.add(EffectTag("吸烟×咖啡因：咖啡因清除加快（CYP1A2 诱导源于烟雾多环芳烃而非尼古丁）", 1, false, false))
         if ("吸烟（烟草烟雾）" in names && drugAntipsych.any { it in names }) si.add(EffectTag("吸烟×抗精神病药：CYP1A2 诱导降低血药浓度（源于烟雾而非尼古丁）", 1, false, false))
         if ("槟榔碱" in names && drugAntipsych.any { it in names }) si.add(EffectTag("槟榔碱×抗精神病药：锥体外系症状加重风险", 2, false, false))
         if ("利福平" in names && "喹硫平" in names) si.add(EffectTag("利福平×喹硫平：血药浓度显著下降（CYP3A4 强诱导）", 2, false, false))
         tags.addAll(si)
         // t82：阿片类中毒触发 = 阿片∩BZD 联用（原通路）OR 任一阿片急性过量 ≥ 轻度（μ 激动剂单药超大剂量）
-        if ((drugOpioid.keys.any { it in names } && drugBzd.any { it in names }) ||
-            drugOpioid.keys.any { it in names && odWeight(it) >= 1 }) {
+        if ((names.any { isOpioid(it) } && names.any { isBzd(it) }) ||
+            names.any { isOpioid(it) && odWeight(it) >= 1 }) {
             val oi = opioidToxPack(names)
             if (oi.weight >= 3) tags.add(EffectTag("阿片类中毒", oi.tier, acute = true, pack = true))
         }
         // t82：血清素综合征触发 = 任一血清素能药急性过量 ≥ 轻度；标签等级 = 逆转剂减权后的包 tier。
         // 阈值 weight >= 3（tier ≥ 1，与抗胆碱能包同口径）——残余 < 3 视为不构成综合征级。
-        if (tags.none { it.name == "血清素综合征" } && packSerotonDrugs.any { it in names && odWeight(it) >= 1 }) {
+        if (tags.none { it.name == "血清素综合征" } && names.any { isSerotonergic(it) && odWeight(it) >= 1 }) {
             val si = serotonergicPack(names)
             if (si.weight >= 3) tags.add(EffectTag("血清素综合征", si.tier, acute = true, pack = true))
         }
@@ -971,13 +1005,19 @@ object DshComposeHost {
                 if (k in recListState.value.indices) deleteRecAt(k)
             }
             // ---------- t82 自定义药物 ----------
-            "openCustomDrugs" -> { customMgrOpen.value = true; cdErrState.value = "" }
-            "closeCustomDrugs" -> { customMgrOpen.value = false; cdNameState.value = ""; cdHalfState.value = ""; cdBioState.value = ""; cdTypState.value = ""; cdErrState.value = "" }
+            "openCustomDrugs" -> { customMgrOpen.value = true; cdErrState.value = ""; cdCatsState.value = ArrayList() }
+            "closeCustomDrugs" -> { customMgrOpen.value = false; cdNameState.value = ""; cdHalfState.value = ""; cdBioState.value = ""; cdTypState.value = ""; cdErrState.value = ""; cdCatsState.value = ArrayList() }
             "pickCdColor" -> { cdColorState.value = presetColors.getOrNull((args.getOrNull(0) as? Int) ?: 0) ?: 0xFFFFC107.toInt() }
             "customPickAt" -> {
                 val k = (args.getOrNull(0) as? Int) ?: 0
                 if (k in customDrugsState.value.indices) selectedDrug.value = customIdxBase + k
                 doseErrState.value = ""
+            }
+            "toggleCdCat" -> {
+                val c = (args.getOrNull(0) as? Int) ?: return
+                val cur = ArrayList(cdCatsState.value)
+                if (cur.contains(c)) cur.remove(c) else cur.add(c)
+                cdCatsState.value = cur
             }
             "commitCustomDrug" -> commitCustomDrug()
             "askDelCustom" -> pendingDelCustom.value = (args.getOrNull(0) as? Int) ?: -1
@@ -1079,9 +1119,9 @@ object DshComposeHost {
             bi == null || bi < 0.0 || bi > 100.0 -> fail("生物利用度 F 须为 0-100")
             ty == null || ty <= 0.0 -> fail("常用量必须为正数（mg）")
             else -> {
-                customDrugsState.value.add(CustomDrug(nm, th, bi / 100.0, ty, cdColorState.value))
+                customDrugsState.value.add(CustomDrug(nm, th, bi / 100.0, ty, cdColorState.value, ArrayList(cdCatsState.value)))
                 saveCustomDrugs()
-                cdNameState.value = ""; cdHalfState.value = ""; cdBioState.value = ""; cdTypState.value = ""; cdErrState.value = ""
+                cdNameState.value = ""; cdHalfState.value = ""; cdBioState.value = ""; cdTypState.value = ""; cdErrState.value = ""; cdCatsState.value = ArrayList()
                 toast("已添加自定义药「" + nm + "」")
             }
         }
@@ -1197,7 +1237,7 @@ object DshComposeHost {
     }
 
     /** t82 自定义药物管理抽屉：新增表单（名/半衰期/F/常用量/曲线色）+ 已建列表（长按删除）。 */
-    @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+    @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
     @Composable
     fun Subl_CustomDrugSheet() {
         if (!customMgrOpen.value) return
@@ -1223,6 +1263,19 @@ object DshComposeHost {
                         value = cdTypState.value, onValueChange = { actText("setCdTyp", it) },
                         label = { androidx.compose.material3.Text("常用量 mg") }, singleLine = true, keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
                         modifier = Modifier.weight(1.0f))
+                }
+                // 药理分类（多选）—— 效应机制入口：继承分类效应词条模板 + 进入对应综合征包
+                androidx.compose.foundation.layout.FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                    catNames.indices.forEach { i ->
+                        val sel = cdCatsState.value.contains(i)
+                        Box(modifier = Modifier
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(if (sel) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
+                            .clickable { act("toggleCdCat", listOf(i)) }
+                            .padding(horizontal = 12.dp, vertical = 6.dp)) {
+                            androidx.compose.material3.Text(text = if (sel) "✓ " + catNames[i] else catNames[i], fontSize = 13.sp, color = if (sel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
                 }
                 // 曲线色六选一
                 androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
