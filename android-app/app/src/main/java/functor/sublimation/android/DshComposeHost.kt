@@ -1470,7 +1470,7 @@ object DshComposeHost {
                 }
                 // ---- 给药途径 ----
                 androidx.compose.material3.Text(text = "给药途径", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                androidx.compose.foundation.layout.FlowRow(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
+                androidx.compose.foundation.layout.FlowRow(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
                     routeNames.indices.forEach { i ->
                         val sel = cdRouteIdx.value == i
                         Box(modifier = Modifier.clip(RoundedCornerShape(14.dp)).background(if (sel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant).clickable { act("pickCdRoute", listOf(i)) }.padding(horizontal = 12.dp, vertical = 5.dp)) {
@@ -1504,7 +1504,7 @@ object DshComposeHost {
                 }
                 // ---- 效应包 ----
                 androidx.compose.material3.Text(text = "效应包（药理分类，可多选）", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                androidx.compose.foundation.layout.FlowRow(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                androidx.compose.foundation.layout.FlowRow(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
                     catNames.indices.forEach { i ->
                         val sel = cdCatsState.value.contains(i)
                         Box(modifier = Modifier.clip(RoundedCornerShape(14.dp)).background(if (sel) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant).clickable { act("toggleCdCat", listOf(i)) }.padding(horizontal = 12.dp, vertical = 5.dp)) {
@@ -1690,7 +1690,7 @@ object DshComposeHost {
             Text(text = "包内效应（按权重排序 · 来源）", color = Color(0xFF6750A4), fontSize = 13.0.sp, fontWeight = FontWeight.Bold)
             info.members.forEach { m ->
                 Row(
-                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color(packBgOf(m.weight))).padding(horizontal = 12.dp, vertical = 6.dp)
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(12.dp)).background(Color(packBgOf(m.weight))).padding(horizontal = 12.dp, vertical = 8.dp)
                 ) {
                     Text(text = m.name + " · 权重 " + m.weight + "　" + if (m.srcs.isEmpty()) "（当前无药贡献）" else m.srcs,
                         color = Color(packCellFg(packTierOf(m.weight))), fontSize = 13.0.sp)
