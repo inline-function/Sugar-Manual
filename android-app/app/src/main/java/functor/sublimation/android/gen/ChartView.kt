@@ -77,7 +77,7 @@ fun Subl_ConcentrationChart(
     showLegend: Boolean = true,
     badge: String = "估算",
     startHour: Float = -12f,                  // 窗口起点：t=0 为当前时间
-    stepHour: Float = 1f,                     // 宿主采样步长
+    stepHour: Float = 1f / 6f,                // 宿主采样步长：10 分钟（pkSeries -720..2160 step 10 分钟）
 ) {
     val density = LocalDensity.current
     val labelPx = with(density) { 11.dp.toPx() }
