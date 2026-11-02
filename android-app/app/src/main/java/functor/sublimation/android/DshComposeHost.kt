@@ -1179,10 +1179,9 @@ object DshComposeHost {
                 val (th, f) = drugParams(name)
                 val doses = recs.filter { it.first == name }.map { it.second to (it.third - now) / 3600000L }
                 series.add(SublSeries(name, Color(drugColorOf(name)), pkSeries(doses, th, f), hiName == name))
-                // t88 代谢物曲线：与母药同剂量源、滞后吸收（峰晚 0.5h）、T½ 通常更长；高亮随母药
+                // t88 代谢物曲线：Bateman 动力学（由母药消除生成，先升后降）；高亮随母药
                 metabsOf(name, th.toDouble(), drugColorOf(name)).forEach { m ->
-                    val mDoses = doses.map { it.first to (it.second + 0.5).toLong() }
-                    series.add(SublSeries(m.name, Color(m.color), pkSeries(mDoses, m.tHalf.toInt(), m.bio), hiName == name))
+                    series.add(SublSeries(m.name, Color(m.color), metabSeries(doses, th.toDouble(), m), hiName == name))
                 }
             }
         }
@@ -1191,6 +1190,26 @@ object DshComposeHost {
             else List(series[0].points.size) { i -> series.sumOf { it.points[i].toDouble() }.toFloat() }
         chartLabelsState.value = (-12..36 step 12).map { "${it}h" }
     }
+    /** t88 代谢物浓度曲线：Bateman 方程——代谢物由母药消除生成，从 0 先升后降。
+     *  Cm(τ) = D·fm·kp·(e^-kp·τ − e^-km·τ)/(km − kp)，τ = t − t0；
+     *  kp = ln2/母药T½（生成速率），km = ln2/代谢物T½（消除速率），fm = 转化分数。
+     *  例：氟西汀 T½ 48h → 去甲氟西汀 T½ 168h，约 3-4 天达峰后缓降。 */
+    private fun metabSeries(doses: List<Pair<Double, Long>>, parentHalf: Double, m: Metab): List<Float> =
+        (-720..2160 step 10).map { mm ->
+            val t = mm / 60.0
+            var c = 0.0
+            val kp = Math.log(2.0) / parentHalf
+            val km = Math.log(2.0) / m.tHalf
+            doses.forEach { d ->
+                val tau = t - d.second
+                if (tau > 0) {
+                    c += if (Math.abs(km - kp) < 1e-9) d.first * m.bio * kp * tau * Math.exp(-kp * tau)
+                        else d.first * m.bio * kp * (Math.exp(-kp * tau) - Math.exp(-km * tau)) / (km - kp)
+                }
+            }
+            c.toFloat()
+        }
+
     /** -12h..+36h 每 10 分钟采样（t81：与 JS stepHours()=1/6h 同构；t=0 为当前时间，
      * 供图表视口内裁剪绘制，吸收相峰形圆滑）；浓度取 1 位小数。 */
     private fun pkSeries(doses: List<Pair<Double, Long>>, tHalf: Number, bio: Double): List<Float> =
