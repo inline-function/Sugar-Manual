@@ -44,7 +44,7 @@ fun profileSexKey(): Str = "sm_sex"
 fun congenitalConds(): List[Str] = cons("蚕豆病（G6PD缺乏）", emptyList())
 fun existingConds(): List[Str] = cons("高血压", cons("青光眼", cons("肝功能不全", cons("肾功能不全", cons("癫痫",
     cons("心律失常史", cons("糖尿病", cons("消化性溃疡", cons("物质使用障碍史", cons("痴呆/认知障碍",
-    cons("孕期/哺乳期", emptyList())))))))))))
+    cons("孕期/哺乳期", cons("双相情感障碍", emptyList()))))))))))))
 
 // 逗号拼接（空列表 → 空串；落 storage 的序列化）。
 fun joinCsv(xs: List[Str]): Str = xs.fold("") { acc, s => if (acc == "") s else concat(acc, concat(",", s)) }

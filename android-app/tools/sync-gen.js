@@ -80,6 +80,13 @@ if (src.includes("ModalBottomSheet")) throw new Error("sync-gen: 仍有未替换
 
 fs.writeFileSync(path.join(genDir, "Home.kt"), src);
 
+// 3.6) 顶栏第二个图标 → 手册按钮（menu_book + act("openManual")；幂等）
+{
+  const oldMenuCall = 'androidx.compose.material3.TextButton(onClick = { functor.sublimation.android.DshComposeHost.act("openDrugList") }) {\n                androidx.compose.material3.Icon(imageVector = androidx.compose.material.icons.Icons.Filled.Menu, contentDescription = null, modifier =';
+  const newMenuCall = 'androidx.compose.material3.TextButton(onClick = { functor.sublimation.android.DshComposeHost.act("openManual") }) {\n                androidx.compose.material3.Icon(imageVector = androidx.compose.material.icons.Icons.AutoMirrored.Filled.MenuBook, contentDescription = null, modifier =';
+  if (src.includes(oldMenuCall)) src = src.replace(oldMenuCall, newMenuCall);
+}
+
 // 4) 逐字复制
 for (const f of ["PickerRowsA.kt", "PickerRowsB.kt", "PickerRowsC.kt", "LibRowsA.kt", "LibRowsB.kt", "LibRowsC.kt", "LibRowsD.kt", "GeneratedCompose.kt"]) {
   fs.copyFileSync(path.join(outDir, f), path.join(genDir, f));

@@ -242,7 +242,7 @@ object DshComposeHost {
     private val settingsOpen = mutableStateOf(false)
     // ---- t77 个人画像（与 profile.subl 同源；SharedPreferences 键 sm_conds/sm_age/sm_sex） ----
     private val profCondNames = listOf("蚕豆病（G6PD缺乏）", "高血压", "青光眼", "肝功能不全", "肾功能不全", "癫痫",
-        "心律失常史", "糖尿病", "消化性溃疡", "物质使用障碍史", "痴呆/认知障碍", "孕期/哺乳期")
+        "心律失常史", "糖尿病", "消化性溃疡", "物质使用障碍史", "痴呆/认知障碍", "孕期/哺乳期", "双相情感障碍")
     private val sexNames = listOf("男", "女", "其他")
     private val profCondsState = mutableStateOf(setOf<String>())
     private val profAgeState = mutableStateOf("")
@@ -596,10 +596,13 @@ object DshComposeHost {
     // 档位：<1.5× 0（治疗窗）/ <4× 1 轻度 / <10× 2 中度 / ≥10× 3 重度。
     // 例：1000mg 氟伏沙明（常用 100mg）= 10× → 中度 +2；10000mg 芬太尼（0.1mg）= 10^5× → 重度 +3。
     /** 相对常用量的过量倍数（无 typDose / 无剂量 → 0 不计）。 */
+    /** 相对常用量的过量倍数（无 typDose / 无剂量 → 0 不计）。
+     *  t88 剂量累加：同一药多条记录求和（4×25mg 氟西汀 = 100mg = 5×常用量，与单次等效）。 */
     private fun odRatio(drug: String): Double {
-        val typ = typDose[drug] ?: customByName(drug)?.typ ?: return 0.0
-        val dose = recListState.value.firstOrNull { it.name == drug }?.amount?.trim()?.toDoubleOrNull() ?: return 0.0
-        return dose / typ
+        val typ = typDose[drug] ?: customByName(drug)?.typ?.coerceAtLeast(0.01) ?: return 0.0
+        val dose = recListState.value.filter { it.name == drug }
+            .sumOf { it.amount.trim().toDoubleOrNull() ?: 0.0 }
+        return if (dose <= 0.0) 0.0 else dose / typ
     }
     /** 过量权重（0-3：轻/中/重度急性过量）。t84 酶抑制致浓度↑ → 表观剂量 = 剂量 × enzymeFold。 */
     private fun odWeight(drug: String): Int {
@@ -829,6 +832,32 @@ object DshComposeHost {
     private fun isSubjective(name: String): Boolean = !nonSubjectiveRoots.any { name.contains(it) }
     // ---- t77 画像加权规则镜像（与 app/profile.subl 同表同文案，纯宿主版） ----
     private data class ProfRuleHost(val cond: String, val keys: List<String>, val label: String, val level: Int, val acute: Boolean, val pack: Boolean)
+    /** t88 病史加权：病史 × 台账药 → 额外主观效应词条（权重直接入效应流）。 */
+    private data class CondBoost(val cond: String, val drugKeys: List<String>, val effect: String, val level: Int, val acute: Boolean, val why: String)
+    private val condBoostTable = listOf(
+        CondBoost("双相情感障碍", listOf("氟伏沙明", "帕罗西汀", "氟西汀", "舍曲林", "西酞普兰", "艾司西酞普兰", "文拉法辛", "度洛西汀", "阿米替林", "氯米帕明", "曲唑酮", "米氮平"), "躁狂", 3, false, "抗抑郁药诱发躁狂/轻躁狂转换风险（五朵金花尤其）"),
+        CondBoost("双相情感障碍", listOf("哌甲酯", "安非他酮"), "躁狂", 2, true, "兴奋剂/NDRI 诱发躁狂转换"),
+        CondBoost("双相情感障碍", listOf("碳酸锂", "丙戊酸", "卡马西平", "拉莫三嗪", "奥氮平", "喹硫平"), "稳定情绪", 1, false, "心境稳定剂覆盖可对冲转换风险（权重增长记）"),
+        CondBoost("癫痫", listOf("安非他酮"), "癫痫", 3, true, "安非他酮降低惊厥阈值（剂量依赖）"),
+        CondBoost("癫痫", listOf("氯米帕明", "阿米替林"), "癫痫", 2, true, "TCA 降低惊厥阈值"),
+        CondBoost("青光眼", listOf("阿米替林", "氯米帕明", "苯海索", "苯扎托品", "奥氮平", "喹硫平"), "闭角型青光眼急性发作", 3, true, "抗胆碱能致瞳孔散大、房角关闭"),
+        CondBoost("肾功能不全", listOf("碳酸锂"), "锂中毒", 3, false, "肾小球滤过率下降致锂蓄积"),
+        CondBoost("肝功能不全", listOf("丙戊酸", "卡马西平"), "肝损加重", 2, false, "经肝代谢的心境稳定剂需监测转氨酶"),
+        CondBoost("痴呆/认知障碍", listOf("阿米替林", "氯米帕明", "苯海索", "苯扎托品", "奥氮平", "喹硫平"), "谵妄", 3, true, "抗胆碱能负荷加重老年谵妄"),
+        CondBoost("孕期/哺乳期", listOf("帕罗西汀", "氟西汀"), "新生儿撤药/综合征", 2, true, "SSRI 妊娠晚期暴露致新生儿适应不良综合征"),
+        CondBoost("物质使用障碍史", listOf("吗啡", "羟考酮", "芬太尼", "可待因", "曲马多", "哌替啶", "地西泮", "艾司唑仑", "阿普唑仑", "氯硝西泮", "劳拉西泮", "咪达唑仑"), "成瘾倾向加重", 2, false, "阿片/BZD 用于成瘾史者依赖风险倍增")
+    )
+    private fun condBoostTags(names: Set<String>): List<EffectTag> {
+        val out = ArrayList<EffectTag>()
+        condBoostTable.forEach { r ->
+            if (profCondsState.value.any { c -> c == r.cond || c.contains(r.cond) || r.cond.contains(c) }) {
+                val hit = names.firstOrNull { d -> r.drugKeys.any { kw -> kwHit(d, kw) } }
+                if (hit != null) out.add(EffectTag(r.effect + "（" + r.why + "）", r.level, r.acute, false))
+            }
+        }
+        return out
+    }
+
     private val profRulesHost = listOf(
         ProfRuleHost("蚕豆病（G6PD缺乏）", listOf("阿司匹林", "伯氨喹", "磺胺", "呋喃妥因", "亚甲蓝", "维生素K3", "萘啶酸", "氯霉素"), "溶血风险（G6PD 氧化应激）", 3, true, true),
         ProfRuleHost("青光眼", listOf("苯海索", "苯扎托品", "阿米替林", "氯米帕明", "抗胆碱能"), "青光眼发作风险（抗胆碱能）", 3, true, true),
@@ -938,6 +967,7 @@ object DshComposeHost {
             if (acInfo.weight >= 3) tags.add(EffectTag("抗胆碱能综合征", acInfo.tier, true, true))
         }
         tags.addAll(profileTagsHost())
+        condBoostTags(names).forEach { tags.add(it) }
         // t79 rev2 子效应内聚：包至少一个成员权重 > 0 才显示；成员效应只随已显示的毒理学包出现
         val acFlat = acKeys
         val serFlat = serKeys.flatten()
@@ -1001,9 +1031,44 @@ object DshComposeHost {
     fun attachEnv(ctx: android.content.Context) { appCtx = ctx; loadProfileState(); refreshRecList(); loadCustomDrugs(); loadCustomPacks(); recomputeChart() }
     /** t83 Activity 单开：宿主 object 为进程级单例，第二个 Activity 复用同一实例；仅当上下文缺失时补。 */
     fun attachEnvIfMissing(ctx: android.content.Context) { if (appCtx == null) attachEnv(ctx) }
-    // ---------- 浓度图（与 JS chartSeriesList/PkEngine 同公式：C(t)=Σ D·F·0.5^(t/T½)；窗口 -12h..+36h 步长 1h，t=0=现在；t75 新药沿用 host 旧式峰值模型，与 JS 模型差异见 compose 同步说明） ----------
+    // ---------- t88 内置代谢物表（去甲氟西汀等；代谢物曲线与母药联动高亮） ----------
+    private data class Metab(val name: String, val tHalf: Double, val bio: Double, val color: Int)
+    private val builtinMetabs = mapOf(
+        "氟西汀" to listOf(Metab("去甲氟西汀", 168.0, 0.7, 0xFF8E24AA.toInt())),
+        "舍曲林" to listOf(Metab("去甲舍曲林", 62.0, 0.6, 0xFF6A1B9A.toInt())),
+        "文拉法辛" to listOf(Metab("O-去甲基文拉法辛", 11.0, 0.5, 0xFF00838F.toInt())),
+        "曲马多" to listOf(Metab("O-去甲基曲马多（M1）", 9.0, 0.7, 0xFF7B1FA2.toInt())),
+        "可待因" to listOf(Metab("吗啡（CYP2D6 活化）", 3.0, 0.8, 0xFF5D4037.toInt())),
+        "阿米替林" to listOf(Metab("去甲替林", 30.0, 0.55, 0xFF455A64.toInt())),
+        "氯米帕明" to listOf(Metab("去甲氯米帕明", 36.0, 0.55, 0xFF455A64.toInt())),
+        "卡马西平" to listOf(Metab("10,11-环氧化物", 6.0, 0.7, 0xFFEF6C00.toInt())),
+        "丙戊酸" to listOf(Metab("丙戊酸结合物", 12.0, 0.4, 0xFF26A69A.toInt())),
+        "利培酮" to listOf(Metab("帕利哌酮", 23.0, 0.6, 0xFF5E35B1.toInt()))
+    )
+    /** 自定义药代谢物：T½ = 母药 × 2（保守估计）、F = 0.6、色取母药。 */
+    private fun metabsOf(drug: String, parentHalf: Double, parentColor: Int): List<Metab> {
+        builtinMetabs[drug]?.let { return it }
+        val cd = customByName(drug) ?: return emptyList()
+        if (cd.metabolites.isEmpty()) return emptyList()
+        return cd.metabolites.map { Metab(it, parentHalf * 2.0, 0.6, parentColor) }
+    }
+
+// ---------- 浓度图（与 JS chartSeriesList/PkEngine 同公式：C(t)=Σ D·F·0.5^(t/T½)；窗口 -12h..+36h 步长 1h，t=0=现在；t75 新药沿用 host 旧式峰值模型，与 JS 模型差异见 compose 同步说明） ----------
     // t80 曲线高亮（点记录卡 toggle；session 态，不随 ledger 持久化）
     private val chartHiState = mutableStateOf("")
+    // t88 手册页（简化版引论.md；Markdown → Compose 渲染）
+    private val manualOpenState = mutableStateOf(false)
+    fun manualOpen(): Boolean = manualOpenState.value
+    private var manualParsed: org.commonmark.node.Document? = null
+    fun manualDoc(): org.commonmark.node.Document? {
+        manualParsed?.let { return it }
+        try {
+            val md = appCtx?.assets?.open("intro.md")?.bufferedReader()?.readText() ?: return null
+            manualParsed = org.commonmark.parser.Parser.builder().build().parse(md) as? org.commonmark.node.Document
+        } catch (e: Throwable) { Log.w(tag, "manualDoc: " + e.message) }
+        return manualParsed
+    }
+
     private val chartSeriesState = mutableStateOf<List<SublSeries>>(emptyList())
     private val chartTotalState = mutableStateOf<List<Float>>(emptyList())
     private val chartLabelsState = mutableStateOf<List<String>>(emptyList())
@@ -1114,6 +1179,11 @@ object DshComposeHost {
                 val (th, f) = drugParams(name)
                 val doses = recs.filter { it.first == name }.map { it.second to (it.third - now) / 3600000L }
                 series.add(SublSeries(name, Color(drugColorOf(name)), pkSeries(doses, th, f), hiName == name))
+                // t88 代谢物曲线：与母药同剂量源、滞后吸收（峰晚 0.5h）、T½ 通常更长；高亮随母药
+                metabsOf(name, th.toDouble(), drugColorOf(name)).forEach { m ->
+                    val mDoses = doses.map { it.first to (it.second + 0.5).toLong() }
+                    series.add(SublSeries(m.name, Color(m.color), pkSeries(mDoses, m.tHalf.toInt(), m.bio), hiName == name))
+                }
             }
         }
         chartSeriesState.value = series
@@ -1123,11 +1193,11 @@ object DshComposeHost {
     }
     /** -12h..+36h 每 10 分钟采样（t81：与 JS stepHours()=1/6h 同构；t=0 为当前时间，
      * 供图表视口内裁剪绘制，吸收相峰形圆滑）；浓度取 1 位小数。 */
-    private fun pkSeries(doses: List<Pair<Double, Long>>, tHalf: Int, bio: Double): List<Float> =
+    private fun pkSeries(doses: List<Pair<Double, Long>>, tHalf: Number, bio: Double): List<Float> =
         (-720..2160 step 10).map { m ->
             val t = m / 60.0
             val c = doses.fold(0.0) { acc, d ->
-                if (t >= d.second) acc + d.first * bio * Math.pow(0.5, (t - d.second) / tHalf) else acc
+                if (t >= d.second) acc + d.first * bio * Math.pow(0.5, (t - d.second) / tHalf.toDouble()) else acc
             }
             Math.round(c * 10.0) / 10.0.toFloat()
         }
@@ -1270,6 +1340,8 @@ object DshComposeHost {
             "openSettingsDialog" -> settingsOpen.value = true
             "closeSettings" -> settingsOpen.value = false
             "openDrugList" -> drugListOpen.value = true
+            "openManual" -> manualOpenState.value = true
+            "closeManual" -> manualOpenState.value = false
             "closeDrugList" -> drugListOpen.value = false
             "openDocFor" -> {
                 val idx = args.getOrNull(0) as? Int
@@ -2255,5 +2327,140 @@ object DshComposeHost {
                 }
             }
         }
+    }
+    /** t88 Markdown 渲染：标题/段落/列表/引用/分隔线 → Compose 列（内联标记拍平）。 */
+    @androidx.compose.runtime.Composable
+    fun Subl_Manual() {
+        val doc = manualDoc() ?: run {
+            androidx.compose.material3.Text("手册加载失败", color = androidx.compose.material3.MaterialTheme.colorScheme.error)
+            return
+        }
+        androidx.compose.foundation.layout.Column(
+            modifier = androidx.compose.ui.Modifier.fillMaxWidth().padding(16.dp)
+        ) {
+            var node: org.commonmark.node.Node? = doc.firstChild
+            while (node != null) {
+                when (node) {
+                    is org.commonmark.node.Heading -> MdLine(node, (22 - node.level * 2).coerceIn(14, 22), true)
+                    is org.commonmark.node.Paragraph -> {
+                        val raw = MdRaw(node)
+                        if (raw.startsWith("|")) MdTable(raw) else MdLine(node, 15, false)
+                    }
+                    is org.commonmark.node.BulletList -> MdList(node, false)
+                    is org.commonmark.node.OrderedList -> MdList(node, true)
+                    is org.commonmark.node.BlockQuote -> {
+                        val bq = node
+                        androidx.compose.material3.Surface(
+                            color = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant,
+                            modifier = androidx.compose.ui.Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                        ) {
+                            androidx.compose.foundation.layout.Column(modifier = androidx.compose.ui.Modifier.padding(12.dp)) {
+                                var child: org.commonmark.node.Node? = bq.firstChild
+                                while (child != null) { val cur = child; MdInline(cur); child = cur.next }
+                            }
+                        }
+                    }
+                    is org.commonmark.node.ThematicBreak -> androidx.compose.material3.Divider(
+                        modifier = androidx.compose.ui.Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                    )
+                }
+                node = node.next
+            }
+        }
+    }
+    @androidx.compose.runtime.Composable
+    private fun MdLine(node: org.commonmark.node.Node, size: Int, bold: Boolean) {
+        androidx.compose.material3.Text(
+            text = MdText(node), fontSize = size.sp,
+            fontWeight = if (bold) androidx.compose.ui.text.font.FontWeight.Bold else null,
+            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
+            modifier = androidx.compose.ui.Modifier.fillMaxWidth().padding(vertical = 3.dp)
+        )
+    }
+    @androidx.compose.runtime.Composable
+    private fun MdList(node: org.commonmark.node.Node, ordered: Boolean) {
+        androidx.compose.foundation.layout.Column(modifier = androidx.compose.ui.Modifier.padding(start = 12.dp)) {
+            var i = 0
+            var c: org.commonmark.node.Node? = node.firstChild
+            while (c != null) {
+                val cur = c
+                TextWithPrefix(if (ordered) ("" + (i + 1) + ". ") else "• ", MdText(cur), 15)
+                i++; c = cur.next
+            }
+        }
+    }
+    @androidx.compose.runtime.Composable
+    private fun TextWithPrefix(prefix: String, body: String, size: Int) {
+        androidx.compose.foundation.layout.Row(modifier = androidx.compose.ui.Modifier.padding(vertical = 2.dp)) {
+            androidx.compose.material3.Text(prefix, fontSize = size.sp, color = androidx.compose.material3.MaterialTheme.colorScheme.primary)
+            androidx.compose.material3.Text(body, fontSize = size.sp, color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface)
+        }
+    }
+    @androidx.compose.runtime.Composable
+    private fun MdInline(node: org.commonmark.node.Node) {
+        androidx.compose.material3.Text(
+            text = MdText(node), fontSize = 15.sp,
+            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = androidx.compose.ui.Modifier.padding(vertical = 2.dp)
+        )
+    }
+    /** 段落原始多行文本（保留换行，供表格检测）。 */
+    private fun MdRaw(node: org.commonmark.node.Node): String {
+        val sb = StringBuilder()
+        var c: org.commonmark.node.Node? = node.firstChild
+        while (c != null) {
+            val cur: org.commonmark.node.Node = c!!
+            when (cur) {
+                is org.commonmark.node.Text -> sb.append(cur.literal)
+                is org.commonmark.node.Code -> sb.append(cur.literal)
+                is org.commonmark.node.SoftLineBreak, is org.commonmark.node.HardLineBreak -> sb.append("\n")
+            }
+            c = cur.next
+        }
+        return sb.toString().trim()
+    }
+    /** 轻量 Markdown 表格：| 分隔行；第二行分隔符（|:---|）跳过；首行表头。 */
+    @androidx.compose.runtime.Composable
+    private fun MdTable(raw: String) {
+        val rows = raw.split("\n").map { line ->
+            line.split("|").map { it.trim() }.filterIndexed { i, _ -> true }.drop(1).dropLast(1)
+        }.filter { it.isNotEmpty() && !it.joinToString("").matches(Regex("^[-: ]*$")) }
+        if (rows.isEmpty()) { androidx.compose.material3.Text(raw, fontSize = 15.sp); return }
+        val cols = rows.maxOf { it.size }
+        androidx.compose.foundation.layout.Column(modifier = androidx.compose.ui.Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+            rows.forEachIndexed { ri, row ->
+                androidx.compose.foundation.layout.Row(modifier = androidx.compose.ui.Modifier.fillMaxWidth()) {
+                    for (ci in 0 until cols) {
+                        val cell = row.getOrNull(ci) ?: ""
+                        androidx.compose.material3.Text(
+                            text = if (cell.isEmpty()) " " else cell,
+                            fontSize = 13.sp,
+                            fontWeight = if (ri == 0) androidx.compose.ui.text.font.FontWeight.Bold else null,
+                            color = if (ri == 0) androidx.compose.material3.MaterialTheme.colorScheme.primary else androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
+                            modifier = androidx.compose.ui.Modifier.weight(1f).padding(4.dp)
+                        )
+                    }
+                }
+                if (ri == 0) androidx.compose.material3.Divider(modifier = androidx.compose.ui.Modifier.fillMaxWidth())
+            }
+        }
+    }
+
+    /** 节点内联文本拍平（含 Strong/Em/Code/Link，去标记符号）。 */
+    private fun MdText(node: org.commonmark.node.Node): String {
+        val sb = StringBuilder()
+        var c: org.commonmark.node.Node? = node.firstChild
+        while (c != null) {
+            val cur: org.commonmark.node.Node = c!!
+            when (cur) {
+                is org.commonmark.node.Text -> sb.append(cur.literal)
+                is org.commonmark.node.Code -> sb.append(cur.literal)
+                is org.commonmark.node.StrongEmphasis, is org.commonmark.node.Emphasis,
+                is org.commonmark.node.Link -> sb.append(MdText(cur))
+                is org.commonmark.node.SoftLineBreak, is org.commonmark.node.HardLineBreak -> sb.append(" ")
+            }
+            c = cur.next
+        }
+        return sb.toString().trim()
     }
 }

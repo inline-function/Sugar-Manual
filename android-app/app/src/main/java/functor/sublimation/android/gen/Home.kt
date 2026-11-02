@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -44,8 +44,8 @@ fun Home() {
             androidx.compose.material3.TextButton(onClick = { functor.sublimation.android.DshComposeHost.act("openDrugList") }) {
                 androidx.compose.material3.Icon(imageVector = androidx.compose.material.icons.Icons.Filled.Info, contentDescription = null, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.onPrimary)
             }
-            androidx.compose.material3.TextButton(onClick = { functor.sublimation.android.DshComposeHost.act("openDrugList") }) {
-                androidx.compose.material3.Icon(imageVector = androidx.compose.material.icons.Icons.Filled.Menu, contentDescription = null, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.onPrimary)
+            androidx.compose.material3.TextButton(onClick = { functor.sublimation.android.DshComposeHost.act("openManual") }) {
+                androidx.compose.material3.Icon(imageVector = androidx.compose.material.icons.Icons.Filled.MenuBook, contentDescription = null, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.onPrimary)
             }
             androidx.compose.material3.TextButton(onClick = { functor.sublimation.android.DshComposeHost.act("openSettingsDialog") }) {
                 androidx.compose.material3.Icon(imageVector = androidx.compose.material.icons.Icons.Filled.Settings, contentDescription = null, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.onPrimary)
@@ -392,6 +392,16 @@ fun Home() {
                                         androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("profName", 11), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.0.sp)
                                     }
                                     if (functor.sublimation.android.DshComposeHost.boolArg("profOn", 11)) {
+                                    androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
+                                        androidx.compose.material3.Text(text = "✓", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                    }
+                                    }
+                                }
+                                androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("toggleProfCond", listOf(12)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                                    androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1.0f)) {
+                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("profName", 12), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.0.sp)
+                                    }
+                                    if (functor.sublimation.android.DshComposeHost.boolArg("profOn", 12)) {
                                     androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
                                         androidx.compose.material3.Text(text = "✓", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
                                     }

@@ -26,3 +26,4 @@ android-app/app/src/main/assets/app.js
 
 # 生成产物（桌面 CLI 验收）
 app/out.test.js
+ui.xml

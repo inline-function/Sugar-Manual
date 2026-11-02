@@ -17,12 +17,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -99,12 +103,42 @@ class MainActivity : ComponentActivity() {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     // t82：长按记录卡的删除确认框（挂在 Surface 内、与页面树平级）
                     DshComposeHost.Subl_DeleteDialog()
+
                     when {
                         // @compose 编译期产物 gen/GeneratedCompose.kt 的 SublRoot()（发射器聚合的分派入口）；
                         // 生成支未就位时退回样例首页（gen/GeneratedComposeSample.kt）；都没有就只是逻辑控制台。
                         BuildConfig.SUBL_COMPOSE_GENERATED -> SublRoot()
                         BuildConfig.SUBL_COMPOSE_SAMPLE -> SublApp_content()
                         else -> LogicConsole()
+                    }
+                    // t88 手册页（顶栏 menu_book 按钮；全屏覆盖、系统返回关闭）
+                    if (DshComposeHost.manualOpen()) {
+                        androidx.activity.compose.BackHandler { DshComposeHost.act("closeManual") }
+                        androidx.compose.foundation.layout.Column(
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            androidx.compose.material3.TopAppBar(
+                                title = { Text("简化版引论") },
+                                navigationIcon = {
+                                    androidx.compose.material3.TextButton(onClick = { DshComposeHost.act("closeManual") }) {
+                                        androidx.compose.material3.Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                            contentDescription = "关闭手册"
+                                        )
+                                    }
+                                },
+                                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                                )
+                            )
+                            androidx.compose.foundation.layout.Box(
+                                modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                            ) {
+                                DshComposeHost.Subl_Manual()
+                            }
+                        }
                     }
                 }
             }

@@ -14,8 +14,8 @@ struct Home {
             TextButton(onClick = { unchecked openDrugList() }) {
                 Icon(name = "info", size = 22, tint = "onPrimary")
             }
-            TextButton(onClick = { unchecked openDrugList() }) {
-                Icon(name = "menu", size = 22, tint = "onPrimary")
+            TextButton(onClick = { unchecked openManual() }) {
+                Icon(name = "menuBook", size = 22, tint = "onPrimary")
             }
             TextButton(onClick = { unchecked openSettingsDialog() }) {
                 Icon(name = "settings", size = 22, tint = "onPrimary")
@@ -474,6 +474,14 @@ struct Home {
                     Text(text = profName(11), size = 14, color = "onSurface")
                 }
                 Box(modifier = paddingH(8), visible = profOn(11)) {
+                    Text(text = "✓", size = 16, bold = true, color = "primary")
+                }
+            }
+            Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked toggleProfCond(12) }) {
+                Box(modifier = weight(1.0)) {
+                    Text(text = profName(12), size = 14, color = "onSurface")
+                }
+                Box(modifier = paddingH(8), visible = profOn(12)) {
                     Text(text = "✓", size = 16, bold = true, color = "primary")
                 }
             }
