@@ -256,6 +256,82 @@ struct Home {
                     onChange = { t => unchecked setPickQuery(t) })
                 Box(modifier = fillWidth().height(240), scrollable = true) {
                     Box(modifier = fillWidth(), orientation = "vertical", spacing = 6) {
+                    // t82 自定义药物选药区（宿主数据槽 customPick*；选中索引 100+k 与内置隔离，搜索同过滤）
+                    Box(modifier = fillWidth(), orientation = "vertical", spacing = 2, visible = hasCustomPick()) {
+                        Text(text = "自定义药物", size = 13, bold = true, color = "primary")
+                    }
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked customPickAt(0) }, visible = customPickVisible(0)) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = customPickName(0), size = 16, bold = true, color = "onSurface")
+                            Text(text = customPickDesc(0), size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(100)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked customPickAt(1) }, visible = customPickVisible(1)) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = customPickName(1), size = 16, bold = true, color = "onSurface")
+                            Text(text = customPickDesc(1), size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(101)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked customPickAt(2) }, visible = customPickVisible(2)) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = customPickName(2), size = 16, bold = true, color = "onSurface")
+                            Text(text = customPickDesc(2), size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(102)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked customPickAt(3) }, visible = customPickVisible(3)) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = customPickName(3), size = 16, bold = true, color = "onSurface")
+                            Text(text = customPickDesc(3), size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(103)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked customPickAt(4) }, visible = customPickVisible(4)) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = customPickName(4), size = 16, bold = true, color = "onSurface")
+                            Text(text = customPickDesc(4), size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(104)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked customPickAt(5) }, visible = customPickVisible(5)) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = customPickName(5), size = 16, bold = true, color = "onSurface")
+                            Text(text = customPickDesc(5), size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(105)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked customPickAt(6) }, visible = customPickVisible(6)) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = customPickName(6), size = 16, bold = true, color = "onSurface")
+                            Text(text = customPickDesc(6), size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(106)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
+                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked customPickAt(7) }, visible = customPickVisible(7)) {
+                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                            Text(text = customPickName(7), size = 16, bold = true, color = "onSurface")
+                            Text(text = customPickDesc(7), size = 12, color = "onSurfaceVariant")
+                        }
+                        Box(modifier = paddingH(8), visible = isSel(107)) {
+                            Text(text = "✓", size = 16, bold = true, color = "primary")
+                        }
+                    }
                     PickerRowsA()
                     PickerRowsB()
                     PickerRowsC()
@@ -403,6 +479,14 @@ struct Home {
             }
                         Text(text = "关于", size = 15, bold = true, color = "primary")
                         Text(text = "语法糖手册 V1.0 · SfA @compose 通路\n按钮交互经 DshComposeHost.act 路由到 Kotlin 侧交互态。", color = "onSurfaceVariant", size = 12)
+                        // t82 自定义药物管理入口
+                        Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked openCustomDrugs() }) {
+                            Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
+                                Text(text = "自定义药物", size = 15, bold = true, color = "onSurface")
+                                Text(text = "新增 / 长按删除；与内置药同引擎（曲线 + 过量判定）", size = 12, color = "onSurfaceVariant")
+                            }
+                            Text(text = "＞", size = 16, color = "onSurfaceVariant")
+                        }
                         TextButton(label = "清空记录", onClick = { unchecked clearAll() }) {}
                     }
                 }

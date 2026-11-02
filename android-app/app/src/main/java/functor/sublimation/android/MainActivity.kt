@@ -99,6 +99,8 @@ class MainActivity : ComponentActivity() {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     // t82：长按记录卡的删除确认框（挂在 Surface 内、与页面树平级）
                     DshComposeHost.Subl_DeleteDialog()
+                    // t82：自定义药物管理抽屉
+                    DshComposeHost.Subl_CustomDrugSheet()
                     when {
                         // @compose 编译期产物 gen/GeneratedCompose.kt 的 SublRoot()（发射器聚合的分派入口）；
                         // 生成支未就位时退回样例首页（gen/GeneratedComposeSample.kt）；都没有就只是逻辑控制台。

@@ -33,9 +33,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -264,6 +266,52 @@ object DshComposeHost {
     private val recListState = mutableStateOf(ArrayList<HostRec>())
     // t82：长按记录卡待删除槽位（-1 = 无待确认；askDeleteRec 置位、confirm/cancel 清零）
     private val pendingDelete = mutableStateOf(-1)
+    // ---------- t82 自定义药物（用户自建：名字 + 半衰期 + 生物利用度 + 常用量 + 曲线色） ----------
+    // 与内置药同引擎：可服药（选药索引 100+k）、浓度曲线（drugParams）、过量判定（odRatio）、
+    // 记录卡色块条（drugColorOf）。存 storage 键 "customDrugs"。
+    data class CustomDrug(val name: String, val tHalf: Double, val bio: Double, val typ: Double, val color: Int)
+    private val customDrugsState = mutableStateOf(ArrayList<CustomDrug>())
+    /** 自定义药在选药列表的索引基（与内置 drugNames 下标隔离）。 */
+    private val customIdxBase = 100
+    private val presetColors = intArrayOf(0xFFFFC107.toInt(), 0xFF1976D2.toInt(), 0xFF00897B.toInt(), 0xFF8E24AA.toInt(), 0xFFE64A19.toInt(), 0xFF795548.toInt())
+    // 自定义药管理抽屉状态
+    private val customMgrOpen = mutableStateOf(false)
+    private val cdNameState = mutableStateOf("")
+    private val cdHalfState = mutableStateOf("")
+    private val cdBioState = mutableStateOf("")
+    private val cdTypState = mutableStateOf("")
+    private val cdColorState = mutableStateOf(0xFFFFC107.toInt())
+    private val cdErrState = mutableStateOf("")
+    private val pendingDelCustom = mutableStateOf(-1)
+    private fun loadCustomDrugs() {
+        val ctx = appCtx ?: return
+        try {
+            val arr = org.json.JSONArray(ctx.getSharedPreferences("dsh-storage", 0).getString("customDrugs", "[]") ?: "[]")
+            val out = ArrayList<CustomDrug>()
+            for (i in 0 until arr.length()) {
+                val o = arr.optJSONObject(i) ?: continue
+                out.add(CustomDrug(
+                    o.opt("name") as? String ?: "",
+                    (o.opt("tHalf") as? Number)?.toDouble() ?: 0.0,
+                    (o.opt("bio") as? Number)?.toDouble() ?: 0.0,
+                    (o.opt("typ") as? Number)?.toDouble() ?: 0.0,
+                    (o.opt("color") as? Number)?.toInt() ?: 0xFFFFC107.toInt()))
+            }
+            customDrugsState.value = out
+        } catch (e: Throwable) { Log.w(tag, "loadCustomDrugs: " + e.message) }
+    }
+    private fun saveCustomDrugs() {
+        val ctx = appCtx
+        if (ctx == null) return
+        val arr = org.json.JSONArray()
+        customDrugsState.value.forEach { d ->
+            val o = org.json.JSONObject()
+            o.put("name", d.name); o.put("tHalf", d.tHalf); o.put("bio", d.bio); o.put("typ", d.typ); o.put("color", d.color)
+            arr.put(o)
+        }
+        ctx.getSharedPreferences("dsh-storage", 0).edit().putString("customDrugs", arr.toString()).apply()
+    }
+    private fun customByName(n: String): CustomDrug? = customDrugsState.value.firstOrNull { it.name == n }
     @Volatile private var appCtx: android.content.Context? = null
 
     // ---------- 主观效应词条流（与 warn.subl effectTags 同引擎：急性/慢性不良反应跨药聚合） ----------
@@ -333,7 +381,7 @@ object DshComposeHost {
     // 例：1000mg 氟伏沙明（常用 100mg）= 10× → 中度 +2；10000mg 芬太尼（0.1mg）= 10^5× → 重度 +3。
     /** 相对常用量的过量倍数（无 typDose / 无剂量 → 0 不计）。 */
     private fun odRatio(drug: String): Double {
-        val typ = typDose[drug] ?: return 0.0
+        val typ = typDose[drug] ?: customByName(drug)?.typ ?: return 0.0
         val dose = recListState.value.firstOrNull { it.name == drug }?.amount?.trim()?.toDoubleOrNull() ?: return 0.0
         return dose / typ
     }
@@ -630,7 +678,7 @@ object DshComposeHost {
             compareByDescending<EffectTag> { it.level }.thenByDescending { it.acute }.thenByDescending { it.pack }
         )
     }
-    fun attachEnv(ctx: android.content.Context) { appCtx = ctx; loadProfileState(); refreshRecList(); recomputeChart() }
+    fun attachEnv(ctx: android.content.Context) { appCtx = ctx; loadProfileState(); refreshRecList(); loadCustomDrugs(); recomputeChart() }
     // ---------- 浓度图（与 JS chartSeriesList/PkEngine 同公式：C(t)=Σ D·F·0.5^(t/T½)；窗口 -12h..+36h 步长 1h，t=0=现在；t75 新药沿用 host 旧式峰值模型，与 JS 模型差异见 compose 同步说明） ----------
     // t80 曲线高亮（点记录卡 toggle；session 态，不随 ledger 持久化）
     private val chartHiState = mutableStateOf("")
@@ -641,7 +689,11 @@ object DshComposeHost {
     fun chartSeries(): List<SublSeries> = chartSeriesState.value
     fun chartTotal(): List<Float> = chartTotalState.value
     fun chartLabels(): List<String> = chartLabelsState.value
-    private fun drugParams(name: String): Pair<Int, Double> = when (name) {
+    private fun drugParams(name: String): Pair<Int, Double> {
+        // t82 自定义药优先（用户给的 T½/F，四舍五入到整小时参与现有整型曲线引擎）
+        val cd = customByName(name)
+        if (cd != null) return (if (cd.tHalf < 1.0) 1 else cd.tHalf.toInt()) to cd.bio
+        return when (name) {
         "氟伏沙明" -> 15 to 0.5      // T½ 15h · F=50%
         "帕罗西汀" -> 24 to 1.0      // T½ 24h · F=100%
         "氟西汀" -> 96 to 0.6       // T½ 96h（慢性给药母药）· F=60%
@@ -685,6 +737,7 @@ object DshComposeHost {
         "苯扎托品" -> 8 to 0.5     // F≈ 估算
         else -> 24 to 1.0           // 同 halfOfName/bioOfName 兜底
     }
+    }
     private val drugAntipsych = setOf("奥氮平", "喹硫平")
     private val drugMood = setOf("碳酸锂", "丙戊酸", "卡马西平", "拉莫三嗪")
     private val drugAntidepress = setOf("文拉法辛", "度洛西汀", "阿米替林", "米氮平", "安非他酮", "曲唑酮", "氯米帕明")
@@ -696,7 +749,8 @@ object DshComposeHost {
     private val drugPsyched = setOf("裸盖菇素")
     private val drugAntichol = setOf("苯海索", "苯扎托品")
     private fun drugColorOf(name: String): Int =
-        if (drugSsri.contains(name)) 0xFFFFC107.toInt()
+        if (customByName(name) != null) customByName(name)!!.color
+        else if (drugSsri.contains(name)) 0xFFFFC107.toInt()
         else if (drugBzd.contains(name)) 0xFF1976D2.toInt()
         else drugOpioid[name] ?: when (name) {
             in drugMood -> 0xFF3949AB.toInt()
@@ -780,6 +834,14 @@ object DshComposeHost {
             nm != null && (q.isEmpty() || nm.contains(q) || q.contains(nm))
         }
         "profOn" -> profCondNames.getOrNull(args.getOrNull(0) as? Int ?: 0) in profCondsState.value
+        // t82 自定义药选药槽
+        "hasCustomPick" -> customDrugsState.value.isNotEmpty()
+        "customPickVisible" -> {
+            val k = args.getOrNull(0) as? Int ?: 0
+            val d = customDrugsState.value.getOrNull(k)
+            val q = drugQueryState.value.trim()
+            d != null && (q.isEmpty() || d.name.contains(q) || q.contains(d.name))
+        }
         "sexIs" -> sexNames.getOrNull(args.getOrNull(0) as? Int ?: 0) == profSexState.value
         else -> { Log.w(tag, "boolArg 未知路由: " + name); false }
     }
@@ -793,6 +855,12 @@ object DshComposeHost {
             if (k in 0 until 10 && k < recListState.value.size && recListState.value[k].name == chartHiState.value) "primaryContainer" else "surfaceVariant"
         }
         "pickQuery" -> drugQueryState.value
+        // t82 自定义药选药行
+        "customPickName" -> customDrugsState.value.getOrNull(args.getOrNull(0) as? Int ?: 0)?.name ?: ""
+        "customPickDesc" -> {
+            val d = customDrugsState.value.getOrNull(args.getOrNull(0) as? Int ?: 0)
+            if (d != null) "自定义 · T½ " + (if (d.tHalf % 1.0 == 0.0) d.tHalf.toInt().toString() else d.tHalf.toString()) + "h · F=" + (d.bio * 100).toInt() + "% · 常用 " + (if (d.typ % 1.0 == 0.0) d.typ.toInt().toString() else d.typ.toString()) + "mg" else ""
+        }
         "doseErr" -> doseErrState.value
         "docName" -> docNameState.value
         "docBody" -> drugDocText(docNameState.value)
@@ -832,6 +900,11 @@ object DshComposeHost {
                 recomputeChart()
             }
             "setPickQuery" -> drugQueryState.value = v     // t79 rev2 选药搜索（仅态变更，重组即可见）
+            // t82 自定义药表单输入
+            "setCdName" -> { cdNameState.value = v; if (cdErrState.value.isNotEmpty()) cdErrState.value = "" }
+            "setCdHalf" -> cdHalfState.value = v
+            "setCdBio" -> cdBioState.value = v
+            "setCdTyp" -> cdTypState.value = v
             else -> Log.w(tag, "actText 未知路由: " + name)
         }
     }
@@ -897,6 +970,30 @@ object DshComposeHost {
                 pendingDelete.value = -1
                 if (k in recListState.value.indices) deleteRecAt(k)
             }
+            // ---------- t82 自定义药物 ----------
+            "openCustomDrugs" -> { customMgrOpen.value = true; cdErrState.value = "" }
+            "closeCustomDrugs" -> { customMgrOpen.value = false; cdNameState.value = ""; cdHalfState.value = ""; cdBioState.value = ""; cdTypState.value = ""; cdErrState.value = "" }
+            "pickCdColor" -> { cdColorState.value = presetColors.getOrNull((args.getOrNull(0) as? Int) ?: 0) ?: 0xFFFFC107.toInt() }
+            "customPickAt" -> {
+                val k = (args.getOrNull(0) as? Int) ?: 0
+                if (k in customDrugsState.value.indices) selectedDrug.value = customIdxBase + k
+                doseErrState.value = ""
+            }
+            "commitCustomDrug" -> commitCustomDrug()
+            "askDelCustom" -> pendingDelCustom.value = (args.getOrNull(0) as? Int) ?: -1
+            "cancelDelCustom" -> pendingDelCustom.value = -1
+            "confirmDelCustom" -> {
+                val k = pendingDelCustom.value
+                pendingDelCustom.value = -1
+                if (k in customDrugsState.value.indices) {
+                    val gone = customDrugsState.value[k].name
+                    customDrugsState.value.removeAt(k)
+                    saveCustomDrugs()
+                    if (selectedDrug.value == customIdxBase + k) selectedDrug.value = -1
+                    if (chartHiState.value == gone) { chartHiState.value = ""; recomputeChart() }
+                    toast("已删除自定义药「" + gone + "」")
+                }
+            }
             "toggleProfCond" -> {
                 val k = args.getOrNull(0) as? Int ?: 0
                 val c = profCondNames.getOrNull(k) ?: return
@@ -926,7 +1023,7 @@ object DshComposeHost {
             amt <= 0.0 -> { doseErrState.value = "剂量必须大于 0"; toast("剂量必须大于 0") }
             amt > 10000.0 -> { doseErrState.value = "单次剂量不得超过 10000 mg"; toast("单次剂量不得超过 10000 mg") }
             else -> {
-                val drug = drugNames.getOrElse(pick) { "氟伏沙明" }
+                val drug = if (pick >= customIdxBase) customDrugsState.value.getOrNull(pick - customIdxBase)?.name ?: "氟伏沙明" else drugNames.getOrElse(pick) { "氟伏沙明" }
                 val time = System.currentTimeMillis().toString()
                 val rec = "{\"drug\":" + org.json.JSONObject.quote(drug) +
                     ",\"amount\":" + org.json.JSONObject.quote(dt) +
@@ -968,6 +1065,28 @@ object DshComposeHost {
     private fun putLedger(v: String) {
         appCtx?.getSharedPreferences("dsh-storage", 0)?.edit()?.putString("ledger", v)?.apply()
     }
+    /** t82 提交自定义药：校验（非空名 / 不与内置或已建重名 / T½>0 / F 0..100% / 常用量>0）→ 入表并持久化。 */
+    private fun commitCustomDrug() {
+        val nm = cdNameState.value.trim()
+        val th = cdHalfState.value.trim().toDoubleOrNull()
+        val bi = cdBioState.value.trim().toDoubleOrNull()
+        val ty = cdTypState.value.trim().toDoubleOrNull()
+        fun fail(msg: String) { cdErrState.value = msg; toast(msg) }
+        when {
+            nm.isEmpty() -> fail("药名不能为空")
+            drugNames.contains(nm) || customDrugsState.value.any { it.name == nm } -> fail("药名与已有药物重复")
+            th == null || th <= 0.0 -> fail("半衰期必须为正数（小时）")
+            bi == null || bi < 0.0 || bi > 100.0 -> fail("生物利用度 F 须为 0-100")
+            ty == null || ty <= 0.0 -> fail("常用量必须为正数（mg）")
+            else -> {
+                customDrugsState.value.add(CustomDrug(nm, th, bi / 100.0, ty, cdColorState.value))
+                saveCustomDrugs()
+                cdNameState.value = ""; cdHalfState.value = ""; cdBioState.value = ""; cdTypState.value = ""; cdErrState.value = ""
+                toast("已添加自定义药「" + nm + "」")
+            }
+        }
+    }
+
     /** t82 删除第 k 条记录：ledger JSON 重写 + 列表/曲线同步；若高亮药被删空则清除高亮。 */
     private fun deleteRecAt(k: Int) {
         val ctx = appCtx ?: return
@@ -1073,6 +1192,91 @@ object DshComposeHost {
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 androidx.compose.material3.Text(text = fmtRecTime(r.timeMs), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
+            }
+        }
+    }
+
+    /** t82 自定义药物管理抽屉：新增表单（名/半衰期/F/常用量/曲线色）+ 已建列表（长按删除）。 */
+    @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+    @Composable
+    fun Subl_CustomDrugSheet() {
+        if (!customMgrOpen.value) return
+        DshSheet(onDismiss = { act("closeCustomDrugs") }, sheetFraction = 0f) {
+            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
+                androidx.compose.material3.Text(text = "自定义药物", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                androidx.compose.material3.Text(text = "与内置药同引擎：可服药、画浓度曲线、按常用量判过量。删除：长按列表行。", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                // ---- 新增表单 ----
+                androidx.compose.material3.OutlinedTextField(
+                    value = cdNameState.value, onValueChange = { actText("setCdName", it) },
+                    label = { androidx.compose.material3.Text("药名") }, singleLine = true,
+                    modifier = Modifier.fillMaxWidth())
+                androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                    androidx.compose.material3.OutlinedTextField(
+                        value = cdHalfState.value, onValueChange = { actText("setCdHalf", it) },
+                        label = { androidx.compose.material3.Text("半衰期 h") }, singleLine = true, keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                        modifier = Modifier.weight(1.0f))
+                    androidx.compose.material3.OutlinedTextField(
+                        value = cdBioState.value, onValueChange = { actText("setCdBio", it) },
+                        label = { androidx.compose.material3.Text("F %") }, singleLine = true, keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                        modifier = Modifier.weight(1.0f))
+                    androidx.compose.material3.OutlinedTextField(
+                        value = cdTypState.value, onValueChange = { actText("setCdTyp", it) },
+                        label = { androidx.compose.material3.Text("常用量 mg") }, singleLine = true, keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                        modifier = Modifier.weight(1.0f))
+                }
+                // 曲线色六选一
+                androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    androidx.compose.material3.Text(text = "曲线色", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    presetColors.indices.forEach { i ->
+                        val sel = cdColorState.value == presetColors[i]
+                        Box(modifier = Modifier
+                            .size(28.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(Color(presetColors[i]))
+                            .clickable { act("pickCdColor", listOf(i)) }
+                            .then(if (sel) Modifier.border(2.dp, MaterialTheme.colorScheme.onSurface, RoundedCornerShape(14.dp)) else Modifier))
+                    }
+                }
+                androidx.compose.material3.Button(onClick = { act("commitCustomDrug") }, modifier = Modifier.fillMaxWidth()) {
+                    androidx.compose.material3.Text(text = "＋ 添加自定义药物")
+                }
+                if (cdErrState.value.isNotEmpty()) {
+                    androidx.compose.material3.Text(text = cdErrState.value, fontSize = 13.sp, color = MaterialTheme.colorScheme.error)
+                }
+                androidx.compose.material3.HorizontalDivider()
+                // ---- 已建列表（长按删除） ----
+                androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
+                    if (customDrugsState.value.isEmpty()) {
+                        androidx.compose.material3.Text(text = "（尚无自定义药物）", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 8.dp))
+                    }
+                    customDrugsState.value.forEachIndexed { i, d ->
+                        androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .combinedClickable(onClick = {}, onLongClick = { act("askDelCustom", listOf(i)) })
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
+                            Box(modifier = Modifier.width(5.dp).height(22.dp).clip(RoundedCornerShape(2.5.dp)).background(Color(d.color)))
+                            androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1.0f)) {
+                                androidx.compose.material3.Text(text = d.name, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                androidx.compose.material3.Text(text = "T½ " + d.tHalf + "h · F=" + (d.bio * 100).toInt() + "% · 常用 " + d.typ + "mg", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            androidx.compose.material3.Text(text = "长按删除", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+                // 删除确认
+                if (pendingDelCustom.value >= 0 && pendingDelCustom.value < customDrugsState.value.size) {
+                    val d = customDrugsState.value[pendingDelCustom.value]
+                    androidx.compose.material3.AlertDialog(
+                        onDismissRequest = { pendingDelCustom.value = -1 },
+                        title = { androidx.compose.material3.Text(text = "删除自定义药物", fontWeight = FontWeight.Bold) },
+                        text = { androidx.compose.material3.Text(text = "确认删除「" + d.name + "」？其浓度曲线与选药入口将移除，服药记录保留。") },
+                        confirmButton = { androidx.compose.material3.TextButton(onClick = { act("confirmDelCustom") }) { androidx.compose.material3.Text(text = "删除", color = MaterialTheme.colorScheme.error) } },
+                        dismissButton = { androidx.compose.material3.TextButton(onClick = { act("cancelDelCustom") }) { androidx.compose.material3.Text(text = "取消") } }
+                    )
+                }
             }
         }
     }

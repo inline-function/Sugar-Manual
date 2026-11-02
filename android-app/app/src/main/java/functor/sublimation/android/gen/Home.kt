@@ -24,10 +24,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.background
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.runtime.Composable
 import androidx.compose.material3.MaterialTheme
 
@@ -109,6 +109,115 @@ fun Home() {
                         androidx.compose.material3.TextField(value = functor.sublimation.android.DshComposeHost.strArg("pickQuery"), onValueChange = { v -> functor.sublimation.android.DshComposeHost.actText("setPickQuery", v) }, label = { androidx.compose.material3.Text(text = "搜索药物") }, singleLine = true)
                         androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().height(240.dp).verticalScroll(rememberScrollState())) {
                             androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                                if (functor.sublimation.android.DshComposeHost.boolArg("hasCustomPick")) {
+                                androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp), modifier = Modifier.fillMaxWidth()) {
+                                    androidx.compose.material3.Text(text = "自定义药物", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 13.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                }
+                                }
+                                if (functor.sublimation.android.DshComposeHost.boolArg("customPickVisible", 0)) {
+                                androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("customPickAt", listOf(0)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                                    androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1.0f)) {
+                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("customPickName"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("customPickDesc"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
+                                    }
+                                    if (functor.sublimation.android.DshComposeHost.boolArg("isSel", 100)) {
+                                    androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
+                                        androidx.compose.material3.Text(text = "✓", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                    }
+                                    }
+                                }
+                                }
+                                if (functor.sublimation.android.DshComposeHost.boolArg("customPickVisible", 1)) {
+                                androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("customPickAt", listOf(1)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                                    androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1.0f)) {
+                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("customPickName"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("customPickDesc"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
+                                    }
+                                    if (functor.sublimation.android.DshComposeHost.boolArg("isSel", 101)) {
+                                    androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
+                                        androidx.compose.material3.Text(text = "✓", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                    }
+                                    }
+                                }
+                                }
+                                if (functor.sublimation.android.DshComposeHost.boolArg("customPickVisible", 2)) {
+                                androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("customPickAt", listOf(2)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                                    androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1.0f)) {
+                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("customPickName"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("customPickDesc"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
+                                    }
+                                    if (functor.sublimation.android.DshComposeHost.boolArg("isSel", 102)) {
+                                    androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
+                                        androidx.compose.material3.Text(text = "✓", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                    }
+                                    }
+                                }
+                                }
+                                if (functor.sublimation.android.DshComposeHost.boolArg("customPickVisible", 3)) {
+                                androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("customPickAt", listOf(3)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                                    androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1.0f)) {
+                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("customPickName"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("customPickDesc"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
+                                    }
+                                    if (functor.sublimation.android.DshComposeHost.boolArg("isSel", 103)) {
+                                    androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
+                                        androidx.compose.material3.Text(text = "✓", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                    }
+                                    }
+                                }
+                                }
+                                if (functor.sublimation.android.DshComposeHost.boolArg("customPickVisible", 4)) {
+                                androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("customPickAt", listOf(4)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                                    androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1.0f)) {
+                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("customPickName"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("customPickDesc"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
+                                    }
+                                    if (functor.sublimation.android.DshComposeHost.boolArg("isSel", 104)) {
+                                    androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
+                                        androidx.compose.material3.Text(text = "✓", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                    }
+                                    }
+                                }
+                                }
+                                if (functor.sublimation.android.DshComposeHost.boolArg("customPickVisible", 5)) {
+                                androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("customPickAt", listOf(5)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                                    androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1.0f)) {
+                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("customPickName"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("customPickDesc"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
+                                    }
+                                    if (functor.sublimation.android.DshComposeHost.boolArg("isSel", 105)) {
+                                    androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
+                                        androidx.compose.material3.Text(text = "✓", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                    }
+                                    }
+                                }
+                                }
+                                if (functor.sublimation.android.DshComposeHost.boolArg("customPickVisible", 6)) {
+                                androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("customPickAt", listOf(6)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                                    androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1.0f)) {
+                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("customPickName"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("customPickDesc"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
+                                    }
+                                    if (functor.sublimation.android.DshComposeHost.boolArg("isSel", 106)) {
+                                    androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
+                                        androidx.compose.material3.Text(text = "✓", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                    }
+                                    }
+                                }
+                                }
+                                if (functor.sublimation.android.DshComposeHost.boolArg("customPickVisible", 7)) {
+                                androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("customPickAt", listOf(7)) }.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                                    androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1.0f)) {
+                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("customPickName"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                        androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("customPickDesc"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
+                                    }
+                                    if (functor.sublimation.android.DshComposeHost.boolArg("isSel", 107)) {
+                                    androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
+                                        androidx.compose.material3.Text(text = "✓", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                    }
+                                    }
+                                }
+                                }
                                 PickerRowsA()
                                 PickerRowsB()
                                 PickerRowsC()
@@ -290,6 +399,13 @@ fun Home() {
                                 }
                                 androidx.compose.material3.Text(text = "关于", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 15.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
                                 androidx.compose.material3.Text(text = "语法糖手册 V1.0 · SfA @compose 通路\n按钮交互经 DshComposeHost.act 路由到 Kotlin 侧交互态。", modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
+                                androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).clickable { functor.sublimation.android.DshComposeHost.act("openCustomDrugs") }.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                                    androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1.0f)) {
+                                        androidx.compose.material3.Text(text = "自定义药物", modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 15.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                        androidx.compose.material3.Text(text = "新增 / 长按删除；与内置药同引擎（曲线 + 过量判定）", modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
+                                    }
+                                    androidx.compose.material3.Text(text = "＞", modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 16.0.sp)
+                                }
                                 androidx.compose.material3.TextButton(onClick = { functor.sublimation.android.DshComposeHost.act("clearAll") }) {
                                     androidx.compose.material3.Text(text = "清空记录")
                                 }
