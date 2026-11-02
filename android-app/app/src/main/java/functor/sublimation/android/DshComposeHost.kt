@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.verticalScroll
@@ -272,11 +273,22 @@ object DshComposeHost {
     /** t82 自定义药效应机制：药理分类（多选）→ 继承该分类效应词条模板 + 进入对应综合征包。
      * 例：自定义「曲马多样药」选 阿片能+血清素能 → 同时进入阿片类中毒与血清素综合征包，
      * 词条流出现呼吸抑制/震颤等，剂量过量再按 odWeight 给包加权。 */
-    data class CustomDrug(val name: String, val tHalf: Double, val bio: Double, val typ: Double, val color: Int, val cats: List<Int>)
+    /** 自定义效应词条：名称 + 权重（正=增强效应，负=减弱/拮抗）+ 急性/慢性。 */
+    data class CustomEntry(val name: String, val weight: Int, val acute: Boolean)
+    /** t82 完整自定义药模型（对齐内置 Drug 结构的可编辑子集）：
+     *  route 给药途径；advCustom 主观效应增减（可正可负）；overdose 过量反应；withdraw 戒断反应；
+     *  metabolites 代谢物。 */
+    data class CustomDrug(val name: String, val tHalf: Double, val bio: Double, val typ: Double, val color: Int, val cats: List<Int>,
+        val route: String = "口服",
+        val advCustom: List<CustomEntry> = emptyList(),
+        val overdose: List<CustomEntry> = emptyList(),
+        val withdraw: List<CustomEntry> = emptyList(),
+        val metabolites: List<String> = emptyList())
     // 药理分类 id
     private val CAT_SER = 0; private val CAT_OPI = 1; private val CAT_BZD = 2
     private val CAT_ANTICH = 3; private val CAT_STIM = 4; private val CAT_ANTIPSY = 5
     private val catNames = listOf("血清素能", "阿片能（μ 激动）", "苯二氮卓类", "抗胆碱能", "中枢兴奋剂", "抗精神病")
+    private val routeNames = listOf("口服", "静脉注射", "肌肉注射", "透皮", "吸入", "舌下含服")
     /** 分类 → 效应词条模板（AdvEnt）；level 频率基准、acute 急性。 */
     private val catAdvTemplates = mapOf(
         CAT_SER to listOf(AdvEnt("血清素综合征", 1, true), AdvEnt("恶心", 2, false), AdvEnt("震颤", 2, false), AdvEnt("失眠", 2, false), AdvEnt("头晕", 2, false), AdvEnt("激越", 1, false)),
@@ -294,7 +306,14 @@ object DshComposeHost {
         val cd = customByName(name) ?: return emptyList()
         val out = ArrayList<AdvEnt>()
         cd.cats.forEach { c -> catAdvTemplates[c]?.forEach { e -> if (out.none { it.name == e.name }) out.add(e) } }
+        cd.advCustom.filter { it.weight > 0 }.forEach { e -> if (out.none { it.name == e.name }) out.add(AdvEnt(e.name, e.weight.coerceIn(1, 3), e.acute)) }
         return out
+    }
+    /** 自定义负权重词条 → 包减权（与逆转剂同机制：按包症状关键词命中求和）。 */
+    private fun customNegWeight(drug: String, keys: List<List<String>>): Int {
+        val cd = customByName(drug) ?: return 0
+        // keys 为症状组列表（组内任一关键词命中即算该组匹配；拮抗剂式按名称归组扣减）
+        return cd.advCustom.filter { it.weight < 0 && keys.flatten().any { kw -> kwHit(it.name, kw) } }.sumOf { -it.weight }
     }
     /** 自定义药分类归属判断（包成员与相互作用镜像用）。 */
     private fun isSerotonergic(n: String): Boolean = n in packSerotonDrugs || (customByName(n)?.cats?.contains(CAT_SER) == true)
@@ -314,6 +333,18 @@ object DshComposeHost {
     private val cdColorState = mutableStateOf(0xFFFFC107.toInt())
     private val cdErrState = mutableStateOf("")
     private val cdCatsState = mutableStateOf(ArrayList<Int>())
+    private var cdRouteIdx = mutableStateOf(0)
+    private val cdAdvDraft = mutableStateOf(ArrayList<CustomEntry>())      // 主观效应（增减）
+    private val cdOverDraft = mutableStateOf(ArrayList<CustomEntry>())     // 过量反应
+    private val cdWithDraft = mutableStateOf(ArrayList<CustomEntry>())     // 戒断反应
+    private val cdMetaboDraft = mutableStateOf(ArrayList<String>())        // 代谢物
+    // 词条编辑行（三区分立名称 + 共享权重/急慢）
+    private val cdAdvNameState = mutableStateOf("")
+    private val cdOverNameState = mutableStateOf("")
+    private val cdWithNameState = mutableStateOf("")
+    private val cdMetaboNameState = mutableStateOf("")
+    private val cdEnWeight = mutableStateOf(1)
+    private val cdEnAcute = mutableStateOf(true)
     private val pendingDelCustom = mutableStateOf(-1)
     private fun loadCustomDrugs() {
         val ctx = appCtx ?: return
@@ -328,7 +359,10 @@ object DshComposeHost {
                     (o.opt("bio") as? Number)?.toDouble() ?: 0.0,
                     (o.opt("typ") as? Number)?.toDouble() ?: 0.0,
                     (o.opt("color") as? Number)?.toInt() ?: 0xFFFFC107.toInt(),
-                    (o.opt("cats") as? org.json.JSONArray)?.let { a -> (0 until a.length()).map { a.optInt(it) } } ?: emptyList()))
+                    (o.opt("cats") as? org.json.JSONArray)?.let { a -> (0 until a.length()).map { a.optInt(it) } } ?: emptyList(),
+                    o.opt("route") as? String ?: "口服",
+                    decEntries(o, "advCustom"), decEntries(o, "overdose"), decEntries(o, "withdraw"),
+                    (o.opt("metabolites") as? org.json.JSONArray)?.let { a -> (0 until a.length()).mapNotNull { it as? String } } ?: emptyList()))
             }
             customDrugsState.value = out
         } catch (e: Throwable) { Log.w(tag, "loadCustomDrugs: " + e.message) }
@@ -341,11 +375,30 @@ object DshComposeHost {
             val o = org.json.JSONObject()
             o.put("name", d.name); o.put("tHalf", d.tHalf); o.put("bio", d.bio); o.put("typ", d.typ); o.put("color", d.color)
             o.put("cats", org.json.JSONArray(d.cats))
+            o.put("route", d.route)
+            o.put("advCustom", encEntries(d.advCustom))
+            o.put("overdose", encEntries(d.overdose))
+            o.put("withdraw", encEntries(d.withdraw))
+            o.put("metabolites", org.json.JSONArray(d.metabolites))
             arr.put(o)
         }
         ctx.getSharedPreferences("dsh-storage", 0).edit().putString("customDrugs", arr.toString()).apply()
     }
     private fun customByName(n: String): CustomDrug? = customDrugsState.value.firstOrNull { it.name == n }
+    private fun decEntries(o: org.json.JSONObject, key: String): List<CustomEntry> {
+        val a = o.optJSONArray(key) ?: return emptyList()
+        val out = ArrayList<CustomEntry>()
+        for (i in 0 until a.length()) {
+            val e = a.optJSONObject(i) ?: continue
+            out.add(CustomEntry(e.opt("name") as? String ?: "", (e.opt("weight") as? Number)?.toInt() ?: 1, (e.opt("acute") as? Boolean) ?: false))
+        }
+        return out
+    }
+    private fun encEntries(xs: List<CustomEntry>): org.json.JSONArray {
+        val a = org.json.JSONArray()
+        xs.forEach { e -> val o = org.json.JSONObject(); o.put("name", e.name); o.put("weight", e.weight); o.put("acute", e.acute); a.put(o) }
+        return a
+    }
     @Volatile private var appCtx: android.content.Context? = null
 
     // ---------- 主观效应词条流（与 warn.subl effectTags 同引擎：急性/慢性不良反应跨药聚合） ----------
@@ -452,7 +505,8 @@ object DshComposeHost {
             if (boost != null) listOf(PackMember("画像加权（抗胆碱能负荷）", boost.first, boost.second)) else emptyList())
         // t82：剂量过量加权行
         val odAc = names.filter { isAnticholinergic(it) }.mapNotNull { d -> val w = odWeight(d); if (w > 0) PackMember("抗胆碱能负荷过量", w, odLine(d)) else null }
-        val gross = packWeightSum(members + odAc)
+        val negAc = names.filter { isAnticholinergic(it) }.sumOf { customNegWeight(it, acKeys.map { k -> listOf(k) }) }
+        val gross = packWeightSum(members + odAc) - negAc
         val red = if ("毒扁豆碱" in names) 3 else 0     // t79 rev2 逆转剂：胆碱酯酶抑制，升 ACh 对抗蕈毒碱阻断
         val w = if (gross >= red) gross - red else 0
         return PackInfo("抗胆碱能综合征", true, w, packTierOf(w), if (red > 0) "毒扁豆碱 −3" else "", antiChPackDesc, members + odAc)
@@ -470,7 +524,8 @@ object DshComposeHost {
         val odSer = ds.mapNotNull { d -> val w = odWeight(d); if (w > 0) PackMember("急性过量加权（血清素能）", w, odLine(d)) else null }
         val all0 = rows + combo + odSer
         val red = if ("赛庚啶" in names) 3 else 0          // t79 rev2 逆转剂：5-HT2 拮抗
-        val gross0 = all0.sumOf { it.weight }
+        val neg = ds.sumOf { customNegWeight(it, serKeys) }   // t82 自定义负权重词条
+        val gross0 = all0.sumOf { it.weight } - neg
         val w0 = if (gross0 >= red) gross0 - red else 0
         return PackInfo("血清素综合征", true, w0, packTierOf(w0), if (red > 0) "赛庚啶 −3" else "", serotonPackDesc, all0.sortedByDescending { it.weight })
     }
@@ -488,7 +543,8 @@ object DshComposeHost {
         val odOp = ds.filter { drugOpioid.containsKey(it) }.mapNotNull { d -> val w = odWeight(d); if (w > 0) PackMember("μ 激动剂急性过量", w, odLine(d)) else null }
         val all1 = rows + combo + odOp
         val red1 = if ("纳洛酮" in names) 4 else 0       // t79 rev2 逆转剂：μ 受体竞争性拮抗
-        val gross1 = all1.sumOf { it.weight }
+        val neg1 = ds.sumOf { customNegWeight(it, opKeys) }  // t82 自定义负权重词条
+        val gross1 = all1.sumOf { it.weight } - neg1
         val w1 = if (gross1 >= red1) gross1 - red1 else 0
         val rev1 = (if (red1 > 0) "纳洛酮 −4" else "") + if (hasFlu) "氟马西尼：苯二氮卓贡献归零" else ""
         return PackInfo("阿片类中毒", true, w1, packTierOf(w1), rev1, opioidPackDesc, all1.sortedByDescending { it.weight })
@@ -704,6 +760,22 @@ object DshComposeHost {
         tags.filter { it.pack }.forEach { tg -> if (packDisplayed(tg.name)) displayed.add(tg.name) }
         val hidden = HashSet<String>()
         displayed.forEach { p -> toxKeySets.firstOrNull { it.first == p }?.second?.forEach { k -> hidden.add(k) } }
+        // t82 自定义药过量反应：该药 odWeight>=1 时输出其 overdose 词条（level 随过量档 2-3）
+        val nowMs = System.currentTimeMillis()
+        recListState.value.forEach { r ->
+            val cd = customByName(r.name) ?: return@forEach
+            val w = odWeight(r.name)
+            if (w >= 1) cd.overdose.forEach { e -> tags.add(EffectTag(e.name, (w + 1).coerceAtMost(3), e.acute, false)) }
+        }
+        // t82 自定义药戒断反应：有记录且距最近给药 > 5×半衰期 → 输出 withdraw 词条（依赖停药 onset）
+        recListState.value.groupBy { it.name }.forEach { (n, rs) ->
+            val cd = customByName(n) ?: return@forEach
+            if (cd.withdraw.isEmpty()) return@forEach
+            val last = rs.maxOf { it.timeMs }
+            if (last > 0 && (nowMs - last) / 3600000.0 > cd.tHalf * 5.0) {
+                cd.withdraw.forEach { e -> tags.add(EffectTag(e.name, if (e.acute) 2 else 1, e.acute, false)) }
+            }
+        }
         val kept = tags.filter { tg ->
             if (tg.pack) tg.name in displayed
             else !hidden.any { kwHit(tg.name, it) }
@@ -893,7 +965,7 @@ object DshComposeHost {
         "customPickName" -> customDrugsState.value.getOrNull(args.getOrNull(0) as? Int ?: 0)?.name ?: ""
         "customPickDesc" -> {
             val d = customDrugsState.value.getOrNull(args.getOrNull(0) as? Int ?: 0)
-            if (d != null) "自定义 · T½ " + (if (d.tHalf % 1.0 == 0.0) d.tHalf.toInt().toString() else d.tHalf.toString()) + "h · F=" + (d.bio * 100).toInt() + "% · 常用 " + (if (d.typ % 1.0 == 0.0) d.typ.toInt().toString() else d.typ.toString()) + "mg" else ""
+            if (d != null) "自定义 · " + d.route + " · T½ " + (if (d.tHalf % 1.0 == 0.0) d.tHalf.toInt().toString() else d.tHalf.toString()) + "h · F=" + (d.bio * 100).toInt() + "% · 常用 " + (if (d.typ % 1.0 == 0.0) d.typ.toInt().toString() else d.typ.toString()) + "mg" + (if (d.metabolites.isNotEmpty()) " · 代谢物 " + d.metabolites.joinToString("/") else "") else ""
         }
         "doseErr" -> doseErrState.value
         "docName" -> docNameState.value
@@ -916,7 +988,7 @@ object DshComposeHost {
                 when {
                     name.startsWith("name") -> r.name
                     name.startsWith("dose") -> r.amount + " mg"
-                    else -> fmtRecTime(r.timeMs)
+                    else -> fmtRecTime(r.timeMs, r.name)
                 }
             } else { Log.w(tag, "strArg 未知路由: " + name); "" }
         }
@@ -939,6 +1011,10 @@ object DshComposeHost {
             "setCdHalf" -> cdHalfState.value = v
             "setCdBio" -> cdBioState.value = v
             "setCdTyp" -> cdTypState.value = v
+            "setCdAdvName" -> cdAdvNameState.value = v
+            "setCdOverName" -> cdOverNameState.value = v
+            "setCdWithName" -> cdWithNameState.value = v
+            "setCdMetaboName" -> cdMetaboNameState.value = v
             else -> Log.w(tag, "actText 未知路由: " + name)
         }
     }
@@ -1005,8 +1081,17 @@ object DshComposeHost {
                 if (k in recListState.value.indices) deleteRecAt(k)
             }
             // ---------- t82 自定义药物 ----------
-            "openCustomDrugs" -> { customMgrOpen.value = true; cdErrState.value = ""; cdCatsState.value = ArrayList() }
-            "closeCustomDrugs" -> { customMgrOpen.value = false; cdNameState.value = ""; cdHalfState.value = ""; cdBioState.value = ""; cdTypState.value = ""; cdErrState.value = ""; cdCatsState.value = ArrayList() }
+            "openCustomDrugs" -> {
+                customMgrOpen.value = true; cdErrState.value = ""; cdCatsState.value = ArrayList()
+                cdRouteIdx.value = 0; cdAdvDraft.value = ArrayList(); cdOverDraft.value = ArrayList(); cdWithDraft.value = ArrayList(); cdMetaboDraft.value = ArrayList()
+                cdAdvNameState.value = ""; cdOverNameState.value = ""; cdWithNameState.value = ""; cdMetaboNameState.value = ""; cdEnWeight.value = 1; cdEnAcute.value = true
+            }
+            "closeCustomDrugs" -> {
+                customMgrOpen.value = false
+                cdNameState.value = ""; cdHalfState.value = ""; cdBioState.value = ""; cdTypState.value = ""; cdErrState.value = ""; cdCatsState.value = ArrayList()
+                cdRouteIdx.value = 0; cdAdvDraft.value = ArrayList(); cdOverDraft.value = ArrayList(); cdWithDraft.value = ArrayList(); cdMetaboDraft.value = ArrayList()
+                cdAdvNameState.value = ""; cdOverNameState.value = ""; cdWithNameState.value = ""; cdMetaboNameState.value = ""
+            }
             "pickCdColor" -> { cdColorState.value = presetColors.getOrNull((args.getOrNull(0) as? Int) ?: 0) ?: 0xFFFFC107.toInt() }
             "customPickAt" -> {
                 val k = (args.getOrNull(0) as? Int) ?: 0
@@ -1018,6 +1103,37 @@ object DshComposeHost {
                 val cur = ArrayList(cdCatsState.value)
                 if (cur.contains(c)) cur.remove(c) else cur.add(c)
                 cdCatsState.value = cur
+            }
+            "pickCdRoute" -> { cdRouteIdx.value = (args.getOrNull(0) as? Int) ?: 0 }
+            "addCdEntry" -> {
+                // args: 目标区（0=主观 1=过量 2=戒断）
+                val tgt = (args.getOrNull(0) as? Int) ?: 0
+                val nm = (when (tgt) { 1 -> cdOverNameState; 2 -> cdWithNameState; else -> cdAdvNameState }).value.trim()
+                if (nm.isEmpty()) { cdErrState.value = "词条名不能为空"; toast("词条名不能为空") }
+                else {
+                    val e = CustomEntry(nm, cdEnWeight.value, cdEnAcute.value)
+                    val tgtList = when (tgt) { 1 -> cdOverDraft; 2 -> cdWithDraft; else -> cdAdvDraft }
+                    tgtList.value.add(e)
+                    tgtList.value = ArrayList(tgtList.value)
+                    (when (tgt) { 1 -> cdOverNameState; 2 -> cdWithNameState; else -> cdAdvNameState }).value = ""
+                }
+            }
+            "delCdEntry" -> {
+                val tgt = (args.getOrNull(0) as? Int) ?: 0
+                val idx = (args.getOrNull(1) as? Int) ?: -1
+                val tgtList = when (tgt) { 1 -> cdOverDraft; 2 -> cdWithDraft; else -> cdAdvDraft }
+                if (idx in tgtList.value.indices) { tgtList.value.removeAt(idx); tgtList.value = ArrayList(tgtList.value) }
+            }
+            "setCdEnWeight" -> { cdEnWeight.value = (args.getOrNull(0) as? Int) ?: 1 }
+            "setCdEnAcute" -> { cdEnAcute.value = (args.getOrNull(0) as? Int) == 1 }
+            "addCdMetabo" -> {
+                val nm = cdMetaboNameState.value.trim()
+                if (nm.isNotEmpty()) { cdMetaboDraft.value.add(nm); cdMetaboDraft.value = ArrayList(cdMetaboDraft.value); cdMetaboNameState.value = "" }
+                else { cdErrState.value = "代谢物名不能为空"; toast("代谢物名不能为空") }
+            }
+            "delCdMetabo" -> {
+                val idx = (args.getOrNull(0) as? Int) ?: -1
+                if (idx in cdMetaboDraft.value.indices) { cdMetaboDraft.value.removeAt(idx); cdMetaboDraft.value = ArrayList(cdMetaboDraft.value) }
             }
             "commitCustomDrug" -> commitCustomDrug()
             "askDelCustom" -> pendingDelCustom.value = (args.getOrNull(0) as? Int) ?: -1
@@ -1080,10 +1196,10 @@ object DshComposeHost {
     }
     /** 记录列表同步：读 prefs "ledger" 全量（最近 10 条驱动 name_k/dose_k/time_k/bar_k 槽位）。 */
     /** 记录卡时间行（与 strArg time_k 同格式）。 */
-    private fun fmtRecTime(t: Long): String = if (t > 0) {
+    private fun fmtRecTime(t: Long, drug: String): String = if (t > 0) {
         val cal = java.util.Calendar.getInstance().apply { timeInMillis = t }
-        "给药时间 今日 %02d:%02d · 口服".format(cal.get(java.util.Calendar.HOUR_OF_DAY), cal.get(java.util.Calendar.MINUTE))
-    } else "给药时间 · 口服"
+        "给药时间 今日 %02d:%02d · %s".format(cal.get(java.util.Calendar.HOUR_OF_DAY), cal.get(java.util.Calendar.MINUTE), customByName(drug)?.route ?: "口服")
+    } else "给药时间 · " + (customByName(drug)?.route ?: "口服")
 
     private fun refreshRecList() {
         val ctx = appCtx ?: return
@@ -1119,9 +1235,11 @@ object DshComposeHost {
             bi == null || bi < 0.0 || bi > 100.0 -> fail("生物利用度 F 须为 0-100")
             ty == null || ty <= 0.0 -> fail("常用量必须为正数（mg）")
             else -> {
-                customDrugsState.value.add(CustomDrug(nm, th, bi / 100.0, ty, cdColorState.value, ArrayList(cdCatsState.value)))
+                customDrugsState.value.add(CustomDrug(nm, th, bi / 100.0, ty, cdColorState.value, ArrayList(cdCatsState.value),
+                    routeNames.getOrElse(cdRouteIdx.value) { "口服" }, ArrayList(cdAdvDraft.value), ArrayList(cdOverDraft.value), ArrayList(cdWithDraft.value), ArrayList(cdMetaboDraft.value)))
                 saveCustomDrugs()
                 cdNameState.value = ""; cdHalfState.value = ""; cdBioState.value = ""; cdTypState.value = ""; cdErrState.value = ""; cdCatsState.value = ArrayList()
+                cdAdvDraft.value = ArrayList(); cdOverDraft.value = ArrayList(); cdWithDraft.value = ArrayList(); cdMetaboDraft.value = ArrayList()
                 toast("已添加自定义药「" + nm + "」")
             }
         }
@@ -1195,6 +1313,9 @@ object DshComposeHost {
     /** t82 服药记录卡：sync-gen 把 home 的 10 张 hasRec(k) 卡整卡替换为本组合。
      *  药名左色块条 = 该药曲线色（drugColorOf；五朵金花金色、BZD 蓝、阿片棕橙……）；
      *  点卡 = 高亮该药曲线（toggleChartHi 不变），长按 = 弹删除确认框（askDeleteRec）。 */
+    /** t82 服药记录卡：sync-gen 把 home 的 10 张 hasRec(k) 卡整卡替换为本组合。
+     *  药名左色块条 = 该药曲线色（drugColorOf；五朵金花金色、BZD 蓝、阿片棕橙……）；
+     *  点卡 = 高亮该药曲线（toggleChartHi 不变），长按 = 弹删除确认框（askDeleteRec）。 */
     @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
     @Composable
     fun Subl_RecCard(k: Int) {
@@ -1231,21 +1352,66 @@ object DshComposeHost {
                     }
                 }
                 Spacer(modifier = Modifier.height(4.dp))
-                androidx.compose.material3.Text(text = fmtRecTime(r.timeMs), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
+                androidx.compose.material3.Text(text = fmtRecTime(r.timeMs, r.name), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
             }
         }
     }
 
-    /** t82 自定义药物管理抽屉：新增表单（名/半衰期/F/常用量/曲线色）+ 已建列表（长按删除）。 */
+    /** t82 自定义效应词条编辑器（主观增减 / 过量反应 / 戒断反应三区共用）。 */
+    @Composable
+    private fun CdEntryEditor(title: String, hint: String, target: Int, draft: MutableState<ArrayList<CustomEntry>>, nameState: MutableState<String>, nameRoute: String) {
+        androidx.compose.material3.Text(text = title, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+        androidx.compose.material3.Text(text = hint, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        // 已录词条
+        draft.value.forEachIndexed { i, e ->
+            androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surfaceVariant).padding(horizontal = 10.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                androidx.compose.material3.Text(text = e.name, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1.0f))
+                androidx.compose.material3.Text(text = (if (e.weight > 0) "+" else "") + e.weight, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (e.weight > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
+                androidx.compose.material3.Text(text = if (e.acute) "急性" else "慢性", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                androidx.compose.material3.TextButton(onClick = { act("delCdEntry", listOf(target, i)) }, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
+                    androidx.compose.material3.Text(text = "✕", fontSize = 13.sp, color = MaterialTheme.colorScheme.error)
+                }
+            }
+        }
+        // 录入行
+        androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
+            androidx.compose.material3.OutlinedTextField(
+                value = nameState.value, onValueChange = { actText(nameRoute, it) },
+                label = { androidx.compose.material3.Text("词条名") }, singleLine = true,
+                modifier = Modifier.weight(1.0f))
+            androidx.compose.foundation.layout.Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                listOf(-2, -1, 1, 2, 3).forEach { w ->
+                    val sel = cdEnWeight.value == w
+                    Box(modifier = Modifier.size(30.dp).clip(RoundedCornerShape(15.dp)).background(if (sel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant).clickable { act("setCdEnWeight", listOf(w)) }, contentAlignment = Alignment.Center) {
+                        androidx.compose.material3.Text(text = (if (w > 0) "+" else "") + w, fontSize = 11.sp, color = if (sel) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+            androidx.compose.material3.TextButton(onClick = { act("addCdEntry", listOf(target)) }) {
+                androidx.compose.material3.Text(text = "＋", fontSize = 18.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+            }
+        }
+        // 急性/慢性切换
+        androidx.compose.foundation.layout.Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
+            Box(modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(if (cdEnAcute.value) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant).clickable { act("setCdEnAcute", listOf(1)) }.padding(horizontal = 10.dp, vertical = 4.dp)) {
+                androidx.compose.material3.Text(text = "急性", fontSize = 11.sp, color = if (cdEnAcute.value) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Box(modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(if (!cdEnAcute.value) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant).clickable { act("setCdEnAcute", listOf(0)) }.padding(horizontal = 10.dp, vertical = 4.dp)) {
+                androidx.compose.material3.Text(text = "慢性", fontSize = 11.sp, color = if (!cdEnAcute.value) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+
     @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
     @Composable
     fun Subl_CustomDrugSheet() {
         if (!customMgrOpen.value) return
         DshSheet(onDismiss = { act("closeCustomDrugs") }, sheetFraction = 0f) {
-            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
+            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp).verticalScroll(rememberScrollState()), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)) {
                 androidx.compose.material3.Text(text = "自定义药物", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                androidx.compose.material3.Text(text = "与内置药同引擎：可服药、画浓度曲线、按常用量判过量。删除：长按列表行。", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                // ---- 新增表单 ----
+                androidx.compose.material3.Text(text = "与内置药同引擎：药代 + 给药途径 + 效应词条 + 效应包，全部参与预警/曲线。", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                // ---- 药代 + 剂量 ----
+                androidx.compose.material3.Text(text = "药代动力学", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 androidx.compose.material3.OutlinedTextField(
                     value = cdNameState.value, onValueChange = { actText("setCdName", it) },
                     label = { androidx.compose.material3.Text("药名") }, singleLine = true,
@@ -1264,30 +1430,56 @@ object DshComposeHost {
                         label = { androidx.compose.material3.Text("常用量 mg") }, singleLine = true, keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
                         modifier = Modifier.weight(1.0f))
                 }
-                // 药理分类（多选）—— 效应机制入口：继承分类效应词条模板 + 进入对应综合征包
-                androidx.compose.foundation.layout.FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
-                    catNames.indices.forEach { i ->
-                        val sel = cdCatsState.value.contains(i)
-                        Box(modifier = Modifier
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(if (sel) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
-                            .clickable { act("toggleCdCat", listOf(i)) }
-                            .padding(horizontal = 12.dp, vertical = 6.dp)) {
-                            androidx.compose.material3.Text(text = if (sel) "✓ " + catNames[i] else catNames[i], fontSize = 13.sp, color = if (sel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                // ---- 给药途径 ----
+                androidx.compose.material3.Text(text = "给药途径", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                androidx.compose.foundation.layout.FlowRow(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
+                    routeNames.indices.forEach { i ->
+                        val sel = cdRouteIdx.value == i
+                        Box(modifier = Modifier.clip(RoundedCornerShape(14.dp)).background(if (sel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant).clickable { act("pickCdRoute", listOf(i)) }.padding(horizontal = 12.dp, vertical = 5.dp)) {
+                            androidx.compose.material3.Text(text = routeNames[i], fontSize = 12.sp, color = if (sel) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
-                // 曲线色六选一
+                // ---- 效应词条三区 ----
+                CdEntryEditor("主观效应增减", "正值增强效应/综合征包；负值按关键词给血清素·阿片·抗胆碱包减权（拮抗机制）。", 0, cdAdvDraft, cdAdvNameState, "setCdAdvName")
+                CdEntryEditor("过量反应", "该药 ≥1.5× 常用量时输出，等级随过量档（2-3）。", 1, cdOverDraft, cdOverNameState, "setCdOverName")
+                CdEntryEditor("戒断反应", "距最近给药 > 5×半衰期时输出（依赖停药 onset）。", 2, cdWithDraft, cdWithNameState, "setCdWithName")
+                // ---- 代谢物 ----
+                androidx.compose.material3.Text(text = "代谢物", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                androidx.compose.material3.Text(text = "仅为资料/描述，不入选服药（对应内置药 admin=仅代谢物 地位）。", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                cdMetaboDraft.value.forEachIndexed { i, m ->
+                    androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surfaceVariant).padding(horizontal = 10.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                        androidx.compose.material3.Text(text = m, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1.0f))
+                        androidx.compose.material3.TextButton(onClick = { act("delCdMetabo", listOf(i)) }, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
+                            androidx.compose.material3.Text(text = "✕", fontSize = 13.sp, color = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                }
+                androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
+                    androidx.compose.material3.OutlinedTextField(
+                        value = cdMetaboNameState.value, onValueChange = { actText("setCdMetaboName", it) },
+                        label = { androidx.compose.material3.Text("代谢物名") }, singleLine = true,
+                        modifier = Modifier.weight(1.0f))
+                    androidx.compose.material3.TextButton(onClick = { act("addCdMetabo") }) {
+                        androidx.compose.material3.Text(text = "＋", fontSize = 18.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                    }
+                }
+                // ---- 效应包 ----
+                androidx.compose.material3.Text(text = "效应包（药理分类，可多选）", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                androidx.compose.foundation.layout.FlowRow(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                    catNames.indices.forEach { i ->
+                        val sel = cdCatsState.value.contains(i)
+                        Box(modifier = Modifier.clip(RoundedCornerShape(14.dp)).background(if (sel) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant).clickable { act("toggleCdCat", listOf(i)) }.padding(horizontal = 12.dp, vertical = 5.dp)) {
+                            androidx.compose.material3.Text(text = if (sel) "✓ " + catNames[i] else catNames[i], fontSize = 12.sp, color = if (sel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+                // ---- 曲线色 ----
+                androidx.compose.material3.Text(text = "曲线色", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                    androidx.compose.material3.Text(text = "曲线色", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     presetColors.indices.forEach { i ->
                         val sel = cdColorState.value == presetColors[i]
-                        Box(modifier = Modifier
-                            .size(28.dp)
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(Color(presetColors[i]))
-                            .clickable { act("pickCdColor", listOf(i)) }
-                            .then(if (sel) Modifier.border(2.dp, MaterialTheme.colorScheme.onSurface, RoundedCornerShape(14.dp)) else Modifier))
+                        Box(modifier = Modifier.size(28.dp).clip(RoundedCornerShape(14.dp)).background(Color(presetColors[i])).clickable { act("pickCdColor", listOf(i)) }.then(if (sel) Modifier.border(2.dp, MaterialTheme.colorScheme.onSurface, RoundedCornerShape(14.dp)) else Modifier))
                     }
                 }
                 androidx.compose.material3.Button(onClick = { act("commitCustomDrug") }, modifier = Modifier.fillMaxWidth()) {
@@ -1298,25 +1490,18 @@ object DshComposeHost {
                 }
                 androidx.compose.material3.HorizontalDivider()
                 // ---- 已建列表（长按删除） ----
-                androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
-                    if (customDrugsState.value.isEmpty()) {
-                        androidx.compose.material3.Text(text = "（尚无自定义药物）", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 8.dp))
-                    }
-                    customDrugsState.value.forEachIndexed { i, d ->
-                        androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
-                            .combinedClickable(onClick = {}, onLongClick = { act("askDelCustom", listOf(i)) })
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
-                            Box(modifier = Modifier.width(5.dp).height(22.dp).clip(RoundedCornerShape(2.5.dp)).background(Color(d.color)))
-                            androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1.0f)) {
-                                androidx.compose.material3.Text(text = d.name, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                                androidx.compose.material3.Text(text = "T½ " + d.tHalf + "h · F=" + (d.bio * 100).toInt() + "% · 常用 " + d.typ + "mg", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                androidx.compose.material3.Text(text = "已建（长按删除）", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                customDrugsState.value.forEachIndexed { i, d ->
+                    androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).combinedClickable(onClick = {}, onLongClick = { act("askDelCustom", listOf(i)) }).padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
+                        Box(modifier = Modifier.width(5.dp).height(22.dp).clip(RoundedCornerShape(2.5.dp)).background(Color(d.color)))
+                        androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1.0f)) {
+                            androidx.compose.material3.Text(text = d.name + " · " + d.route, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                            androidx.compose.material3.Text(text = "T½ " + d.tHalf + "h · F=" + (d.bio * 100).toInt() + "% · 常用 " + d.typ + "mg" + (if (d.metabolites.isNotEmpty()) " · 代谢物 " + d.metabolites.joinToString("/") else ""), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            if (d.advCustom.isNotEmpty() || d.overdose.isNotEmpty() || d.withdraw.isNotEmpty()) {
+                                androidx.compose.material3.Text(text = "效应 " + d.advCustom.size + " · 过量 " + d.overdose.size + " · 戒断 " + d.withdraw.size, fontSize = 11.sp, color = MaterialTheme.colorScheme.primary)
                             }
-                            androidx.compose.material3.Text(text = "长按删除", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
+                        androidx.compose.material3.Text(text = "长按删除", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 // 删除确认
@@ -1345,7 +1530,7 @@ object DshComposeHost {
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { pendingDelete.value = -1 },
             title = { androidx.compose.material3.Text(text = "删除服药记录", fontWeight = FontWeight.Bold) },
-            text = { androidx.compose.material3.Text(text = "确认删除「" + r.name + " " + r.amount + " mg」？\n" + fmtRecTime(r.timeMs) + "\n删除后曲线与记录列表同步刷新，操作不可撤销。") },
+            text = { androidx.compose.material3.Text(text = "确认删除「" + r.name + " " + r.amount + " mg」？\n" + fmtRecTime(r.timeMs, r.name) + "\n删除后曲线与记录列表同步刷新，操作不可撤销。") },
             confirmButton = {
                 androidx.compose.material3.TextButton(onClick = { act("confirmDeleteRec") }) {
                     androidx.compose.material3.Text(text = "删除", color = MaterialTheme.colorScheme.error)
