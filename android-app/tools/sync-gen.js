@@ -7,6 +7,7 @@
  *   3) Home.kt: 5 处 ModalBottomSheet(…, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true))
  *      → 宿主 DshSheet（自绘抽屉：点遮罩/系统返回退出、无下滑手势——用户要求 t79 rev2）；
  *      服药表单抽屉（cancelForm）额外注入 sheetFraction = 2f/3f（用户要求：抽屉上沿拉到屏幕顶部下方 1/3 处）；
+ *   3.5) Home.kt: 10 处 hasRec(k) if 块 → 宿主 Subl_RecCard(k)（药名左色块条=该药曲线色；长按=删记录确认框）；
  *   4) PickerRowsA/B/C.kt、LibRowsA/B/C/D.kt、GeneratedCompose.kt 逐字复制。
  * 用法：node android-app/tools/sync-gen.js
  */
@@ -54,6 +55,28 @@ for (const route of ["closeSettings", "closeDrugList", "closeDoc", "closePackShe
   src = src.split(mbsCall).join(sheetCall);
 }
 if (src.includes("ModalBottomSheet")) throw new Error("sync-gen: 仍有未替换的 ModalBottomSheet");
+
+// 3.5) 记录卡整卡宿主化（t82）：hasRec(k) 的 if 块 → DshComposeHost.Subl_RecCard(k)
+//   药名左色块条与该药曲线同色（drugColorOf：五朵金花金色、BZD 蓝、阿片棕橙……）；
+//   点卡 = 高亮曲线（toggleChartHi 不变），长按 = 弹删除确认框（askDeleteRec）。
+//   替换保留 if 头，故重复执行幂等（块内容已是单行 Subl_RecCard 时原样写回）。
+{
+  for (let k = 0; k < 10; k++) {
+    const tagIf = 'if (functor.sublimation.android.DshComposeHost.boolArg("hasRec", ' + k + ')) {';
+    const at = src.indexOf(tagIf);
+    if (at < 0) throw new Error("sync-gen: hasRec 卡 " + k + " 未找到");
+    let depth = 0, i = at + tagIf.length - 1;   // i 指向 if 的 '{'
+    for (; i < src.length; i++) {
+      const ch = src[i];
+      if (ch === "{") depth++;
+      else if (ch === "}") { depth--; if (depth === 0) break; }
+    }
+    if (depth !== 0) throw new Error("sync-gen: hasRec 卡 " + k + " 括号不配对");
+    const ind = "                    ";
+    const replacement = tagIf + "\n" + ind + "functor.sublimation.android.DshComposeHost.Subl_RecCard(" + k + ")\n" + ind + "}";
+    src = src.slice(0, at) + replacement + src.slice(i + 1);
+  }
+}
 
 fs.writeFileSync(path.join(genDir, "Home.kt"), src);
 

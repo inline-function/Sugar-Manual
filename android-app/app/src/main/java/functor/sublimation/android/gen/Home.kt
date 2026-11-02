@@ -62,274 +62,34 @@ fun Home() {
                         functor.sublimation.android.DshComposeHost.Subl_EffectTags(tags = functor.sublimation.android.DshComposeHost.effectTags(), modifier = Modifier)
                     }
                     if (functor.sublimation.android.DshComposeHost.boolArg("hasRec", 0)) {
-                    androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().clickable { functor.sublimation.android.DshComposeHost.act("toggleChartHi", listOf(0)) }) {
-                        androidx.compose.material3.Card(shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp), elevation = androidx.compose.material3.CardDefaults.cardElevation(0.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(vertical = 6.dp)) {
-                            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
-                                androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth()) {
-                                    androidx.compose.foundation.layout.Column(modifier = Modifier.width(10.dp)) {
-                                        // 空容器
-                                    }
-                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("name0"), modifier = Modifier.weight(1.0f), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("dose0"), modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    androidx.compose.foundation.layout.Column(modifier = Modifier.clickable { functor.sublimation.android.DshComposeHost.act("openDocFor", listOf(0)) }.padding(horizontal = 4.dp)) {
-                                        androidx.compose.material3.Text(text = "ⓘ", modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    }
-                                    if (functor.sublimation.android.DshComposeHost.boolArg("cardHiOf", 0)) {
-                                    androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
-                                        androidx.compose.material3.Text(text = "● 高亮", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 11.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    }
-                                    }
-                                }
-                                androidx.compose.foundation.layout.Column(modifier = Modifier.height(4.dp)) {
-                                    // 空容器
-                                }
-                                androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("time0"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
-                            }
-                        }
-                    }
+                    functor.sublimation.android.DshComposeHost.Subl_RecCard(0)
                     }
                     if (functor.sublimation.android.DshComposeHost.boolArg("hasRec", 1)) {
-                    androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().clickable { functor.sublimation.android.DshComposeHost.act("toggleChartHi", listOf(1)) }) {
-                        androidx.compose.material3.Card(shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp), elevation = androidx.compose.material3.CardDefaults.cardElevation(0.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(vertical = 6.dp)) {
-                            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
-                                androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth()) {
-                                    androidx.compose.foundation.layout.Column(modifier = Modifier.width(10.dp)) {
-                                        // 空容器
-                                    }
-                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("name1"), modifier = Modifier.weight(1.0f), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("dose1"), modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    androidx.compose.foundation.layout.Column(modifier = Modifier.clickable { functor.sublimation.android.DshComposeHost.act("openDocFor", listOf(1)) }.padding(horizontal = 4.dp)) {
-                                        androidx.compose.material3.Text(text = "ⓘ", modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    }
-                                    if (functor.sublimation.android.DshComposeHost.boolArg("cardHiOf", 1)) {
-                                    androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
-                                        androidx.compose.material3.Text(text = "● 高亮", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 11.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    }
-                                    }
-                                }
-                                androidx.compose.foundation.layout.Column(modifier = Modifier.height(4.dp)) {
-                                    // 空容器
-                                }
-                                androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("time1"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
-                            }
-                        }
-                    }
+                    functor.sublimation.android.DshComposeHost.Subl_RecCard(1)
                     }
                     if (functor.sublimation.android.DshComposeHost.boolArg("hasRec", 2)) {
-                    androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().clickable { functor.sublimation.android.DshComposeHost.act("toggleChartHi", listOf(2)) }) {
-                        androidx.compose.material3.Card(shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp), elevation = androidx.compose.material3.CardDefaults.cardElevation(0.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(vertical = 6.dp)) {
-                            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
-                                androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth()) {
-                                    androidx.compose.foundation.layout.Column(modifier = Modifier.width(10.dp)) {
-                                        // 空容器
-                                    }
-                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("name2"), modifier = Modifier.weight(1.0f), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("dose2"), modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    androidx.compose.foundation.layout.Column(modifier = Modifier.clickable { functor.sublimation.android.DshComposeHost.act("openDocFor", listOf(2)) }.padding(horizontal = 4.dp)) {
-                                        androidx.compose.material3.Text(text = "ⓘ", modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    }
-                                    if (functor.sublimation.android.DshComposeHost.boolArg("cardHiOf", 2)) {
-                                    androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
-                                        androidx.compose.material3.Text(text = "● 高亮", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 11.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    }
-                                    }
-                                }
-                                androidx.compose.foundation.layout.Column(modifier = Modifier.height(4.dp)) {
-                                    // 空容器
-                                }
-                                androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("time2"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
-                            }
-                        }
-                    }
+                    functor.sublimation.android.DshComposeHost.Subl_RecCard(2)
                     }
                     if (functor.sublimation.android.DshComposeHost.boolArg("hasRec", 3)) {
-                    androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().clickable { functor.sublimation.android.DshComposeHost.act("toggleChartHi", listOf(3)) }) {
-                        androidx.compose.material3.Card(shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp), elevation = androidx.compose.material3.CardDefaults.cardElevation(0.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(vertical = 6.dp)) {
-                            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
-                                androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth()) {
-                                    androidx.compose.foundation.layout.Column(modifier = Modifier.width(10.dp)) {
-                                        // 空容器
-                                    }
-                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("name3"), modifier = Modifier.weight(1.0f), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("dose3"), modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    androidx.compose.foundation.layout.Column(modifier = Modifier.clickable { functor.sublimation.android.DshComposeHost.act("openDocFor", listOf(3)) }.padding(horizontal = 4.dp)) {
-                                        androidx.compose.material3.Text(text = "ⓘ", modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    }
-                                    if (functor.sublimation.android.DshComposeHost.boolArg("cardHiOf", 3)) {
-                                    androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
-                                        androidx.compose.material3.Text(text = "● 高亮", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 11.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    }
-                                    }
-                                }
-                                androidx.compose.foundation.layout.Column(modifier = Modifier.height(4.dp)) {
-                                    // 空容器
-                                }
-                                androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("time3"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
-                            }
-                        }
-                    }
+                    functor.sublimation.android.DshComposeHost.Subl_RecCard(3)
                     }
                     if (functor.sublimation.android.DshComposeHost.boolArg("hasRec", 4)) {
-                    androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().clickable { functor.sublimation.android.DshComposeHost.act("toggleChartHi", listOf(4)) }) {
-                        androidx.compose.material3.Card(shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp), elevation = androidx.compose.material3.CardDefaults.cardElevation(0.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(vertical = 6.dp)) {
-                            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
-                                androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth()) {
-                                    androidx.compose.foundation.layout.Column(modifier = Modifier.width(10.dp)) {
-                                        // 空容器
-                                    }
-                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("name4"), modifier = Modifier.weight(1.0f), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("dose4"), modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    androidx.compose.foundation.layout.Column(modifier = Modifier.clickable { functor.sublimation.android.DshComposeHost.act("openDocFor", listOf(4)) }.padding(horizontal = 4.dp)) {
-                                        androidx.compose.material3.Text(text = "ⓘ", modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    }
-                                    if (functor.sublimation.android.DshComposeHost.boolArg("cardHiOf", 4)) {
-                                    androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
-                                        androidx.compose.material3.Text(text = "● 高亮", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 11.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    }
-                                    }
-                                }
-                                androidx.compose.foundation.layout.Column(modifier = Modifier.height(4.dp)) {
-                                    // 空容器
-                                }
-                                androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("time4"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
-                            }
-                        }
-                    }
+                    functor.sublimation.android.DshComposeHost.Subl_RecCard(4)
                     }
                     if (functor.sublimation.android.DshComposeHost.boolArg("hasRec", 5)) {
-                    androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().clickable { functor.sublimation.android.DshComposeHost.act("toggleChartHi", listOf(5)) }) {
-                        androidx.compose.material3.Card(shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp), elevation = androidx.compose.material3.CardDefaults.cardElevation(0.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(vertical = 6.dp)) {
-                            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
-                                androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth()) {
-                                    androidx.compose.foundation.layout.Column(modifier = Modifier.width(10.dp)) {
-                                        // 空容器
-                                    }
-                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("name5"), modifier = Modifier.weight(1.0f), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("dose5"), modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    androidx.compose.foundation.layout.Column(modifier = Modifier.clickable { functor.sublimation.android.DshComposeHost.act("openDocFor", listOf(5)) }.padding(horizontal = 4.dp)) {
-                                        androidx.compose.material3.Text(text = "ⓘ", modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    }
-                                    if (functor.sublimation.android.DshComposeHost.boolArg("cardHiOf", 5)) {
-                                    androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
-                                        androidx.compose.material3.Text(text = "● 高亮", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 11.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    }
-                                    }
-                                }
-                                androidx.compose.foundation.layout.Column(modifier = Modifier.height(4.dp)) {
-                                    // 空容器
-                                }
-                                androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("time5"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
-                            }
-                        }
-                    }
+                    functor.sublimation.android.DshComposeHost.Subl_RecCard(5)
                     }
                     if (functor.sublimation.android.DshComposeHost.boolArg("hasRec", 6)) {
-                    androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().clickable { functor.sublimation.android.DshComposeHost.act("toggleChartHi", listOf(6)) }) {
-                        androidx.compose.material3.Card(shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp), elevation = androidx.compose.material3.CardDefaults.cardElevation(0.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(vertical = 6.dp)) {
-                            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
-                                androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth()) {
-                                    androidx.compose.foundation.layout.Column(modifier = Modifier.width(10.dp)) {
-                                        // 空容器
-                                    }
-                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("name6"), modifier = Modifier.weight(1.0f), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("dose6"), modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    androidx.compose.foundation.layout.Column(modifier = Modifier.clickable { functor.sublimation.android.DshComposeHost.act("openDocFor", listOf(6)) }.padding(horizontal = 4.dp)) {
-                                        androidx.compose.material3.Text(text = "ⓘ", modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    }
-                                    if (functor.sublimation.android.DshComposeHost.boolArg("cardHiOf", 6)) {
-                                    androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
-                                        androidx.compose.material3.Text(text = "● 高亮", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 11.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    }
-                                    }
-                                }
-                                androidx.compose.foundation.layout.Column(modifier = Modifier.height(4.dp)) {
-                                    // 空容器
-                                }
-                                androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("time6"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
-                            }
-                        }
-                    }
+                    functor.sublimation.android.DshComposeHost.Subl_RecCard(6)
                     }
                     if (functor.sublimation.android.DshComposeHost.boolArg("hasRec", 7)) {
-                    androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().clickable { functor.sublimation.android.DshComposeHost.act("toggleChartHi", listOf(7)) }) {
-                        androidx.compose.material3.Card(shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp), elevation = androidx.compose.material3.CardDefaults.cardElevation(0.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(vertical = 6.dp)) {
-                            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
-                                androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth()) {
-                                    androidx.compose.foundation.layout.Column(modifier = Modifier.width(10.dp)) {
-                                        // 空容器
-                                    }
-                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("name7"), modifier = Modifier.weight(1.0f), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("dose7"), modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    androidx.compose.foundation.layout.Column(modifier = Modifier.clickable { functor.sublimation.android.DshComposeHost.act("openDocFor", listOf(7)) }.padding(horizontal = 4.dp)) {
-                                        androidx.compose.material3.Text(text = "ⓘ", modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    }
-                                    if (functor.sublimation.android.DshComposeHost.boolArg("cardHiOf", 7)) {
-                                    androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
-                                        androidx.compose.material3.Text(text = "● 高亮", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 11.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    }
-                                    }
-                                }
-                                androidx.compose.foundation.layout.Column(modifier = Modifier.height(4.dp)) {
-                                    // 空容器
-                                }
-                                androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("time7"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
-                            }
-                        }
-                    }
+                    functor.sublimation.android.DshComposeHost.Subl_RecCard(7)
                     }
                     if (functor.sublimation.android.DshComposeHost.boolArg("hasRec", 8)) {
-                    androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().clickable { functor.sublimation.android.DshComposeHost.act("toggleChartHi", listOf(8)) }) {
-                        androidx.compose.material3.Card(shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp), elevation = androidx.compose.material3.CardDefaults.cardElevation(0.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(vertical = 6.dp)) {
-                            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
-                                androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth()) {
-                                    androidx.compose.foundation.layout.Column(modifier = Modifier.width(10.dp)) {
-                                        // 空容器
-                                    }
-                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("name8"), modifier = Modifier.weight(1.0f), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("dose8"), modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    androidx.compose.foundation.layout.Column(modifier = Modifier.clickable { functor.sublimation.android.DshComposeHost.act("openDocFor", listOf(8)) }.padding(horizontal = 4.dp)) {
-                                        androidx.compose.material3.Text(text = "ⓘ", modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    }
-                                    if (functor.sublimation.android.DshComposeHost.boolArg("cardHiOf", 8)) {
-                                    androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
-                                        androidx.compose.material3.Text(text = "● 高亮", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 11.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    }
-                                    }
-                                }
-                                androidx.compose.foundation.layout.Column(modifier = Modifier.height(4.dp)) {
-                                    // 空容器
-                                }
-                                androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("time8"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
-                            }
-                        }
-                    }
+                    functor.sublimation.android.DshComposeHost.Subl_RecCard(8)
                     }
                     if (functor.sublimation.android.DshComposeHost.boolArg("hasRec", 9)) {
-                    androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().clickable { functor.sublimation.android.DshComposeHost.act("toggleChartHi", listOf(9)) }) {
-                        androidx.compose.material3.Card(shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp), elevation = androidx.compose.material3.CardDefaults.cardElevation(0.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(vertical = 6.dp)) {
-                            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
-                                androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth()) {
-                                    androidx.compose.foundation.layout.Column(modifier = Modifier.width(10.dp)) {
-                                        // 空容器
-                                    }
-                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("name9"), modifier = Modifier.weight(1.0f), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("dose9"), modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    androidx.compose.foundation.layout.Column(modifier = Modifier.clickable { functor.sublimation.android.DshComposeHost.act("openDocFor", listOf(9)) }.padding(horizontal = 4.dp)) {
-                                        androidx.compose.material3.Text(text = "ⓘ", modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    }
-                                    if (functor.sublimation.android.DshComposeHost.boolArg("cardHiOf", 9)) {
-                                    androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
-                                        androidx.compose.material3.Text(text = "● 高亮", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 11.0.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                    }
-                                    }
-                                }
-                                androidx.compose.foundation.layout.Column(modifier = Modifier.height(4.dp)) {
-                                    // 空容器
-                                }
-                                androidx.compose.material3.Text(text = functor.sublimation.android.DshComposeHost.strArg("time9"), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
-                            }
-                        }
-                    }
+                    functor.sublimation.android.DshComposeHost.Subl_RecCard(9)
                     }
                     if (functor.sublimation.android.DshComposeHost.boolArg("noRec")) {
                     androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(vertical = 12.dp)) {

@@ -31,6 +31,11 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -257,6 +262,8 @@ object DshComposeHost {
     // 服药记录列表（最近 10 条：name_k/dose_k/time_k/bar_k 槽位 + hasRec(k) 显隐）
     private data class HostRec(val name: String, val amount: String, val timeMs: Long)
     private val recListState = mutableStateOf(ArrayList<HostRec>())
+    // t82：长按记录卡待删除槽位（-1 = 无待确认；askDeleteRec 置位、confirm/cancel 清零）
+    private val pendingDelete = mutableStateOf(-1)
     @Volatile private var appCtx: android.content.Context? = null
 
     // ---------- 主观效应词条流（与 warn.subl effectTags 同引擎：急性/慢性不良反应跨药聚合） ----------
@@ -767,10 +774,7 @@ object DshComposeHost {
                 when {
                     name.startsWith("name") -> r.name
                     name.startsWith("dose") -> r.amount + " mg"
-                    else -> if (r.timeMs > 0) {
-                        val cal = java.util.Calendar.getInstance().apply { timeInMillis = r.timeMs }
-                        "给药时间 今日 %02d:%02d · 口服".format(cal.get(java.util.Calendar.HOUR_OF_DAY), cal.get(java.util.Calendar.MINUTE))
-                    } else "给药时间 · 口服"
+                    else -> fmtRecTime(r.timeMs)
                 }
             } else { Log.w(tag, "strArg 未知路由: " + name); "" }
         }
@@ -845,6 +849,14 @@ object DshComposeHost {
                 if (n.isNullOrEmpty()) { Log.w(tag, "toggleChartHi 无对应药: " + args) }
                 else { chartHiState.value = if (chartHiState.value == n) "" else n; recomputeChart() }
             }
+            // t82：长按记录卡 → 删除确认框
+            "askDeleteRec" -> pendingDelete.value = (args.getOrNull(0) as? Int) ?: -1
+            "cancelDeleteRec" -> pendingDelete.value = -1
+            "confirmDeleteRec" -> {
+                val k = pendingDelete.value
+                pendingDelete.value = -1
+                if (k in recListState.value.indices) deleteRecAt(k)
+            }
             "toggleProfCond" -> {
                 val k = args.getOrNull(0) as? Int ?: 0
                 val c = profCondNames.getOrNull(k) ?: return
@@ -890,6 +902,12 @@ object DshComposeHost {
         }
     }
     /** 记录列表同步：读 prefs "ledger" 全量（最近 10 条驱动 name_k/dose_k/time_k/bar_k 槽位）。 */
+    /** 记录卡时间行（与 strArg time_k 同格式）。 */
+    private fun fmtRecTime(t: Long): String = if (t > 0) {
+        val cal = java.util.Calendar.getInstance().apply { timeInMillis = t }
+        "给药时间 今日 %02d:%02d · 口服".format(cal.get(java.util.Calendar.HOUR_OF_DAY), cal.get(java.util.Calendar.MINUTE))
+    } else "给药时间 · 口服"
+
     private fun refreshRecList() {
         val ctx = appCtx ?: return
         try {
@@ -909,6 +927,28 @@ object DshComposeHost {
     }
     private fun putLedger(v: String) {
         appCtx?.getSharedPreferences("dsh-storage", 0)?.edit()?.putString("ledger", v)?.apply()
+    }
+    /** t82 删除第 k 条记录：ledger JSON 重写 + 列表/曲线同步；若高亮药被删空则清除高亮。 */
+    private fun deleteRecAt(k: Int) {
+        val ctx = appCtx ?: return
+        try {
+            val arr = org.json.JSONArray(ctx.getSharedPreferences("dsh-storage", 0).getString("ledger", "[]") ?: "[]")
+            val sb = StringBuilder()
+            for (i in 0 until arr.length()) {
+                if (i == k) continue
+                val o = arr.optJSONObject(i) ?: continue
+                if (sb.isNotEmpty()) sb.append(',')
+                sb.append(o.toString())
+            }
+            putLedger("[" + sb.toString() + "]")
+            refreshRecList()
+            recomputeChart()
+            if (chartHiState.value.isNotEmpty() && recListState.value.none { it.name == chartHiState.value }) {
+                chartHiState.value = ""
+                recomputeChart()
+            }
+            toast("已删除 1 条记录")
+        } catch (e: Throwable) { Log.w(tag, "deleteRecAt: " + e.message) }
     }
     private fun toast(msg: String) {
         val ctx = appCtx
@@ -951,6 +991,75 @@ object DshComposeHost {
                 ) { content() }
             }
         }
+    }
+
+    /** t82 服药记录卡：sync-gen 把 home 的 10 张 hasRec(k) 卡整卡替换为本组合。
+     *  药名左色块条 = 该药曲线色（drugColorOf；五朵金花金色、BZD 蓝、阿片棕橙……）；
+     *  点卡 = 高亮该药曲线（toggleChartHi 不变），长按 = 弹删除确认框（askDeleteRec）。 */
+    @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+    @Composable
+    fun Subl_RecCard(k: Int) {
+        val recs = recListState.value
+        if (k >= recs.size) return
+        val r = recs[k]
+        val hi = chartHiState.value == r.name
+        // 手势直接挂 Card：Card 的 shape（12dp 圆角）裁剪 combinedClickable 的水波纹，
+        // 点击反馈局限于卡片轮廓内（旧实现手势在外层无裁剪 Column 上，水波纹满溢屏宽）。
+        androidx.compose.material3.Card(
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+            elevation = androidx.compose.material3.CardDefaults.cardElevation(0.dp),
+            colors = androidx.compose.material3.CardDefaults.cardColors(
+                containerColor = if (hi) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 6.dp).combinedClickable(
+                onClick = { act("toggleChartHi", listOf(k)) },
+                onLongClick = { act("askDeleteRec", listOf(k)) }
+            )
+        ) {
+            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+                androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min), verticalAlignment = Alignment.CenterVertically) {
+                    // 修饰符顺序：尺寸→clip→background。padding/end 放 background 之后会把
+                    // 绘制区压成 0 宽（content 宽 5-8<0）导致色块不可见，故用 Spacer 隔开药名。
+                    Box(modifier = Modifier.width(5.dp).height(22.dp)
+                        .clip(RoundedCornerShape(topStart = 2.5.dp, topEnd = 2.5.dp, bottomStart = 2.5.dp, bottomEnd = 2.5.dp))
+                        .background(Color(drugColorOf(r.name))))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    androidx.compose.material3.Text(text = r.name, modifier = Modifier.weight(1.0f), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = FontWeight.Bold)
+                    androidx.compose.material3.Text(text = r.amount + " mg", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = FontWeight.Bold)
+                    if (hi) {
+                        androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
+                            androidx.compose.material3.Text(text = "● 高亮", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 11.0.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                androidx.compose.material3.Text(text = fmtRecTime(r.timeMs), modifier = Modifier, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.0.sp)
+            }
+        }
+    }
+
+    /** t82 长按记录卡的删除确认框（pendingDelete >= 0 时显示；确认后删该条并刷新曲线）。 */
+    @Composable
+    fun Subl_DeleteDialog() {
+        val k = pendingDelete.value
+        if (k < 0) return
+        val recs = recListState.value
+        if (k >= recs.size) return
+        val r = recs[k]
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { pendingDelete.value = -1 },
+            title = { androidx.compose.material3.Text(text = "删除服药记录", fontWeight = FontWeight.Bold) },
+            text = { androidx.compose.material3.Text(text = "确认删除「" + r.name + " " + r.amount + " mg」？\n" + fmtRecTime(r.timeMs) + "\n删除后曲线与记录列表同步刷新，操作不可撤销。") },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = { act("confirmDeleteRec") }) {
+                    androidx.compose.material3.Text(text = "删除", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { act("cancelDeleteRec") }) {
+                    androidx.compose.material3.Text(text = "取消")
+                }
+            }
+        )
     }
 
     /** t79 效应包详情抽屉（@compose 同步脚本把 home 的 PACKSHEET_HOST 标记替换为本组合）：
