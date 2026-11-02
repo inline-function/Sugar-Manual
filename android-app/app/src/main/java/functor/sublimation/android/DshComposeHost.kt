@@ -317,10 +317,60 @@ object DshComposeHost {
     /** 分类 → 所属综合征包（药物集合归属）。 */
     private val catPackMap = mapOf(CAT_SER to 1, CAT_OPI to 2, CAT_BZD to 3, CAT_ANTICH to 4)
     /** 词条查询统一入口：内置表为主，自定义药按其分类模板拼接。 */
+    /** t85 正性主观效应表（治疗效应/主观正向；急性=即刻主观体验，慢性=维持期疗效）。 */
+    private val posTable: Map<String, List<AdvEnt>> = mapOf(
+        "氟伏沙明" to listOf(AdvEnt("抗强迫", 3, false, true), AdvEnt("抗抑郁", 3, false, true), AdvEnt("抗焦虑", 2, false, true)),
+        "帕罗西汀" to listOf(AdvEnt("抗抑郁", 3, false, true), AdvEnt("抗焦虑", 3, false, true)),
+        "氟西汀" to listOf(AdvEnt("抗抑郁", 3, false, true), AdvEnt("抗贪食", 2, false, true)),
+        "舍曲林" to listOf(AdvEnt("抗抑郁", 3, false, true), AdvEnt("抗焦虑", 2, false, true)),
+        "西酞普兰" to listOf(AdvEnt("抗抑郁", 3, false, true)),
+        "艾司西酞普兰" to listOf(AdvEnt("抗抑郁", 3, false, true), AdvEnt("抗焦虑", 2, false, true)),
+        "文拉法辛" to listOf(AdvEnt("抗抑郁", 3, false, true), AdvEnt("抗焦虑", 2, false, true)),
+        "度洛西汀" to listOf(AdvEnt("抗抑郁", 3, false, true), AdvEnt("镇痛", 2, false, true)),
+        "阿米替林" to listOf(AdvEnt("抗抑郁", 3, false, true), AdvEnt("镇痛", 2, false, true)),
+        "曲唑酮" to listOf(AdvEnt("助眠", 3, false, true), AdvEnt("抗抑郁", 2, false, true)),
+        "米氮平" to listOf(AdvEnt("助眠", 3, false, true), AdvEnt("抗抑郁", 3, false, true), AdvEnt("食欲增加", 2, false, true)),
+        "安非他酮" to listOf(AdvEnt("抗抑郁", 3, false, true), AdvEnt("注意力集中", 2, false, true), AdvEnt("戒烟渴求下降", 2, false, true)),
+        "吗啡" to listOf(AdvEnt("镇痛", 3, true, true), AdvEnt("欣快", 2, true, true)),
+        "羟考酮" to listOf(AdvEnt("镇痛", 3, true, true), AdvEnt("欣快", 2, true, true)),
+        "芬太尼" to listOf(AdvEnt("镇痛", 3, true, true), AdvEnt("欣快", 2, true, true)),
+        "可待因" to listOf(AdvEnt("镇咳", 3, true, true), AdvEnt("镇痛", 2, true, true)),
+        "曲马多" to listOf(AdvEnt("镇痛", 3, true, true), AdvEnt("欣快", 1, true, true)),
+        "哌替啶" to listOf(AdvEnt("镇痛", 3, true, true), AdvEnt("欣快", 2, true, true)),
+        "地西泮" to listOf(AdvEnt("抗焦虑", 3, true, true), AdvEnt("镇静", 3, true, true), AdvEnt("抗抑郁", 2, false, true)),
+        "艾司唑仑" to listOf(AdvEnt("助眠", 3, true, true), AdvEnt("抗焦虑", 2, true, true), AdvEnt("镇静", 3, true, true)),
+        "阿普唑仑" to listOf(AdvEnt("抗焦虑", 3, true, true), AdvEnt("镇静", 2, true, true)),
+        "氯硝西泮" to listOf(AdvEnt("抗焦虑", 3, true, true), AdvEnt("镇静", 3, true, true), AdvEnt("抗癫痫", 3, true, true)),
+        "劳拉西泮" to listOf(AdvEnt("抗焦虑", 3, true, true), AdvEnt("镇静", 2, true, true), AdvEnt("抗癫痫", 2, true, true)),
+        "咪达唑仑" to listOf(AdvEnt("镇静", 3, true, true), AdvEnt("抗焦虑", 2, true, true)),
+        "哌甲酯" to listOf(AdvEnt("注意力集中", 3, true, true), AdvEnt("欣快", 2, true, true)),
+        "安非他酮" to listOf(),
+        "咖啡因" to listOf(AdvEnt("提神警觉", 3, true, true), AdvEnt("注意力集中", 2, true, true)),
+        "尼古丁" to listOf(AdvEnt("注意力集中", 2, true, true), AdvEnt("愉悦", 2, true, true)),
+        "乙醇" to listOf(AdvEnt("欣快", 2, true, true), AdvEnt("社交松弛", 2, true, true), AdvEnt("镇静", 2, true, true)),
+        "大麻（Δ9-THC）" to listOf(AdvEnt("欣快", 3, true, true), AdvEnt("愉悦", 2, true, true), AdvEnt("食欲增加", 2, true, true)),
+        "氯胺酮" to listOf(AdvEnt("欣快", 3, true, true), AdvEnt("抗抑郁", 3, false, true)),
+        "裸盖菇素" to listOf(AdvEnt("欣快", 2, true, true), AdvEnt("抗抑郁", 2, false, true)),
+        "MDMA" to listOf(AdvEnt("欣快", 3, true, true), AdvEnt("共情亲近", 3, true, true), AdvEnt("愉悦", 3, true, true)),
+        "碳酸锂" to listOf(AdvEnt("稳定情绪", 3, false, true), AdvEnt("抗躁狂", 3, false, true)),
+        "丙戊酸" to listOf(AdvEnt("稳定情绪", 3, false, true)),
+        "卡马西平" to listOf(AdvEnt("抗癫痫", 3, true, true), AdvEnt("稳定情绪", 2, false, true)),
+        "拉莫三嗪" to listOf(AdvEnt("稳定情绪", 2, false, true)),
+        "奥氮平" to listOf(AdvEnt("稳定情绪", 3, false, true), AdvEnt("镇静", 3, false, true)),
+        "喹硫平" to listOf(AdvEnt("助眠", 3, false, true), AdvEnt("稳定情绪", 2, false, true)),
+        "多奈哌齐" to listOf(AdvEnt("认知改善", 2, false, true)),
+        "丁螺环酮" to listOf(AdvEnt("抗焦虑", 3, false, true)),
+        "对乙酰氨基酚" to listOf(AdvEnt("镇痛", 3, true, true)),
+        "布洛芬" to listOf(AdvEnt("镇痛", 3, true, true), AdvEnt("抗炎", 3, true, true))
+    )
     private fun advList(name: String): List<AdvEnt> {
-        advTable[name]?.let { return it }
-        val cd = customByName(name) ?: return emptyList()
+        val base = advTable[name]
+        if (base != null) {
+            val pos = posTable[name] ?: emptyList()
+            return base + pos.filter { e -> base.none { it.name == e.name } }
+        }
         val out = ArrayList<AdvEnt>()
+        val cd = customByName(name) ?: return emptyList()
         cd.cats.forEach { c -> catAdvTemplates[c]?.forEach { e -> if (out.none { it.name == e.name }) out.add(e) } }
         cd.advCustom.filter { it.weight > 0 }.forEach { e -> if (out.none { it.name == e.name }) out.add(AdvEnt(e.name, e.weight.coerceIn(1, 3), e.acute)) }
         return out
@@ -475,7 +525,8 @@ object DshComposeHost {
 
     // ---------- 主观效应词条流（与 warn.subl effectTags 同引擎：急性/慢性不良反应跨药聚合） ----------
     // 词条（呈现契约）：name 短文字 / level 1-3（白→黄→红）/ acute 急性→flash / pack 综合征包（◆）。
-    data class EffectTag(val name: String, val level: Int, val acute: Boolean, val pack: Boolean)
+    /** t85 pos=true 为正性（治疗/欣快）效应，标签流以绿色区分。 */
+    data class EffectTag(val name: String, val level: Int, val acute: Boolean, val pack: Boolean, val pos: Boolean = false)
     // ---------- t79 效应包详情（与 warn.subl packInfoOf 同引擎：权重/三级分层/成员排序+来源） ----------
     data class PackMember(val name: String, val weight: Int, val srcs: String)
     data class PackInfo(val name: String, val isAcute: Boolean, val weight: Int, val tier: Int, val rev: String, val desc: String, val members: List<PackMember>)
@@ -695,7 +746,8 @@ object DshComposeHost {
     fun packChipText(tg: EffectTag): String = if (tg.pack) "◆ " + tg.name + " · " + packTierName(packTierOfTag(tg)) else tg.name
     fun packFlash(tg: EffectTag): Boolean = if (tg.pack) packInfoOfName(tg.name, tg.level, tg.acute).isAcute else tg.acute
 
-    private data class AdvEnt(val name: String, val level: Int, val acute: Boolean)
+    /** pos=true 为正性（治疗性/主观欣快）效应；level 仍为频率基准（权重换算同口径）。 */
+    private data class AdvEnt(val name: String, val level: Int, val acute: Boolean, val pos: Boolean = false)
     /** 41 药急性/慢性不良反应频率表（与 app 各药物的 subl 数据同源；由 t75 扩充，脚本生成勿手改）。 */
     private val advTable: Map<String, List<AdvEnt>> = mapOf(
         "氟伏沙明" to listOf(AdvEnt("血清素综合征", 1, true), AdvEnt("恶心", 3, false), AdvEnt("嗜睡", 2, false), AdvEnt("失眠", 2, false), AdvEnt("厌食", 2, false), AdvEnt("头晕", 2, false), AdvEnt("震颤", 2, false), AdvEnt("自杀冲动", 1, false)),
@@ -833,15 +885,22 @@ object DshComposeHost {
             val base = list.maxOf { e -> effBase(e.second.level) + odWeight(names.elementAt(e.first)) }
             val drugs = list.map { it.first }.distinct().size
             val level = if (base + drugs >= 4) 3 else base + drugs - 1
-            tags.add(EffectTag(name, level, list.any { it.second.acute }, false))
+            tags.add(EffectTag(name, level, list.any { it.second.acute }, false, list.any { it.second.pos }))
+        }
+        // t85 正性主观效应（治疗效应/欣快）：同名单独聚合为绿色正性标签，与负性同名时不覆盖
+        val posTags = ArrayList<EffectTag>()
+        byName.forEach { (name, list) ->
+            if (list.none { it.second.pos }) return@forEach
+            val base = list.filter { it.second.pos }.maxOf { e -> effBase(e.second.level) + odWeight(names.elementAt(e.first)) }
+            val drugs = list.map { it.first }.distinct().size
+            val level = if (base + drugs >= 4) 3 else base + drugs - 1
+            posTags.add(EffectTag(name, level, list.any { it.second.acute }, false, true))
         }
         // t78 物质/药对相互作用镜像（与 warn.subl substanceInteractions 同表；◆ 为 3 级禁止配伍包）
         val si = ArrayList<EffectTag>()
         if ("环丙沙星" in names && "咖啡因" in names) si.add(EffectTag("环丙沙星×咖啡因：咖啡因清除下降（CYP1A2 抑制）失眠焦虑风险", 2, false, false))
         if (drugBzd.any { it in names } && "克拉霉素" in names) si.add(EffectTag("克拉霉素×苯二氮卓类：过度镇静风险（CYP3A4 抑制）", 2, true, false))
         if ("利福平" in names && "口服避孕药（炔雌醇/去氧孕烯）" in names) si.add(EffectTag("利福平×口服避孕药：避孕失败风险（CYP3A4 强诱导）", 2, false, false))
-        if (names.any { isBzd(it) } && "乙醇" in names) si.add(EffectTag("乙醇×苯二氮卓类：呼吸抑制协同（药效学，禁止配伍）", 3, true, true))
-        if (names.any { isOpioid(it) } && "乙醇" in names) si.add(EffectTag("乙醇×阿片类：呼吸抑制协同（药效学，禁止配伍）", 3, true, true))
         if ("吸烟（烟草烟雾）" in names && "咖啡因" in names) si.add(EffectTag("吸烟×咖啡因：咖啡因清除加快（CYP1A2 诱导源于烟雾多环芳烃而非尼古丁）", 1, false, false))
         if ("吸烟（烟草烟雾）" in names && drugAntipsych.any { it in names }) si.add(EffectTag("吸烟×抗精神病药：CYP1A2 诱导降低血药浓度（源于烟雾而非尼古丁）", 1, false, false))
         if ("槟榔碱" in names && drugAntipsych.any { it in names }) si.add(EffectTag("槟榔碱×抗精神病药：锥体外系症状加重风险", 2, false, false))
@@ -920,6 +979,7 @@ object DshComposeHost {
             packBoosts.filter { it.first == pk.name }.forEach { w += it.second }
             if (w >= pk.threshold) tags.add(EffectTag(pk.name + " · " + packTierOf(w), w, false, true))
         }
+        tags.addAll(posTags)
         val kept = tags.filter { tg ->
             if (tg.pack) tg.name in displayed || customPacksState.value.any { p -> tg.name.startsWith(p.name) }
             else !hidden.any { kwHit(tg.name, it) }
@@ -2137,12 +2197,18 @@ object DshComposeHost {
         ) {
             tags.forEach { tg ->
                 val info = if (tg.pack) packInfoOfName(tg.name, tg.level, tg.acute) else null
-                val bg = if (info != null) packCellBg(info.tier) else when (tg.level) {
+                val bg = if (info != null) packCellBg(info.tier) else if (tg.pos) when (tg.level) {
+                    3 -> 0xF52E7D32.toInt()   // 深绿：正性强效应（欣快等急性）
+                    2 -> 0xF5A5D6A7.toInt()   // 浅绿：正性中效应
+                    else -> 0xF5E8F5E9.toInt()// 极浅绿：正性轻效应
+                } else when (tg.level) {
                     3 -> 0xF5D32F2F.toInt()   // 红：十分常见 / 聚合加深
                     2 -> 0xF5FFEE58.toInt()   // 黄：常见
                     else -> 0xF5ECEFF1.toInt()// 白：少见 / 罕见
                 }
-                val fg = if (info != null) packCellFg(info.tier) else if (tg.level == 3) 0xFFFFFFFF.toInt() else 0xFF4E342E.toInt()
+                val fg = if (info != null) packCellFg(info.tier) else if (tg.pos && tg.level == 3) 0xFFFFFFFF.toInt()
+                    else if (tg.pos) 0xFF1B5E20.toInt()
+                    else if (tg.level == 3) 0xFFFFFFFF.toInt() else 0xFF4E342E.toInt()
                 val flash = if (info != null) info.isAcute else tg.acute  // t79：包存在即闪（急性属性），慢包不闪
                 Box(
                     modifier = Modifier
@@ -2153,7 +2219,7 @@ object DshComposeHost {
                         .then(if (flash) Modifier.flash() else Modifier)
                 ) {
                     Text(
-                        text = if (info != null) "◆ " + tg.name + " · " + packTierName(info.tier) else tg.name,
+                        text = if (info != null) "◆ " + tg.name + " · " + packTierName(info.tier) else if (tg.pos) "＋ " + tg.name else tg.name,
                         color = Color(fg),
                         fontSize = 13.0.sp,
                         fontWeight = FontWeight.Bold
