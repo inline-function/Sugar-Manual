@@ -602,26 +602,68 @@ object DshComposeHost {
         val w0 = if (gross0 >= red) gross0 - red else 0
         return PackInfo("血清素综合征", true, w0, packTierOf(w0), if (red > 0) "赛庚啶 −3" else "", serotonPackDesc, all0.sortedByDescending { it.weight })
     }
-    private fun opioidToxPack(names: Set<String>): PackInfo {
-        val hasFlu = "氟马西尼" in names               // t79 rev2：BZD 位点竞争性拮抗 → 苯二氮卓贡献归零
-        val ds = names.filter { isOpioid(it) || (isBzd(it) && !hasFlu) }.toSet()
-        val combo = if (!hasFlu && ds.size >= 2) listOf(PackMember("μ 受体药效学协同", 2 * (ds.size - 1), ds.sorted().joinToString("，"))) else emptyList()
-        val rows = ArrayList<PackMember>()
-        opKeys.indices.forEach { i ->
-            var w = 0; val sb = StringBuilder()
-            ds.sorted().forEach { d -> val m = memBaseOfDrug(d, opKeys[i]); if (m > 0) { w += m; if (sb.isNotEmpty()) sb.append("，"); sb.append("$d +$m") } }
-            rows.add(PackMember(opCatNames[i], w, sb.toString()))
-        }
-        // t82：剂量过量加权行（仅阿片：μ 激动剂单药超大剂量即阿片中毒三联，不必联用）
-        val odOp = ds.filter { drugOpioid.containsKey(it) }.mapNotNull { d -> val w = odWeight(d); if (w > 0) PackMember("μ 激动剂急性过量", w, odLine(d)) else null }
-        val all1 = rows + combo + odOp
-        val red1 = if ("纳洛酮" in names) 4 else 0       // t79 rev2 逆转剂：μ 受体竞争性拮抗
-        val neg1 = ds.sumOf { customNegWeight(it, opKeys) }  // t82 自定义负权重词条
-        val gross1 = all1.sumOf { it.weight } - neg1
-        val w1 = if (gross1 >= red1) gross1 - red1 else 0
-        val rev1 = (if (red1 > 0) "纳洛酮 −4" else "") + if (hasFlu) "氟马西尼：苯二氮卓贡献归零" else ""
-        return PackInfo("阿片类中毒", true, w1, packTierOf(w1), rev1, opioidPackDesc, all1.sortedByDescending { it.weight })
+    /**
+     * t85 共享效应包：效应是跨包节点——同一效应（如「呼吸抑制」）可被多个包引用，
+     * 其权重 = 所有引用包内药物贡献的并集（呼吸抑制 = 阿片+BZD+酒精 三家药物命中求和），
+     * 每个引用它的包继承同一权重；包权重 = Σ 自身效应行 + 协同 + 过量加权 - 逆转剂/负权重。
+     */
+    private data class ToxEffect(val name: String, val keys: List<String>, val acute: Boolean)
+    private val opToxEffects = listOf(
+        ToxEffect("呼吸抑制", listOf("呼吸抑制", "呼吸变浅", "通气不足"), true),
+        ToxEffect("意识抑制", listOf("意识抑制", "镇静", "嗜睡", "昏迷", "昏睡", "意识模糊"), false),
+        ToxEffect("瞳孔缩小", listOf("瞳孔缩小", "针尖样瞳孔"), false)
+    )
+    private val bzdToxEffects = listOf(
+        ToxEffect("呼吸抑制", listOf("呼吸抑制", "呼吸变浅", "通气不足"), true),
+        ToxEffect("意识抑制", listOf("意识抑制", "镇静", "嗜睡", "昏迷", "昏睡", "意识模糊"), false),
+        ToxEffect("共济失调", listOf("共济失调", "运动失调", "头晕"), false),
+        ToxEffect("依赖风险", listOf("依赖风险", "依赖", "成瘾"), false)
+    )
+    private val etohToxEffects = listOf(
+        ToxEffect("呼吸抑制", listOf("呼吸抑制", "呼吸变浅", "通气不足"), true),
+        ToxEffect("共济失调", listOf("共济失调", "运动失调", "步态不稳"), false),
+        ToxEffect("肝损伤", listOf("肝损伤", "转氨酶", "肝毒性"), false)
+    )
+    private val sharedToxOwners = mapOf(
+        "呼吸抑制" to listOf("阿片类中毒", "苯二氮卓中毒", "酒精中毒"),
+        "意识抑制" to listOf("阿片类中毒", "苯二氮卓中毒"),
+        "共济失调" to listOf("苯二氮卓中毒", "酒精中毒")
+    )
+    private fun toxPackSet(name: String, names: Set<String>): List<String> = when (name) {
+        "阿片类中毒" -> names.filter { isOpioid(it) }.sorted()
+        "苯二氮卓中毒" -> names.filter { isBzd(it) && it != "氟马西尼" }.sorted()
+        "酒精中毒" -> names.filter { it == "乙醇" || it == "酒精" }.sorted()
+        else -> emptyList()
     }
+    /** 共享效应行：权重 = 所有引用包药物集并集的贡献求和（同一效应在多个包里权重一致）。 */
+    private fun sharedToxRow(eff: ToxEffect, packName: String, names: Set<String>): PackMember {
+        val owners = sharedToxOwners[eff.name] ?: listOf(packName)
+        var w = 0; val sb = StringBuilder()
+        owners.flatMap { toxPackSet(it, names) }.distinct().sorted().forEach { d ->
+            val m = memBaseOfDrug(d, eff.keys)
+            if (m > 0) { w += m; if (sb.isNotEmpty()) sb.append("，"); sb.append("$d +$m") }
+        }
+        return PackMember(eff.name, w, sb.toString())
+    }
+    private fun toxPack(packName: String, effects: List<ToxEffect>, names: Set<String>,
+                        comboName: String, revName: String, revWeight: Int, desc: String): PackInfo {
+        val ds = toxPackSet(packName, names)
+        val rows = effects.map { sharedToxRow(it, packName, names) }.filter { it.weight > 0 }
+        val extras = ArrayList<PackMember>()
+        if (ds.size >= 2) extras.add(PackMember(comboName, 2 * (ds.size - 1), ds.joinToString("，")))
+        ds.mapNotNull { d -> val w = odWeight(d); if (w > 0) PackMember("急性过量加权（$d）", w, d) else null }.forEach { extras.add(it) }
+        val all1 = rows + extras
+        val neg1 = ds.sumOf { customNegWeight(it, effects.map { it.keys }) }
+        val gross1 = all1.sumOf { it.weight } - neg1
+        val w1 = if (gross1 >= revWeight) gross1 - revWeight else 0
+        return PackInfo(packName, true, w1, packTierOf(w1), if (revWeight > 0) revName else "", desc, all1.sortedByDescending { it.weight })
+    }
+    private fun opioidToxPack(names: Set<String>): PackInfo =
+        toxPack("阿片类中毒", opToxEffects, names, "μ 受体药效学协同", "纳洛酮 −4", if ("纳洛酮" in names) 4 else 0, opioidPackDesc)
+    private fun bzdToxPack(names: Set<String>): PackInfo =
+        toxPack("苯二氮卓中毒", bzdToxEffects, names, "GABA-A 位点协同", if ("氟马西尼" in names) "氟马西尼 −4" else "", if ("氟马西尼" in names) 4 else 0, bzdPackDesc)
+    private fun etohToxPack(names: Set<String>): PackInfo =
+        toxPack("酒精中毒", etohToxEffects, names, "GABA 能协同", "", 0, etohPackDesc)
     private fun genericPack(name: String, lv: Int, acute: Boolean): PackInfo {
         val w = lv * 3
         return PackInfo(name, acute, w, packTierOf(w), "", packDescText(name), listOf(PackMember("综合权重（词条级别 ×3 换算）", w, "level $lv")))
@@ -635,12 +677,16 @@ object DshComposeHost {
     private val antiChPackDesc = "抗胆碱能综合征（anticholinergic toxidrome）：抗胆碱能药过量或联用使毒蕈碱受体过度阻断。经典记忆口诀「干如骨头、红如甜菜、盲如蝙蝠、热如野兔、疯如帽匠」——瞳孔散大、视物模糊、口干、尿潴留、肠鸣音减少、心动过速、皮肤干燥潮红、谵妄。治疗以停药与支持为主，重度可考虑毒扁豆碱。"
     private val serotonPackDesc = "血清素综合征（serotonin syndrome，Sternbach 诊断标准）：血清素能药物过量或联用 24h 内出现——震颤/阵挛（尤其下肢）、反射亢进、自主神经不稳（出汗、心动过速、体温升高）、精神状态改变（激越、躁动）。治疗为停用血清素能药与支持，重度用赛庚啶。"
     private val opioidPackDesc = "阿片类中毒（opioid toxidrome）三联：意识抑制、呼吸抑制、瞳孔缩小（针尖样瞳孔）。苯二氮卓类/乙醇联用为致死性呼吸抑制协同（FDA 黑框警告）；纳洛酮为特效拮抗，必要时重复给药。"
+    private val bzdPackDesc = "苯二氮卓类中毒：GABA-A 受体过度激动 → 意识抑制 + 共济失调 + 呼吸抑制（与阿片类/乙醇共享呼吸抑制权重）；氟马西尼为受体拮抗剂。"
+    private val etohPackDesc = "酒精中毒：GABA 能增强 + NMDA 拮抗 → 呼吸抑制（与阿片类/苯二氮卓类共享）+ 共济失调 + 肝损伤。"
     fun packInfoOfName(name: String, lv: Int, acute: Boolean): PackInfo {
         val names = recListState.value.map { it.name }.toSet()
         return when (name) {
             "抗胆碱能综合征" -> antiCholinergicPack(names)
             "血清素综合征" -> serotonergicPack(names)
             "阿片类中毒" -> opioidToxPack(names)
+            "苯二氮卓中毒" -> bzdToxPack(names)
+            "酒精中毒" -> etohToxPack(names)
             else -> genericPack(name, lv, acute)
         }
     }
@@ -801,11 +847,18 @@ object DshComposeHost {
         if ("槟榔碱" in names && drugAntipsych.any { it in names }) si.add(EffectTag("槟榔碱×抗精神病药：锥体外系症状加重风险", 2, false, false))
         if ("利福平" in names && "喹硫平" in names) si.add(EffectTag("利福平×喹硫平：血药浓度显著下降（CYP3A4 强诱导）", 2, false, false))
         tags.addAll(si)
-        // t82：阿片类中毒触发 = 阿片∩BZD 联用（原通路）OR 任一阿片急性过量 ≥ 轻度（μ 激动剂单药超大剂量）
-        if ((names.any { isOpioid(it) } && names.any { isBzd(it) }) ||
-            names.any { isOpioid(it) && odWeight(it) >= 1 }) {
+        // t85 三毒理学包：阿片 / BZD / 酒精 各自独立；共享效应（呼吸抑制等）跨包同权重
+        if (names.any { isOpioid(it) }) {
             val oi = opioidToxPack(names)
             if (oi.weight >= 3) tags.add(EffectTag("阿片类中毒", oi.tier, acute = true, pack = true))
+        }
+        if (names.any { isBzd(it) && it != "氟马西尼" }) {
+            val bi = bzdToxPack(names)
+            if (bi.weight >= 3) tags.add(EffectTag("苯二氮卓中毒", bi.tier, acute = true, pack = true))
+        }
+        if (names.any { it == "乙醇" || it == "酒精" }) {
+            val ei = etohToxPack(names)
+            if (ei.weight >= 3) tags.add(EffectTag("酒精中毒", ei.tier, acute = true, pack = true))
         }
         // t82：血清素综合征触发 = 任一血清素能药急性过量 ≥ 轻度；标签等级 = 逆转剂减权后的包 tier。
         // 阈值 weight >= 3（tier ≥ 1，与抗胆碱能包同口径）——残余 < 3 视为不构成综合征级。
@@ -823,10 +876,11 @@ object DshComposeHost {
         val acFlat = acKeys
         val serFlat = serKeys.flatten()
         val opFlat = opKeys.flatten()
-        val toxKeySets = listOf("抗胆碱能综合征" to acFlat, "血清素综合征" to serFlat, "阿片类中毒" to opFlat)
+        val toxKeySets = listOf("抗胆碱能综合征" to acFlat, "血清素综合征" to serFlat, "阿片类中毒" to opFlat,
+            "苯二氮卓中毒" to opFlat, "酒精中毒" to opFlat)
         fun packDisplayed(nm: String): Boolean {
             val info = packInfoOfName(nm, 3, true)
-            val tox = nm == "抗胆碱能综合征" || nm == "血清素综合征" || nm == "阿片类中毒"
+            val tox = nm == "抗胆碱能综合征" || nm == "血清素综合征" || nm == "阿片类中毒" || nm == "苯二氮卓中毒" || nm == "酒精中毒"
             return !tox || ((info.members.maxOfOrNull { it.weight } ?: 0) > 0)
         }
         val displayed = HashSet<String>()
