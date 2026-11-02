@@ -275,6 +275,17 @@ object DshComposeHost {
      * 词条流出现呼吸抑制/震颤等，剂量过量再按 odWeight 给包加权。 */
     /** 自定义效应词条：名称 + 权重（正=增强效应，负=减弱/拮抗）+ 急性/慢性。 */
     data class CustomEntry(val name: String, val weight: Int, val acute: Boolean)
+    /** t84 酶底物：酶名 + 代谢贡献百分比（一药的底物分成合计 100%）。 */
+    data class Substrate(val enzyme: String, val pct: Int)
+    /** t84 酶影响：酶名 + 反应类型（0 竞争 / 1 非竞争 / 2 不可逆 / 3 诱导）+ 五级权重（1 极弱 .. 5 极强）。 */
+    data class EnzMod(val enzyme: String, val kind: Int, val level: Int)
+    /** t84 神经递质权重：递质名 + 五级权重（1 极弱 .. 5 极强）。 */
+    data class NeuroTag(val name: String, val level: Int)
+    // 五级权重名（酶抑制/酶诱导/神经递质共用）
+    private val levelNames = listOf("极弱", "弱效", "中效", "强效", "极强")
+    private val enzKinds = listOf("竞争性抑制", "非竞争性抑制", "不可逆抑制", "诱导")
+    /** 反应类型 → 强度系数（诱导取负 → 降浓度；不可逆最强）。 */
+    private fun enzKindMult(kind: Int): Double = when (kind) { 1 -> 1.5; 2 -> 2.0; 3 -> -1.5; else -> 1.0 }
     /** t82 完整自定义药模型（对齐内置 Drug 结构的可编辑子集）：
      *  route 给药途径；advCustom 主观效应增减（可正可负）；overdose 过量反应；withdraw 戒断反应；
      *  metabolites 代谢物。 */
@@ -283,7 +294,12 @@ object DshComposeHost {
         val advCustom: List<CustomEntry> = emptyList(),
         val overdose: List<CustomEntry> = emptyList(),
         val withdraw: List<CustomEntry> = emptyList(),
-        val metabolites: List<String> = emptyList())
+        val metabolites: List<String> = emptyList(),
+        // t84 酶系统：substrates 底物代谢贡献分成（合计 100%）；enzMods 对酶的影响（类型×五级）
+        val substrates: List<Substrate> = emptyList(),
+        val enzMods: List<EnzMod> = emptyList(),
+        // t84 神经递质系统：递质权重五级（1 极弱 .. 5 极强）
+        val neuros: List<NeuroTag> = emptyList())
     // 药理分类 id
     private val CAT_SER = 0; private val CAT_OPI = 1; private val CAT_BZD = 2
     private val CAT_ANTICH = 3; private val CAT_STIM = 4; private val CAT_ANTIPSY = 5
@@ -338,6 +354,15 @@ object DshComposeHost {
     private val cdOverDraft = mutableStateOf(ArrayList<CustomEntry>())     // 过量反应
     private val cdWithDraft = mutableStateOf(ArrayList<CustomEntry>())     // 戒断反应
     private val cdMetaboDraft = mutableStateOf(ArrayList<String>())        // 代谢物
+    // t84 酶/递质草稿（substrates: CustomEntry.weight 充当 pct；enzMods/neuros: weight 充当五级）
+    private val cdSubsDraft = mutableStateOf(ArrayList<CustomEntry>())
+    private val cdEnzDraft = mutableStateOf(ArrayList<EnzDraft>())
+    private val cdNeuroDraft = mutableStateOf(ArrayList<NeuroDraft>())
+    data class EnzDraft(val enzyme: String, val kind: Int, val level: Int)
+    data class NeuroDraft(val name: String, val level: Int)
+    private val cdSubsNameState = mutableStateOf(""); private val cdSubsPctState = mutableStateOf("")
+    private val cdEnzNameState = mutableStateOf(""); private var cdEnzKind = mutableStateOf(0); private var cdEnzLevel = mutableStateOf(3)
+    private val cdNeuroNameState = mutableStateOf(""); private var cdNeuroLevel = mutableStateOf(3)
     // 词条编辑行（三区分立名称 + 共享权重/急慢）
     private val cdAdvNameState = mutableStateOf("")
     private val cdOverNameState = mutableStateOf("")
@@ -362,7 +387,9 @@ object DshComposeHost {
                     (o.opt("cats") as? org.json.JSONArray)?.let { a -> (0 until a.length()).map { a.optInt(it) } } ?: emptyList(),
                     o.opt("route") as? String ?: "口服",
                     decEntries(o, "advCustom"), decEntries(o, "overdose"), decEntries(o, "withdraw"),
-                    (o.opt("metabolites") as? org.json.JSONArray)?.let { a -> (0 until a.length()).mapNotNull { it as? String } } ?: emptyList()))
+                    (o.opt("metabolites") as? org.json.JSONArray)?.let { a -> (0 until a.length()).mapNotNull { it as? String } } ?: emptyList(),
+                    decSubstrates(o), decEnzMods(o), decNeuros(o))
+                )
             }
             customDrugsState.value = out
         } catch (e: Throwable) { Log.w(tag, "loadCustomDrugs: " + e.message) }
@@ -380,6 +407,9 @@ object DshComposeHost {
             o.put("overdose", encEntries(d.overdose))
             o.put("withdraw", encEntries(d.withdraw))
             o.put("metabolites", org.json.JSONArray(d.metabolites))
+            o.put("substrates", encSubstrates(d.substrates))
+            o.put("enzMods", encEnzMods(d.enzMods))
+            o.put("neuros", encNeuros(d.neuros))
             arr.put(o)
         }
         ctx.getSharedPreferences("dsh-storage", 0).edit().putString("customDrugs", arr.toString()).apply()
@@ -393,6 +423,48 @@ object DshComposeHost {
             out.add(CustomEntry(e.opt("name") as? String ?: "", (e.opt("weight") as? Number)?.toInt() ?: 1, (e.opt("acute") as? Boolean) ?: false))
         }
         return out
+    }
+    private fun decSubstrates(o: org.json.JSONObject): List<Substrate> {
+        val a = o.optJSONArray("substrates") ?: return emptyList()
+        val out = ArrayList<Substrate>()
+        for (i in 0 until a.length()) {
+            val e = a.optJSONObject(i) ?: continue
+            out.add(Substrate((e.opt("enzyme") as? String) ?: "", (e.opt("pct") as? Number)?.toInt() ?: 0))
+        }
+        return out
+    }
+    private fun decEnzMods(o: org.json.JSONObject): List<EnzMod> {
+        val a = o.optJSONArray("enzMods") ?: return emptyList()
+        val out = ArrayList<EnzMod>()
+        for (i in 0 until a.length()) {
+            val e = a.optJSONObject(i) ?: continue
+            out.add(EnzMod((e.opt("enzyme") as? String) ?: "", (e.opt("kind") as? Number)?.toInt() ?: 0, (e.opt("level") as? Number)?.toInt() ?: 1))
+        }
+        return out
+    }
+    private fun decNeuros(o: org.json.JSONObject): List<NeuroTag> {
+        val a = o.optJSONArray("neuros") ?: return emptyList()
+        val out = ArrayList<NeuroTag>()
+        for (i in 0 until a.length()) {
+            val e = a.optJSONObject(i) ?: continue
+            out.add(NeuroTag((e.opt("name") as? String) ?: "", (e.opt("level") as? Number)?.toInt() ?: 1))
+        }
+        return out
+    }
+    private fun encSubstrates(xs: List<Substrate>): org.json.JSONArray {
+        val a = org.json.JSONArray()
+        xs.forEach { val o = org.json.JSONObject(); o.put("enzyme", it.enzyme); o.put("pct", it.pct); a.put(o) }
+        return a
+    }
+    private fun encEnzMods(xs: List<EnzMod>): org.json.JSONArray {
+        val a = org.json.JSONArray()
+        xs.forEach { val o = org.json.JSONObject(); o.put("enzyme", it.enzyme); o.put("kind", it.kind); o.put("level", it.level); a.put(o) }
+        return a
+    }
+    private fun encNeuros(xs: List<NeuroTag>): org.json.JSONArray {
+        val a = org.json.JSONArray()
+        xs.forEach { val o = org.json.JSONObject(); o.put("name", it.name); o.put("level", it.level); a.put(o) }
+        return a
     }
     private fun encEntries(xs: List<CustomEntry>): org.json.JSONArray {
         val a = org.json.JSONArray()
@@ -472,9 +544,10 @@ object DshComposeHost {
         val dose = recListState.value.firstOrNull { it.name == drug }?.amount?.trim()?.toDoubleOrNull() ?: return 0.0
         return dose / typ
     }
-    /** 过量权重（0-3：轻/中/重度急性过量）。 */
+    /** 过量权重（0-3：轻/中/重度急性过量）。t84 酶抑制致浓度↑ → 表观剂量 = 剂量 × enzymeFold。 */
     private fun odWeight(drug: String): Int {
-        val r = odRatio(drug)
+        val ns = recListState.value.map { it.name }.toSet()
+        val r = odRatio(drug) * enzymeFold(drug, ns)
         return when { r >= 10.0 -> 3; r >= 4.0 -> 2; r >= 1.5 -> 1; else -> 0 }
     }
     /** 包成员来源串：药名 + 倍数 + 档位（如「氟伏沙明 10.0× 急性过量）」。 */
@@ -777,15 +850,20 @@ object DshComposeHost {
             }
         }
         // t83 用户自定义效应包：按包关键词扫描台账各药 advList，命中症状行级别求和 → 过阈值显示
+        // t84 酶动力学相互作用（底物浓度↑/↓）与递质驱动效应（递质总权重过门槛 → 主观效应/包）
+        val ns = recListState.value.map { it.name }.toSet()
+        enzymeInteracts(ns).forEach { tags.add(it) }
+        val (neuroTags, packBoosts) = neuroDrives(neuroTotals(ns))
+        neuroTags.forEach { tags.add(it) }
         customPacksState.value.forEach { pk ->
-            val names = recListState.value.map { it.name }.toSet()
             val members = ArrayList<PackMember>()
-            val keyGroups = pk.keys.map { listOf(it) }
-            names.sorted().forEach { d ->
+            ns.sorted().forEach { d ->
                 val m = memBaseOfDrug(d, pk.keys)
                 if (m > 0) members.add(PackMember(d, m, "$d 症状词条命中"))
             }
-            val w = packWeightSum(members)
+            var w = packWeightSum(members)
+            // t84 递质驱动加成（包名命中递质映射的 pack）
+            packBoosts.filter { it.first == pk.name }.forEach { w += it.second }
             if (w >= pk.threshold) tags.add(EffectTag(pk.name + " · " + packTierOf(w), w, false, true))
         }
         val kept = tags.filter { tg ->
@@ -1029,6 +1107,10 @@ object DshComposeHost {
             "setCdOverName" -> cdOverNameState.value = v
             "setCdWithName" -> cdWithNameState.value = v
             "setCdMetaboName" -> cdMetaboNameState.value = v
+            "setCdSubsName" -> cdSubsNameState.value = v
+            "setCdSubsPct" -> cdSubsPctState.value = v.filter { it.isDigit() }
+            "setCdEnzName" -> cdEnzNameState.value = v
+            "setCdNeuroName" -> cdNeuroNameState.value = v
             "setCpName" -> cpNameState.value = v
             "setCpKeys" -> cpKeysState.value = v
             "setCpThresh" -> { cpThreshState.value = ((v.toIntOrNull() ?: 3)).coerceIn(1, 9) }
@@ -1164,6 +1246,34 @@ object DshComposeHost {
                 }
                 pendingDelPack.value = -1
             }
+            "addCdSubs" -> {
+                val nm = cdSubsNameState.value.trim()
+                val pct = cdSubsPctState.value.trim().toIntOrNull() ?: 0
+                if (nm.isEmpty() || pct <= 0) { cdErrState.value = "酶名与贡献%(>0)必填" } else {
+                    cdSubsDraft.value.add(CustomEntry(nm, pct, false)); cdSubsDraft.value = ArrayList(cdSubsDraft.value)
+                    cdSubsNameState.value = ""; cdSubsPctState.value = ""
+                }
+            }
+            "delCdSubs" -> { val i = (args.getOrNull(0) as? Int) ?: -1; if (i in cdSubsDraft.value.indices) { cdSubsDraft.value.removeAt(i); cdSubsDraft.value = ArrayList(cdSubsDraft.value) } }
+            "addCdEnz" -> {
+                val nm = cdEnzNameState.value.trim()
+                if (nm.isEmpty()) { cdErrState.value = "酶名必填" } else {
+                    cdEnzDraft.value.add(EnzDraft(nm, cdEnzKind.value, cdEnzLevel.value)); cdEnzDraft.value = ArrayList(cdEnzDraft.value)
+                    cdEnzNameState.value = ""
+                }
+            }
+            "delCdEnz" -> { val i = (args.getOrNull(0) as? Int) ?: -1; if (i in cdEnzDraft.value.indices) { cdEnzDraft.value.removeAt(i); cdEnzDraft.value = ArrayList(cdEnzDraft.value) } }
+            "pickCdEnzKind" -> { cdEnzKind.value = (args.getOrNull(0) as? Int) ?: 0 }
+            "pickCdEnzLevel" -> { cdEnzLevel.value = (args.getOrNull(0) as? Int) ?: 3 }
+            "addCdNeuro" -> {
+                val nm = cdNeuroNameState.value.trim()
+                if (nm.isEmpty()) { cdErrState.value = "递质名必填" } else {
+                    cdNeuroDraft.value.add(NeuroDraft(nm, cdNeuroLevel.value)); cdNeuroDraft.value = ArrayList(cdNeuroDraft.value)
+                    cdNeuroNameState.value = ""
+                }
+            }
+            "delCdNeuro" -> { val i = (args.getOrNull(0) as? Int) ?: -1; if (i in cdNeuroDraft.value.indices) { cdNeuroDraft.value.removeAt(i); cdNeuroDraft.value = ArrayList(cdNeuroDraft.value) } }
+            "pickCdNeuroLevel" -> { cdNeuroLevel.value = (args.getOrNull(0) as? Int) ?: 3 }
             "commitCustomDrug" -> commitCustomDrug()
             "askDelCustom" -> pendingDelCustom.value = (args.getOrNull(0) as? Int) ?: -1
             "cancelDelCustom" -> pendingDelCustom.value = -1
@@ -1276,7 +1386,10 @@ object DshComposeHost {
             ty == null || ty <= 0.0 -> fail("常用量必须为正数（mg）")
             else -> {
                 customDrugsState.value.add(CustomDrug(nm, th, bi / 100.0, ty, cdColorState.value, ArrayList(cdCatsState.value),
-                    routeNames.getOrElse(cdRouteIdx.value) { "口服" }, ArrayList(cdAdvDraft.value), ArrayList(cdOverDraft.value), ArrayList(cdWithDraft.value), ArrayList(cdMetaboDraft.value)))
+                    routeNames.getOrElse(cdRouteIdx.value) { "口服" }, ArrayList(cdAdvDraft.value), ArrayList(cdOverDraft.value), ArrayList(cdWithDraft.value), ArrayList(cdMetaboDraft.value),
+                    cdSubsDraft.value.map { Substrate(it.name, it.weight) },
+                    cdEnzDraft.value.map { EnzMod(it.enzyme, it.kind, it.level) },
+                    cdNeuroDraft.value.map { NeuroTag(it.name, it.level) }))
                 saveCustomDrugs()
                 cdNameState.value = ""; cdHalfState.value = ""; cdBioState.value = ""; cdTypState.value = ""; cdErrState.value = ""; cdCatsState.value = ArrayList()
                 cdAdvDraft.value = ArrayList(); cdOverDraft.value = ArrayList(); cdWithDraft.value = ArrayList(); cdMetaboDraft.value = ArrayList()
@@ -1502,6 +1615,70 @@ object DshComposeHost {
                         androidx.compose.material3.Text(text = "＋", fontSize = 18.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                     }
                 }
+                // ---- t84 酶系统：底物分成 + 酶影响 ----
+                androidx.compose.material3.Text(text = "酶系统", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                androidx.compose.material3.Text(text = "底物：药经哪些酶代谢、各占多少（合计 100%）。他人抑制该酶 → 本药浓度↑。", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                cdSubsDraft.value.forEachIndexed { i, e ->
+                    androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surfaceVariant).padding(horizontal = 10.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                        androidx.compose.material3.Text(text = e.name + " · " + e.weight + "%", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1.0f))
+                        androidx.compose.material3.TextButton(onClick = { act("delCdSubs", listOf(i)) }, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
+                            androidx.compose.material3.Text(text = "✕", fontSize = 13.sp, color = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                }
+                androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
+                    androidx.compose.material3.OutlinedTextField(value = cdSubsNameState.value, onValueChange = { actText("setCdSubsName", it) }, label = { androidx.compose.material3.Text("酶名") }, singleLine = true, modifier = Modifier.weight(1.0f))
+                    androidx.compose.material3.OutlinedTextField(value = cdSubsPctState.value, onValueChange = { actText("setCdSubsPct", it) }, label = { androidx.compose.material3.Text("贡献%") }, singleLine = true, keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number), modifier = Modifier.width(90.dp))
+                    androidx.compose.material3.TextButton(onClick = { act("addCdSubs") }) { androidx.compose.material3.Text(text = "＋", fontSize = 18.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) }
+                }
+                androidx.compose.material3.Text(text = "酶影响：抑制/诱导它药（竞争/非竞争/不可逆 × 极弱..极强）", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                cdEnzDraft.value.forEachIndexed { i, e ->
+                    androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surfaceVariant).padding(horizontal = 10.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                        androidx.compose.material3.Text(text = e.enzyme + " · " + enzKinds[e.kind] + "·" + levelNames[e.level - 1], fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1.0f))
+                        androidx.compose.material3.TextButton(onClick = { act("delCdEnz", listOf(i)) }, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
+                            androidx.compose.material3.Text(text = "✕", fontSize = 13.sp, color = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                }
+                androidx.compose.material3.OutlinedTextField(value = cdEnzNameState.value, onValueChange = { actText("setCdEnzName", it) }, label = { androidx.compose.material3.Text("酶名（如 CYP2D6）") }, singleLine = true, modifier =Modifier.fillMaxWidth())
+                androidx.compose.foundation.layout.FlowRow(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
+                    enzKinds.indices.forEach { k ->
+                        val sel = cdEnzKind.value == k
+                        Box(modifier = Modifier.clip(RoundedCornerShape(14.dp)).background(if (sel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant).clickable { act("pickCdEnzKind", listOf(k)) }.padding(horizontal = 10.dp, vertical = 4.dp)) {
+                            androidx.compose.material3.Text(text = enzKinds[k], fontSize = 11.sp, color = if (sel) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+                androidx.compose.foundation.layout.FlowRow(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
+                    levelNames.indices.forEach { lv ->
+                        val sel = cdEnzLevel.value == lv + 1
+                        Box(modifier = Modifier.clip(RoundedCornerShape(14.dp)).background(if (sel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant).clickable { act("pickCdEnzLevel", listOf(lv + 1)) }.padding(horizontal = 10.dp, vertical = 4.dp)) {
+                            androidx.compose.material3.Text(text = levelNames[lv], fontSize = 11.sp, color = if (sel) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+                androidx.compose.material3.TextButton(onClick = { act("addCdEnz") }, modifier = Modifier.fillMaxWidth()) { androidx.compose.material3.Text(text = "＋ 添加酶影响", color = MaterialTheme.colorScheme.primary) }
+                // ---- t84 神经递质系统 ----
+                androidx.compose.material3.Text(text = "神经递质", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                androidx.compose.material3.Text(text = "总权重过门槛 → 驱动主观效应/效应包（如血清素能→血清素综合征、阿片能→呼吸抑制+欣快）。", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                cdNeuroDraft.value.forEachIndexed { i, e ->
+                    androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surfaceVariant).padding(horizontal = 10.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                        androidx.compose.material3.Text(text = e.name + " · " + levelNames[e.level - 1], fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1.0f))
+                        androidx.compose.material3.TextButton(onClick = { act("delCdNeuro", listOf(i)) }, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
+                            androidx.compose.material3.Text(text = "✕", fontSize = 13.sp, color = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                }
+                androidx.compose.material3.OutlinedTextField(value = cdNeuroNameState.value, onValueChange = { actText("setCdNeuroName", it) }, label = { androidx.compose.material3.Text("递质名（如 血清素能）") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                androidx.compose.foundation.layout.FlowRow(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
+                    levelNames.indices.forEach { lv ->
+                        val sel = cdNeuroLevel.value == lv + 1
+                        Box(modifier = Modifier.clip(RoundedCornerShape(14.dp)).background(if (sel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant).clickable { act("pickCdNeuroLevel", listOf(lv + 1)) }.padding(horizontal = 10.dp, vertical = 4.dp)) {
+                            androidx.compose.material3.Text(text = levelNames[lv], fontSize = 11.sp, color = if (sel) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+                androidx.compose.material3.TextButton(onClick = { act("addCdNeuro") }, modifier = Modifier.fillMaxWidth()) { androidx.compose.material3.Text(text = "＋ 添加递质", color = MaterialTheme.colorScheme.primary) }
                 // ---- 效应包 ----
                 androidx.compose.material3.Text(text = "效应包（药理分类，可多选）", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 androidx.compose.foundation.layout.FlowRow(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
@@ -1635,7 +1812,200 @@ object DshComposeHost {
         ctx.getSharedPreferences("dsh-storage", android.content.Context.MODE_PRIVATE).edit().putString("customPacks", a.toString()).apply()
     }
 
-        /** t83 重置自定义药物表单（开关 Activity / 提交 / 取消共用）。 */
+        // ---------- t84 内置酶数据（资料页文字 → 结构化；抑制/诱导覆盖常见药） ----------
+    /** 内置抑制剂/诱导剂：药名 → (酶名, 类型, 五级)。 */
+    private val builtinEnzMods = mapOf(
+        "氟伏沙明" to listOf(EnzMod("CYP1A2", 2, 4), EnzMod("CYP2C19", 2, 4), EnzMod("CYP3A4", 1, 3), EnzMod("CYP2D6", 1, 3)),
+        "帕罗西汀" to listOf(EnzMod("CYP2D6", 2, 4)),
+        "氟西汀" to listOf(EnzMod("CYP2D6", 2, 4), EnzMod("CYP2C19", 1, 3)),
+        "舍曲林" to listOf(EnzMod("CYP2D6", 0, 2)),
+        "度洛西汀" to listOf(EnzMod("CYP1A2", 2, 4)),
+        "克拉霉素" to listOf(EnzMod("CYP3A4", 2, 5)),
+        "环丙沙星" to listOf(EnzMod("CYP1A2", 2, 4)),
+        "红霉素" to listOf(EnzMod("CYP3A4", 1, 4)),
+        "利福平" to listOf(EnzMod("CYP3A4", 3, 5), EnzMod("CYP2C9", 3, 4), EnzMod("CYP2C19", 3, 4)),
+        "卡马西平" to listOf(EnzMod("CYP3A4", 3, 4)),
+        "吸烟（烟草烟雾）" to listOf(EnzMod("CYP1A2", 3, 4)),
+        "乙醇" to listOf(EnzMod("CYP2E1", 0, 1))
+    )
+    /** 内置底物：药名 → (酶, 贡献%)。 */
+    private val builtinSubstrates = mapOf(
+        "咖啡因" to listOf(Substrate("CYP1A2", 95)),
+        "雷美替胺" to listOf(Substrate("CYP1A2", 100)),
+        "度洛西汀" to listOf(Substrate("CYP1A2", 80), Substrate("CYP2D6", 20)),
+        "奥氮平" to listOf(Substrate("CYP1A2", 60), Substrate("CYP2D6", 30)),
+        "氯氮平" to listOf(Substrate("CYP1A2", 55), Substrate("CYP3A4", 35)),
+        "喹硫平" to listOf(Substrate("CYP3A4", 90)),
+        "阿普唑仑" to listOf(Substrate("CYP3A4", 80)),
+        "咪达唑仑" to listOf(Substrate("CYP3A4", 90)),
+        "苏沃瑞生" to listOf(Substrate("CYP3A4", 100)),
+        "莱博瑞生" to listOf(Substrate("CYP3A4", 80), Substrate("CYP1A2", 20)),
+        "文拉法辛" to listOf(Substrate("CYP2D6", 70), Substrate("CYP3A4", 25)),
+        "阿米替林" to listOf(Substrate("CYP2D6", 60), Substrate("CYP2C19", 30)),
+        "氯米帕明" to listOf(Substrate("CYP2D6", 60), Substrate("CYP2C19", 30)),
+        "曲马多" to listOf(Substrate("CYP2D6", 20), Substrate("CYP3A4", 20)),
+        "可待因" to listOf(Substrate("CYP2D6", 10), Substrate("CYP3A4", 10)),
+        "布洛芬" to listOf(Substrate("CYP2C9", 90)),
+        "塞来昔布" to listOf(Substrate("CYP2C9", 70), Substrate("CYP3A4", 20)),
+        "对乙酰氨基酚" to listOf(Substrate("CYP2E1", 10), Substrate("UGT", 60)),
+        "乙醇" to listOf(Substrate("CYP2E1", 10), Substrate("ADH", 90))
+    )
+    /** 内置神经递质权重：药名 → (递质, 五级)。 */
+    private val builtinNeuros = mapOf(
+        "氟伏沙明" to listOf(NeuroTag("血清素能", 5)),
+        "帕罗西汀" to listOf(NeuroTag("血清素能", 5)),
+        "氟西汀" to listOf(NeuroTag("血清素能", 5)),
+        "舍曲林" to listOf(NeuroTag("血清素能", 4)),
+        "西酞普兰" to listOf(NeuroTag("血清素能", 4)),
+        "艾司西酞普兰" to listOf(NeuroTag("血清素能", 5)),
+        "文拉法辛" to listOf(NeuroTag("血清素能", 4), NeuroTag("去甲肾上腺素能", 2)),
+        "度洛西汀" to listOf(NeuroTag("血清素能", 4), NeuroTag("去甲肾上腺素能", 3)),
+        "阿米替林" to listOf(NeuroTag("血清素能", 3), NeuroTag("去甲肾上腺素能", 2), NeuroTag("抗胆碱能", 3)),
+        "氯米帕明" to listOf(NeuroTag("血清素能", 4), NeuroTag("抗胆碱能", 3)),
+        "曲唑酮" to listOf(NeuroTag("血清素能", 2), NeuroTag("抗组胺能", 3), NeuroTag("α1阻断", 2)),
+        "米氮平" to listOf(NeuroTag("血清素能", 3), NeuroTag("抗组胺能", 4)),
+        "吗啡" to listOf(NeuroTag("阿片能", 5)),
+        "羟考酮" to listOf(NeuroTag("阿片能", 5)),
+        "芬太尼" to listOf(NeuroTag("阿片能", 5)),
+        "可待因" to listOf(NeuroTag("阿片能", 3)),
+        "曲马多" to listOf(NeuroTag("阿片能", 3), NeuroTag("血清素能", 3), NeuroTag("去甲肾上腺素能", 2)),
+        "哌替啶" to listOf(NeuroTag("阿片能", 4)),
+        "地西泮" to listOf(NeuroTag("GABA能", 5)),
+        "艾司唑仑" to listOf(NeuroTag("GABA能", 5)),
+        "阿普唑仑" to listOf(NeuroTag("GABA能", 5)),
+        "氯硝西泮" to listOf(NeuroTag("GABA能", 5)),
+        "劳拉西泮" to listOf(NeuroTag("GABA能", 4)),
+        "咪达唑仑" to listOf(NeuroTag("GABA能", 5)),
+        "乙醇" to listOf(NeuroTag("GABA能", 3), NeuroTag("谷氨酸能拮抗", 2)),
+        "苯海索" to listOf(NeuroTag("抗胆碱能", 4)),
+        "苯扎托品" to listOf(NeuroTag("抗胆碱能", 4)),
+        "奥氮平" to listOf(NeuroTag("多巴胺能拮抗", 4), NeuroTag("血清素能拮抗", 3), NeuroTag("抗胆碱能", 3), NeuroTag("抗组胺能", 4)),
+        "喹硫平" to listOf(NeuroTag("多巴胺能拮抗", 3), NeuroTag("抗组胺能", 4), NeuroTag("α1阻断", 2)),
+        "哌甲酯" to listOf(NeuroTag("多巴胺能", 4), NeuroTag("去甲肾上腺素能", 4)),
+        "安非他酮" to listOf(NeuroTag("去甲肾上腺素能", 3), NeuroTag("多巴胺能", 2)),
+        "咖啡因" to listOf(NeuroTag("腺苷拮抗", 3)),
+        "尼古丁" to listOf(NeuroTag("烟碱型胆碱能", 4)),
+        "氯胺酮" to listOf(NeuroTag("谷氨酸能拮抗", 5)),
+        "裸盖菇素" to listOf(NeuroTag("血清素能激动", 5))
+    )
+    /** 递质 → 亢进时驱动的「效应包」与「主观效应词条」（总权重门槛见 neuroEffectPass）。 */
+    private val neuroMapping = mapOf(
+        "血清素能" to NeuroMap(emptyList(), "血清素综合征", 7),
+        "血清素能激动" to NeuroMap(listOf("血清素综合征"), "血清素综合征", 6),
+        "阿片能" to NeuroMap(listOf("呼吸抑制", "欣快", "镇静", "瞳孔缩小"), "阿片类中毒", 7),
+        "GABA能" to NeuroMap(listOf("镇静", "嗜睡", "共济失调", "运动失调"), "阿片类中毒", 8),
+        "抗胆碱能" to NeuroMap(listOf("口干", "视物模糊", "谵妄", "尿潴留", "便秘", "心动过速"), "抗胆碱能综合征", 7),
+        "多巴胺能" to NeuroMap(listOf("欣快", "躁动", "失眠"), "", 8),
+        "去甲肾上腺素能" to NeuroMap(listOf("心悸", "焦虑", "震颤", "心动过速"), "", 7),
+        "多巴胺能拮抗" to NeuroMap(listOf("锥体外系症状", "镇静", "代谢综合征"), "", 8),
+        "抗组胺能" to NeuroMap(listOf("镇静", "嗜睡", "口干"), "", 6),
+        "烟碱型胆碱能" to NeuroMap(listOf("心动过速", "震颤", "焦虑"), "", 8),
+        "腺苷拮抗" to NeuroMap(listOf("失眠", "心悸", "焦虑"), "", 6),
+        "谷氨酸能拮抗" to NeuroMap(listOf("镇静", "谵妄", "共济失调"), "", 8),
+        "α1阻断" to NeuroMap(listOf("体位性低血压", "头晕"), "", 5),
+        "5-HT2A激动" to NeuroMap(listOf("幻觉", "谵妄"), "", 6)
+    )
+    data class NeuroMap(val effects: List<String>, val pack: String, val threshold: Int)
+
+    /** 台账神经递质总权重（递质 → Σ 五级权重，内置表 + 自定义药）。 */
+    private fun neuroTotals(names: Set<String>): Map<String, Int> {
+        val sums = HashMap<String, Int>()
+        names.forEach { n ->
+            builtinNeuros[n]?.forEach { sums[it.name] = (sums[it.name] ?: 0) + it.level }
+            customByName(n)?.neuros?.forEach { sums[it.name] = (sums[it.name] ?: 0) + it.level }
+        }
+        return sums
+    }
+    /** 药物的酶影响清单（内置表 + 自定义）。 */
+    private fun enzModsOf(n: String): List<EnzMod> = builtinEnzMods[n] ?: customByName(n)?.enzMods ?: emptyList()
+    /** 药物的底物分成（内置表 + 自定义）。 */
+    private fun substratesOf(n: String): List<Substrate> = builtinSubstrates[n] ?: customByName(n)?.substrates ?: emptyList()
+
+    // ---------- t84 酶动力学引擎 ----------
+    /** 药物的表观浓度倍率：其它在服药物对其各底物酶的抑制（↑）/诱导（↓）按贡献%加权。
+     *  竞争/非竞争/不可逆 × 五级 → 方向性倍率；自身底物合计按 100% 归一。 */
+    private fun enzymeFold(drug: String, names: Set<String>): Double {
+        val subs = substratesOf(drug)
+        if (subs.isEmpty()) return 1.0
+        val totalPct = subs.sumOf { it.pct }.coerceAtLeast(1)
+        var fold = 0.0
+        subs.forEach { s ->
+            val enz = s.enzyme
+            // 他人对该酶的净影响：不可逆 > 非竞争 > 竞争（乘系数）；诱导为负
+            var net = 0.0
+            names.filter { it != drug }.forEach { other ->
+                enzModsOf(other).filter { it.enzyme == enz }.forEach { m ->
+                    val v = enzKindMult(m.kind) * m.level
+                    net = if (v > net) v else net      // 取最强的升高效应；诱导最强也单独可叠加（用 max 简化）
+                }
+            }
+            if (net != 0.0) {
+                // 强度 → 对该酶路径的浓度改变：倍率 = 1 ± net/5（net∈[-7.5,10]，夹到 ±2）
+                val delta = (net / 5.0).coerceIn(-2.0, 2.0)
+                fold += (s.pct.toDouble() / totalPct) * delta
+            }
+        }
+        return (1.0 + fold).coerceIn(0.2, 3.0)
+    }
+    /** 酶相互作用标签（抑制/诱导 → 底物浓度变动，出现在相互作用区）。 */
+    private fun enzymeInteracts(names: Set<String>): List<EffectTag> {
+        val out = ArrayList<EffectTag>()
+        names.forEach { d ->
+            val folds = HashMap<String, Double>()
+            val subs = substratesOf(d)
+            val totalPct = subs.sumOf { it.pct }.coerceAtLeast(1)
+            subs.forEach { s ->
+                var net = 0.0; var src = ""
+                names.filter { it != d }.forEach { other ->
+                    enzModsOf(other).filter { it.enzyme == s.enzyme }.forEach { m ->
+                        val v = enzKindMult(m.kind) * m.level
+                        if (v > net) { net = v; src = other }
+                    }
+                }
+                if (net != 0.0) folds[s.enzyme] = (folds[s.enzyme] ?: 0.0) + (s.pct.toDouble() / totalPct) * (net / 5.0)
+            }
+            if (folds.isNotEmpty()) {
+                val tot = folds.values.sum()
+                val lvl = when { tot >= 1.0 -> 3; tot >= 0.5 -> 2; tot >= 0.2 -> 1; tot <= -0.4 -> 2; tot <= -0.2 -> 1; else -> 0 }
+                if (lvl > 0) {
+                    val dir = if (tot > 0) "浓度↑" else "浓度↓"
+                    val enzymes = folds.entries.joinToString("，") { e -> e.key + " " + (if (e.value > 0) "+" else "") + String.format("%.0f%%", e.value * 100) }
+                    out.add(EffectTag("酶动力学·$d $dir（$enzymes）", lvl, tot > 0, false))
+                }
+            }
+        }
+        return out
+    }
+    /** 递质总权重 → 驱动主观效应词条与效应包（门槛 threshold，超过即生效）。 */
+    private fun neuroDrives(totals: Map<String, Int>): Pair<List<EffectTag>, List<Pair<String, Int>>> {
+        val tagsOut = ArrayList<EffectTag>()
+        val packBoosts = ArrayList<Pair<String, Int>>()
+        totals.forEach { (n, sum) ->
+            val map = neuroMapping[n] ?: return@forEach
+            if (sum >= map.threshold) {
+                val over = sum - map.threshold
+                val boost = 1 + over / 2
+                if (map.pack.isNotEmpty()) packBoosts.add(map.pack to boost)
+                if (map.effects.isNotEmpty()) {
+                    val lvl = (1 + over / 2).coerceAtMost(3)
+                    map.effects.forEach { eff -> tagsOut.add(EffectTag(n + "亢进·" + eff, lvl, false, false)) }
+                }
+            }
+        }
+        return tagsOut to packBoosts
+    }
+    /** 递质驱动对指定包的权重加成（threshold 之上每超 2 加 1）。 */
+    private fun neuroBoostFor(packName: String): Int {
+        val ns = recListState.value.map { it.name }.toSet()
+        var sum = 0
+        neuroTotals(ns).forEach { (n, v) ->
+            val map = neuroMapping[n] ?: return@forEach
+            if (map.pack == packName && v >= map.threshold) sum += 1 + (v - map.threshold) / 2
+        }
+        return sum
+    }
+
+    /** t83 重置自定义药物表单（开关 Activity / 提交 / 取消共用）。 */
     private fun resetCdForm() {
         customMgrOpen.value = false
         cdNameState.value = ""; cdHalfState.value = ""; cdBioState.value = ""; cdTypState.value = ""; cdErrState.value = ""
@@ -1643,6 +2013,8 @@ object DshComposeHost {
         cdAdvDraft.value = ArrayList(); cdOverDraft.value = ArrayList(); cdWithDraft.value = ArrayList(); cdMetaboDraft.value = ArrayList()
         cdAdvNameState.value = ""; cdOverNameState.value = ""; cdWithNameState.value = ""; cdMetaboNameState.value = ""
         cdEnWeight.value = 1; cdEnAcute.value = true
+        cdSubsDraft.value = ArrayList(); cdEnzDraft.value = ArrayList(); cdNeuroDraft.value = ArrayList()
+        cdSubsNameState.value = ""; cdSubsPctState.value = ""; cdEnzNameState.value = ""; cdNeuroNameState.value = ""
     }
 
     /** t82 长按记录卡的删除确认框（pendingDelete >= 0 时显示；确认后删该条并刷新曲线）。 */
