@@ -704,6 +704,20 @@ object DshComposeHost {
         ToxEffect("共济失调", listOf("共济失调", "运动失调", "步态不稳"), false),
         ToxEffect("肝损伤", listOf("肝损伤", "转氨酶", "肝毒性"), false)
     )
+    private val liToxEffects = listOf(
+        ToxEffect("震颤", listOf("手抖", "震颤", "粗大震颤"), true),
+        ToxEffect("烦渴多尿", listOf("烦渴", "多尿", "口渴"), false),
+        ToxEffect("共济失调", listOf("共济失调", "运动失调", "步态不稳"), false),
+        ToxEffect("谵妄", listOf("谵妄", "意识模糊"), false)
+    )
+    private val lithiumPackDesc = "锂中毒（lithium toxicity）：治疗窗窄（治疗血药浓度 0.6-1.2 mmol/L）。过量或蓄积依次出现烦渴多尿、粗大震颤、共济失调与谵妄，重者癫痫、昏迷与肾源性尿崩症；肾功能不全是蓄积主因。处理以停药、补液、纠正肾前性因素与重症透析为主，无特效拮抗剂。"
+    private fun lithiumToxPack(names: Set<String>): PackInfo {
+        val rows = ArrayList<PackMember>(liToxEffects.map { sharedToxRow(it, "锂中毒", names) }.filter { it.weight > 0 })
+        names.filter { it == "碳酸锂" }.mapNotNull { d -> val w = odWeight(d); if (w > 0) PackMember("急性过量加权（$d）", w, d) else null }.forEach { rows.add(it) }
+        if (profCondsState.value.any { it.contains("肾功能不全") }) rows.add(PackMember("肾功能不全 +2", 2, "肾小球滤过率下降致锂蓄积"))
+        val w = rows.sumOf { it.weight }
+        return PackInfo("锂中毒", true, w, packTierOf(w), "", lithiumPackDesc, rows.sortedByDescending { it.weight })
+    }
     private val sharedToxOwners = mapOf(
         "呼吸抑制" to listOf("阿片类中毒", "苯二氮卓中毒", "酒精中毒"),
         "意识抑制" to listOf("阿片类中毒", "苯二氮卓中毒"),
@@ -713,6 +727,7 @@ object DshComposeHost {
         "阿片类中毒" -> names.filter { isOpioid(it) }.sorted()
         "苯二氮卓中毒" -> names.filter { isBzd(it) && it != "氟马西尼" }.sorted()
         "酒精中毒" -> names.filter { it == "乙醇" || it == "酒精" }.sorted()
+        "锂中毒" -> names.filter { it == "碳酸锂" }.sorted()
         else -> emptyList()
     }
     /** 共享效应行：权重 = 所有引用包药物集并集的贡献求和（同一效应在多个包里权重一致）。 */
@@ -767,6 +782,7 @@ object DshComposeHost {
             "阿片类中毒" -> opioidToxPack(names)
             "苯二氮卓中毒" -> bzdToxPack(names)
             "酒精中毒" -> etohToxPack(names)
+            "锂中毒" -> lithiumToxPack(names)
             else -> genericPack(name, lv, acute)
         }
     }
@@ -782,7 +798,7 @@ object DshComposeHost {
     private val advTable: Map<String, List<AdvEnt>> = mapOf(
         "氟伏沙明" to listOf(AdvEnt("血清素综合征", 1, true), AdvEnt("恶心", 3, false), AdvEnt("嗜睡", 2, false), AdvEnt("失眠", 2, false), AdvEnt("厌食", 2, false), AdvEnt("头晕", 2, false), AdvEnt("震颤", 2, false), AdvEnt("自杀冲动", 1, false)),
         "帕罗西汀" to listOf(AdvEnt("恶心", 2, true), AdvEnt("嗜睡", 1, false), AdvEnt("失眠", 2, false)),
-        "氟西汀" to listOf(AdvEnt("血清素综合征", 1, true), AdvEnt("恶心", 3, false), AdvEnt("失眠", 2, false), AdvEnt("头痛", 2, false), AdvEnt("厌食", 2, false), AdvEnt("早期焦虑", 1, false), AdvEnt("年轻成人自杀冲动", 1, false), AdvEnt("躁狂转换", 1, false, true)),
+        "氟西汀" to listOf(AdvEnt("血清素综合征", 1, true), AdvEnt("恶心", 3, false), AdvEnt("失眠", 2, false), AdvEnt("头痛", 2, false), AdvEnt("厌食", 2, false), AdvEnt("焦虑", 1, false), AdvEnt("自杀冲动", 1, false), AdvEnt("躁狂", 1, false, true)),
         "舍曲林" to listOf(AdvEnt("血清素综合征", 1, true), AdvEnt("恶心", 3, false), AdvEnt("失眠", 2, false), AdvEnt("嗜睡", 2, false), AdvEnt("头晕", 2, false), AdvEnt("震颤", 1, false), AdvEnt("自杀冲动", 1, false)),
         "西酞普兰" to listOf(AdvEnt("血清素综合征", 1, true), AdvEnt("恶心", 3, false), AdvEnt("嗜睡", 2, false), AdvEnt("失眠", 2, false), AdvEnt("头晕", 2, false), AdvEnt("自杀冲动", 1, false)),
         "艾司西酞普兰" to listOf(AdvEnt("血清素综合征", 1, true), AdvEnt("恶心", 3, false), AdvEnt("嗜睡", 2, false), AdvEnt("失眠", 2, false), AdvEnt("头晕", 2, false), AdvEnt("自杀冲动", 1, false)),
@@ -804,11 +820,11 @@ object DshComposeHost {
         "拉莫三嗪" to listOf(AdvEnt("头晕", 3, true), AdvEnt("头痛", 3, true), AdvEnt("嗜睡", 3, true), AdvEnt("失眠", 3, false), AdvEnt("皮疹", 2, false), AdvEnt("视力模糊", 2, false), AdvEnt("震颤", 2, false)),
         "文拉法辛" to listOf(AdvEnt("恶心", 3, true), AdvEnt("失眠", 3, true), AdvEnt("血清素综合征", 2, true), AdvEnt("恶心", 3, false), AdvEnt("头痛", 3, false), AdvEnt("失眠", 3, false), AdvEnt("性功能障碍", 3, false), AdvEnt("血压升高", 2, false), AdvEnt("低血钠", 2, false)),
         "度洛西汀" to listOf(AdvEnt("恶心", 3, true), AdvEnt("口干", 3, true), AdvEnt("血清素综合征", 2, true), AdvEnt("恶心", 3, false), AdvEnt("嗜睡", 3, false), AdvEnt("失眠", 3, false), AdvEnt("性功能障碍", 3, false), AdvEnt("血压升高", 2, false), AdvEnt("低血钠", 2, false), AdvEnt("肝损伤", 2, false)),
-        "阿米替林" to listOf(AdvEnt("嗜睡", 3, true), AdvEnt("口干", 3, true), AdvEnt("便秘", 3, true), AdvEnt("抗胆碱能谵妄", 2, true), AdvEnt("嗜睡", 4, false), AdvEnt("口干", 3, false), AdvEnt("便秘", 3, false), AdvEnt("体重增加", 3, false), AdvEnt("QT间期延长", 2, false), AdvEnt("体位性低血压", 2, false), AdvEnt("谵妄", 2, false)),
+        "阿米替林" to listOf(AdvEnt("嗜睡", 3, true), AdvEnt("口干", 3, true), AdvEnt("便秘", 3, true), AdvEnt("谵妄", 2, true), AdvEnt("嗜睡", 4, false), AdvEnt("口干", 3, false), AdvEnt("便秘", 3, false), AdvEnt("体重增加", 3, false), AdvEnt("QT间期延长", 2, false), AdvEnt("体位性低血压", 2, false), AdvEnt("谵妄", 2, false)),
         "米氮平" to listOf(AdvEnt("嗜睡", 4, true), AdvEnt("食欲增加", 3, true), AdvEnt("体重增加", 3, true), AdvEnt("嗜睡", 4, false), AdvEnt("体重增加", 3, false), AdvEnt("食欲增加", 3, false), AdvEnt("血脂升高", 2, false)),
-        "安非他酮" to listOf(AdvEnt("失眠", 4, true), AdvEnt("焦虑", 3, true), AdvEnt("震颤", 3, true), AdvEnt("癫痫发作", 2, true), AdvEnt("失眠", 3, false), AdvEnt("焦虑", 3, false), AdvEnt("口干", 3, false), AdvEnt("体重下降", 2, false)),
+        "安非他酮" to listOf(AdvEnt("失眠", 4, true), AdvEnt("焦虑", 3, true), AdvEnt("震颤", 3, true), AdvEnt("癫痫", 2, true), AdvEnt("失眠", 3, false), AdvEnt("焦虑", 3, false), AdvEnt("口干", 3, false), AdvEnt("体重下降", 2, false)),
         "曲唑酮" to listOf(AdvEnt("嗜睡", 4, true), AdvEnt("头晕", 3, true), AdvEnt("体位性低血压", 2, true), AdvEnt("嗜睡", 4, false), AdvEnt("头晕", 3, false), AdvEnt("口干", 3, false), AdvEnt("异常勃起", 1, false)),
-        "氯米帕明" to listOf(AdvEnt("嗜睡", 4, true), AdvEnt("口干", 3, true), AdvEnt("便秘", 3, true), AdvEnt("抗胆碱能谵妄", 2, true), AdvEnt("嗜睡", 4, false), AdvEnt("口干", 3, false), AdvEnt("便秘", 3, false), AdvEnt("性功能障碍", 3, false), AdvEnt("QT间期延长", 2, false), AdvEnt("体重增加", 2, false)),
+        "氯米帕明" to listOf(AdvEnt("嗜睡", 4, true), AdvEnt("口干", 3, true), AdvEnt("便秘", 3, true), AdvEnt("谵妄", 2, true), AdvEnt("嗜睡", 4, false), AdvEnt("口干", 3, false), AdvEnt("便秘", 3, false), AdvEnt("性功能障碍", 3, false), AdvEnt("QT间期延长", 2, false), AdvEnt("体重增加", 2, false)),
         "哌甲酯" to listOf(AdvEnt("食欲下降", 3, true), AdvEnt("失眠", 3, true), AdvEnt("抽动加重", 2, true), AdvEnt("食欲下降", 3, false), AdvEnt("失眠", 3, false), AdvEnt("体重下降", 3, false), AdvEnt("儿童生长减速", 2, false), AdvEnt("心率血压升高", 2, false)),
         "阿托莫西汀" to listOf(AdvEnt("食欲下降", 3, true), AdvEnt("上腹痛", 3, true), AdvEnt("嗜睡", 3, true), AdvEnt("食欲下降", 3, false), AdvEnt("体重下降", 3, false), AdvEnt("心率血压升高", 2, false), AdvEnt("性功能障碍", 2, false), AdvEnt("肝损伤", 1, false)),
         "多奈哌齐" to listOf(AdvEnt("恶心", 3, true), AdvEnt("腹泻", 3, true), AdvEnt("失眠", 3, true), AdvEnt("恶心", 3, false), AdvEnt("腹泻", 3, false), AdvEnt("心动过缓", 2, false), AdvEnt("恶梦", 2, false), AdvEnt("肌肉痉挛", 2, false)),
@@ -842,7 +858,7 @@ object DshComposeHost {
         "口服避孕药（炔雌醇/去氧孕烯）" to listOf(AdvEnt("恶心", 3, true), AdvEnt("乳房胀痛", 2, true), AdvEnt("情绪波动", 2, true), AdvEnt("静脉血栓", 2, false)),
         // t79 rev2 逆转剂（急性副反应最小集；tags 不含阿片/苯二氮/血清素能/抗胆碱能，不进毒理学包成员）
         "纳洛酮" to listOf(AdvEnt("戒断反应", 3, true), AdvEnt("恶心", 2, true), AdvEnt("心动过速", 2, true)),
-        "氟马西尼" to listOf(AdvEnt("癫痫发作", 2, true)),
+        "氟马西尼" to listOf(AdvEnt("癫痫", 2, true)),
         "毒扁豆碱" to listOf(AdvEnt("唾液分泌增多", 3, true), AdvEnt("心动过缓", 2, true)),
         "赛庚啶" to listOf(AdvEnt("镇静", 3, true)),
     )
@@ -855,15 +871,14 @@ object DshComposeHost {
     /** t88 病史加权：病史 × 台账药 → 额外主观效应词条（权重直接入效应流）。 */
     private data class CondBoost(val cond: String, val drugKeys: List<String>, val effect: String, val level: Int, val acute: Boolean, val why: String)
     private val condBoostTable = listOf(
-        CondBoost("双相情感障碍", listOf("氟伏沙明", "帕罗西汀", "氟西汀", "舍曲林", "西酞普兰", "艾司西酞普兰", "文拉法辛", "度洛西汀", "阿米替林", "氯米帕明", "曲唑酮", "米氮平"), "躁狂转换", 3, false, "抗抑郁药诱发躁狂/轻躁狂转换风险"),
-        CondBoost("双相情感障碍", listOf("哌甲酯", "安非他酮"), "躁狂转换", 2, true, "兴奋剂/NDRI 诱发躁狂转换"),
+        CondBoost("双相情感障碍", listOf("氟伏沙明", "帕罗西汀", "氟西汀", "舍曲林", "西酞普兰", "艾司西酞普兰", "文拉法辛", "度洛西汀", "阿米替林", "氯米帕明", "曲唑酮", "米氮平"), "躁狂", 3, false, "抗抑郁药诱发躁狂/轻躁狂转换风险"),
+        CondBoost("双相情感障碍", listOf("哌甲酯", "安非他酮"), "躁狂", 2, true, "兴奋剂/NDRI 诱发躁狂转换"),
         CondBoost("双相情感障碍", listOf("碳酸锂", "丙戊酸", "卡马西平", "拉莫三嗪", "奥氮平", "喹硫平"), "情绪稳定", 1, false, "心境稳定剂覆盖可对冲转换风险"),
-        CondBoost("癫痫", listOf("安非他酮"), "癫痫发作", 3, true, "安非他酮降低惊厥阈值"),
-        CondBoost("癫痫", listOf("氯米帕明", "阿米替林"), "癫痫发作", 2, true, "TCA 降低惊厥阈值"),
-        CondBoost("青光眼", listOf("阿米替林", "氯米帕明", "苯海索", "苯扎托品", "奥氮平", "喹硫平"), "青光眼发作", 3, true, "抗胆碱能致房角关闭"),
-        CondBoost("肾功能不全", listOf("碳酸锂"), "锂中毒风险", 3, false, "肾小球滤过率下降致锂蓄积"),
-        CondBoost("肝功能不全", listOf("丙戊酸", "卡马西平"), "肝损加重", 2, false, "经肝代谢的心境稳定剂需监测转氨酶"),
-        CondBoost("痴呆/认知障碍", listOf("阿米替林", "氯米帕明", "苯海索", "苯扎托品", "奥氮平", "喹硫平"), "谵妄发作", 3, true, "抗胆碱能负荷加重老年谵妄"),
+        CondBoost("癫痫", listOf("安非他酮"), "癫痫", 3, true, "安非他酮降低惊厥阈值"),
+        CondBoost("癫痫", listOf("氯米帕明", "阿米替林"), "癫痫", 2, true, "TCA 降低惊厥阈值"),
+        CondBoost("青光眼", listOf("阿米替林", "氯米帕明", "苯海索", "苯扎托品", "奥氮平", "喹硫平"), "青光眼", 3, true, "抗胆碱能致房角关闭"),
+        CondBoost("肝功能不全", listOf("丙戊酸", "卡马西平"), "肝损", 2, false, "经肝代谢的心境稳定剂需监测转氨酶"),
+        CondBoost("痴呆/认知障碍", listOf("阿米替林", "氯米帕明", "苯海索", "苯扎托品", "奥氮平", "喹硫平"), "谵妄", 3, true, "抗胆碱能负荷加重老年谵妄"),
         CondBoost("孕期/哺乳期", listOf("帕罗西汀", "氟西汀"), "新生儿撤药", 2, true, "SSRI 妊娠晚期暴露致新生儿适应不良综合征"),
     )
     private fun condBoostTags(names: Set<String>): List<EffectTag> {
@@ -879,15 +894,13 @@ object DshComposeHost {
 
     private val profRulesHost = listOf(
         // t89 label 统一短名（≤8 字、无括号；标签文本只显示 label，不带「病史×药：」前缀）
-        ProfRuleHost("蚕豆病（G6PD缺乏）", listOf("阿司匹林", "伯氨喹", "磺胺", "呋喃妥因", "亚甲蓝", "维生素K3", "萘啶酸", "氯霉素"), "溶血风险", 3, true, true),
-        ProfRuleHost("青光眼", listOf("苯海索", "苯扎托品", "阿米替林", "氯米帕明", "抗胆碱能"), "青光眼发作", 3, true, true),
-        ProfRuleHost("孕期/哺乳期", listOf("碳酸锂", "丙戊酸", "卡马西平", "苯二氮卓"), "胎儿致畸", 3, false, true),
-        ProfRuleHost("癫痫", listOf("氯胺酮", "曲马多"), "癫痫发作", 3, true, false),
-        ProfRuleHost("肾功能不全", listOf("碳酸锂"), "锂中毒风险", 3, false, false),
+        ProfRuleHost("蚕豆病（G6PD缺乏）", listOf("阿司匹林", "伯氨喹", "磺胺", "呋喃妥因", "亚甲蓝", "维生素K3", "萘啶酸", "氯霉素"), "溶血", 3, true, true),
+        ProfRuleHost("青光眼", listOf("苯海索", "苯扎托品", "阿米替林", "氯米帕明", "抗胆碱能"), "青光眼", 3, true, true),
+        ProfRuleHost("癫痫", listOf("氯胺酮", "曲马多"), "癫痫", 3, true, false),
         ProfRuleHost("心律失常史", listOf("西酞普兰", "艾司西酞普兰", "阿米替林", "氯米帕明"), "心律失常", 2, false, false),
         ProfRuleHost("高血压", listOf("哌甲酯", "中枢兴奋剂", "文拉法辛", "度洛西汀", "阿司匹林", "NSAIDs"), "血压升高", 2, false, false),
-        ProfRuleHost("肝功能不全", listOf("丙戊酸", "卡马西平", "对乙酰氨基酚", "阿司匹林", "酒精"), "肝损加重", 2, false, false),
-        ProfRuleHost("消化性溃疡", listOf("阿司匹林", "布洛芬", "NSAIDs"), "出血风险", 2, true, false),
+        ProfRuleHost("肝功能不全", listOf("丙戊酸", "卡马西平", "对乙酰氨基酚", "阿司匹林", "酒精"), "肝损", 2, false, false),
+        ProfRuleHost("消化性溃疡", listOf("阿司匹林", "布洛芬", "NSAIDs"), "出血", 2, true, false),
         ProfRuleHost("痴呆/认知障碍", listOf("苯海索", "苯扎托品", "抗胆碱能", "苯二氮卓"), "认知下降", 2, false, false),
         ProfRuleHost("糖尿病", listOf("米氮平", "奥氮平", "喹硫平"), "体重增加", 1, false, false)
     )
@@ -967,6 +980,10 @@ object DshComposeHost {
         if (names.any { it == "乙醇" || it == "酒精" }) {
             val ei = etohToxPack(names)
             if (ei.weight >= 3) tags.add(EffectTag("酒精中毒", ei.tier, acute = true, pack = true))
+        }
+        if ("碳酸锂" in names) {
+            val li = lithiumToxPack(names)
+            if (li.weight >= 3) tags.add(EffectTag("锂中毒", li.tier, acute = true, pack = true))
         }
         // t82：血清素综合征触发 = 任一血清素能药急性过量 ≥ 轻度；标签等级 = 逆转剂减权后的包 tier。
         // 阈值 weight >= 3（tier ≥ 1，与抗胆碱能包同口径）——残余 < 3 视为不构成综合征级。
