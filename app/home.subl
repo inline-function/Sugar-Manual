@@ -30,7 +30,6 @@ struct Home {
             badge = "估算",
             modifier = fillWidth().fractionHeight(0.45)
         )
-        Text(text = "UNITTOG_HOST", size = 1)
         Box(modifier = fillWidth().weight(1.0), scrollable = true) {
             // 预警标签流（无标题，位于图表与记录之间）：主观效应词条 —— 联用药品的急性/慢性
             // 不良反应跨药聚合，三级配色（白 → 黄 → 红，越深越重）、急性词条闪烁；

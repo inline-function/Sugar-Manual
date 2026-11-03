@@ -33,10 +33,8 @@ const CART_OLD = 'androidx.compose.material3.Text(text = "CART_HOST", modifier =
 const CART_NEW = 'functor.sublimation.android.DshComposeHost.Subl_Cart()';
 const PICK_OLD = 'androidx.compose.material3.Text(text = "PICKLIST_HOST", modifier = Modifier, fontSize = 1.0.sp)';
 const PICK_NEW = 'functor.sublimation.android.DshComposeHost.Subl_PickList()';
-const TOG_OLD = 'androidx.compose.material3.Text(text = "UNITTOG_HOST", modifier = Modifier, fontSize = 1.0.sp)';
-const TOG_NEW = 'functor.sublimation.android.DshComposeHost.Subl_UnitToggle()';
-if (!src.includes(CART_OLD) || !src.includes(PICK_OLD) || !src.includes(TOG_OLD)) throw new Error("sync-gen: t90 标记未找到（请重跑 runcompile 后再同步）");
-src = src.replace(CART_OLD, CART_NEW).replace(PICK_OLD, PICK_NEW).replace(TOG_OLD, TOG_NEW);
+if (!src.includes(CART_OLD) || !src.includes(PICK_OLD)) throw new Error("sync-gen: t90 标记未找到（请重跑 runcompile 后再同步）");
+src = src.replace(CART_OLD, CART_NEW).replace(PICK_OLD, PICK_NEW);
 
 // 2) 下标注入（strArg("profName") → strArg("profName", 0..)，按出现次序）
 for (const name of ["profName", "sexName", "effName"]) {

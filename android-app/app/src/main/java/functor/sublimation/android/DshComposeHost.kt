@@ -782,13 +782,13 @@ object DshComposeHost {
     private val advTable: Map<String, List<AdvEnt>> = mapOf(
         "氟伏沙明" to listOf(AdvEnt("血清素综合征", 1, true), AdvEnt("恶心", 3, false), AdvEnt("嗜睡", 2, false), AdvEnt("失眠", 2, false), AdvEnt("厌食", 2, false), AdvEnt("头晕", 2, false), AdvEnt("震颤", 2, false), AdvEnt("自杀冲动", 1, false)),
         "帕罗西汀" to listOf(AdvEnt("恶心", 2, true), AdvEnt("嗜睡", 1, false), AdvEnt("失眠", 2, false)),
-        "氟西汀" to listOf(AdvEnt("血清素综合征", 1, true), AdvEnt("恶心", 3, false), AdvEnt("失眠", 2, false), AdvEnt("头痛", 2, false), AdvEnt("厌食", 2, false), AdvEnt("早期焦虑", 1, false), AdvEnt("年轻成人自杀冲动", 1, false), AdvEnt("躁狂转换", 1, false)),
+        "氟西汀" to listOf(AdvEnt("血清素综合征", 1, true), AdvEnt("恶心", 3, false), AdvEnt("失眠", 2, false), AdvEnt("头痛", 2, false), AdvEnt("厌食", 2, false), AdvEnt("早期焦虑", 1, false), AdvEnt("年轻成人自杀冲动", 1, false), AdvEnt("躁狂转换", 1, false, true)),
         "舍曲林" to listOf(AdvEnt("血清素综合征", 1, true), AdvEnt("恶心", 3, false), AdvEnt("失眠", 2, false), AdvEnt("嗜睡", 2, false), AdvEnt("头晕", 2, false), AdvEnt("震颤", 1, false), AdvEnt("自杀冲动", 1, false)),
         "西酞普兰" to listOf(AdvEnt("血清素综合征", 1, true), AdvEnt("恶心", 3, false), AdvEnt("嗜睡", 2, false), AdvEnt("失眠", 2, false), AdvEnt("头晕", 2, false), AdvEnt("自杀冲动", 1, false)),
         "艾司西酞普兰" to listOf(AdvEnt("血清素综合征", 1, true), AdvEnt("恶心", 3, false), AdvEnt("嗜睡", 2, false), AdvEnt("失眠", 2, false), AdvEnt("头晕", 2, false), AdvEnt("自杀冲动", 1, false)),
-        "地西泮" to listOf(AdvEnt("呼吸抑制", 1, true), AdvEnt("嗜睡", 2, true), AdvEnt("头晕", 2, true), AdvEnt("嗜睡", 3, false), AdvEnt("头晕", 2, false), AdvEnt("疲劳", 2, false), AdvEnt("共济失调", 2, false), AdvEnt("顺行性记忆损害", 2, false), AdvEnt("呼吸抑制", 1, false), AdvEnt("反常兴奋", 1, false)),
+        "地西泮" to listOf(AdvEnt("呼吸抑制", 1, true), AdvEnt("嗜睡", 2, true), AdvEnt("头晕", 2, true), AdvEnt("嗜睡", 3, false), AdvEnt("头晕", 2, false), AdvEnt("疲劳", 2, false), AdvEnt("共济失调", 2, false), AdvEnt("顺行性记忆损害", 2, false), AdvEnt("呼吸抑制", 1, false), AdvEnt("兴奋", 1, false, true)),
         "艾司唑仑" to listOf(AdvEnt("呼吸抑制", 1, true), AdvEnt("次日残余嗜睡", 2, true), AdvEnt("头晕", 2, true), AdvEnt("嗜睡", 2, false), AdvEnt("头晕", 2, false), AdvEnt("顺行性记忆损害", 2, false), AdvEnt("呼吸抑制", 1, false), AdvEnt("幻觉", 1, false)),
-        "阿普唑仑" to listOf(AdvEnt("呼吸抑制", 1, true), AdvEnt("嗜睡", 2, true), AdvEnt("头晕", 2, true), AdvEnt("嗜睡", 2, false), AdvEnt("头晕", 2, false), AdvEnt("疲劳", 2, false), AdvEnt("共济失调", 2, false), AdvEnt("顺行性记忆损害", 2, false), AdvEnt("呼吸抑制", 1, false), AdvEnt("反常兴奋", 1, false)),
+        "阿普唑仑" to listOf(AdvEnt("呼吸抑制", 1, true), AdvEnt("嗜睡", 2, true), AdvEnt("头晕", 2, true), AdvEnt("嗜睡", 2, false), AdvEnt("头晕", 2, false), AdvEnt("疲劳", 2, false), AdvEnt("共济失调", 2, false), AdvEnt("顺行性记忆损害", 2, false), AdvEnt("呼吸抑制", 1, false), AdvEnt("兴奋", 1, false, true)),
         "氯硝西泮" to listOf(AdvEnt("呼吸抑制", 1, true), AdvEnt("嗜睡", 2, true), AdvEnt("头晕", 2, true), AdvEnt("嗜睡", 3, false), AdvEnt("头晕", 2, false), AdvEnt("共济失调", 2, false), AdvEnt("顺行性记忆损害", 2, false), AdvEnt("疲劳", 2, false), AdvEnt("呼吸抑制", 1, false), AdvEnt("儿童行为脱抑制", 1, false)),
         "劳拉西泮" to listOf(AdvEnt("呼吸抑制", 1, true), AdvEnt("嗜睡", 2, true), AdvEnt("头晕", 2, true), AdvEnt("嗜睡", 3, false), AdvEnt("头晕", 2, false), AdvEnt("乏力", 2, false), AdvEnt("共济失调", 2, false), AdvEnt("顺行性记忆损害", 2, false), AdvEnt("呼吸抑制", 1, false), AdvEnt("脑损伤者矛盾攻击性", 1, false)),
         "咪达唑仑" to listOf(AdvEnt("呼吸抑制", 1, true), AdvEnt("嗜睡", 2, true), AdvEnt("嗜睡", 3, false), AdvEnt("头晕", 2, false), AdvEnt("顺行性记忆损害", 2, false), AdvEnt("呼吸抑制", 1, false), AdvEnt("老年ICU谵妄", 1, false)),
@@ -865,7 +865,6 @@ object DshComposeHost {
         CondBoost("肝功能不全", listOf("丙戊酸", "卡马西平"), "肝损加重", 2, false, "经肝代谢的心境稳定剂需监测转氨酶"),
         CondBoost("痴呆/认知障碍", listOf("阿米替林", "氯米帕明", "苯海索", "苯扎托品", "奥氮平", "喹硫平"), "谵妄发作", 3, true, "抗胆碱能负荷加重老年谵妄"),
         CondBoost("孕期/哺乳期", listOf("帕罗西汀", "氟西汀"), "新生儿撤药", 2, true, "SSRI 妊娠晚期暴露致新生儿适应不良综合征"),
-        CondBoost("物质使用障碍史", listOf("吗啡", "羟考酮", "芬太尼", "可待因", "曲马多", "哌替啶", "地西泮", "艾司唑仑", "阿普唑仑", "氯硝西泮", "劳拉西泮", "咪达唑仑"), "成瘾倾向", 2, false, "阿片/BZD 用于成瘾史者依赖风险倍增")
     )
     private fun condBoostTags(names: Set<String>): List<EffectTag> {
         val out = ArrayList<EffectTag>()
@@ -889,7 +888,6 @@ object DshComposeHost {
         ProfRuleHost("高血压", listOf("哌甲酯", "中枢兴奋剂", "文拉法辛", "度洛西汀", "阿司匹林", "NSAIDs"), "血压升高", 2, false, false),
         ProfRuleHost("肝功能不全", listOf("丙戊酸", "卡马西平", "对乙酰氨基酚", "阿司匹林", "酒精"), "肝损加重", 2, false, false),
         ProfRuleHost("消化性溃疡", listOf("阿司匹林", "布洛芬", "NSAIDs"), "出血风险", 2, true, false),
-        ProfRuleHost("物质使用障碍史", listOf("阿片", "苯二氮卓", "哌甲酯", "中枢兴奋剂"), "依赖误用", 2, false, false),
         ProfRuleHost("痴呆/认知障碍", listOf("苯海索", "苯扎托品", "抗胆碱能", "苯二氮卓"), "认知下降", 2, false, false),
         ProfRuleHost("糖尿病", listOf("米氮平", "奥氮平", "喹硫平"), "体重增加", 1, false, false)
     )
@@ -1170,6 +1168,7 @@ object DshComposeHost {
     private data class ChartRec(val name: String, val amt: Double, val unit: String, val tMs: Long)
     // t90 图表单位面板：µg / mg / g；药物按其记录单位只绘在对应面板上
     private val chartUnitState = mutableStateOf("mg")
+    fun chartUnitLabel(): String = chartUnitState.value
     private fun recomputeChart() {
         val ctx = appCtx ?: return
         val now = System.currentTimeMillis()
@@ -1390,7 +1389,7 @@ object DshComposeHost {
                 if (sp != null) {
                     val ex = cartState.indexOfFirst { it.name == n && it.fromSpec }
                     if (ex >= 0) { val e = cartState[ex]; cartState[ex] = e.copy(count = e.count + 1) }
-                    else cartState.add(0, CartEntry(n, 1, sp, true, "mg", sp))
+                    else { val du = dispUnitOf(sp); cartState.add(0, CartEntry(n, 1, sp, true, du, sp * mgToUnit(du))) }
                     toast("已加入 " + n + " ×1 片")
                 } else { customForState.value = n; customTextState.value = ""; customUnitState.value = 1 }
             }
@@ -1398,8 +1397,8 @@ object DshComposeHost {
                 val n = (args.getOrNull(0) as? String) ?: return
                 val sp = specOf(n)
                 customForState.value = n
-                customTextState.value = if (sp != null) fmtAmt(sp) else ""
-                customUnitState.value = 1
+                customTextState.value = if (sp != null) fmtAmt(sp * mgToUnit(dispUnitOf(sp))) else ""
+                customUnitState.value = unitSyms.indexOf(if (sp != null) dispUnitOf(sp) else "mg")
             }
             "cartUnit" -> { val i = (args.getOrNull(0) as? Int) ?: 1; if (i in 0..2) customUnitState.value = i }
             "cartCustomOk" -> {
@@ -1431,10 +1430,11 @@ object DshComposeHost {
             "cartRemove" -> { val i = (args.getOrNull(0) as? Int) ?: return; if (i in cartState.indices) cartState.removeAt(i) }
             "cartClear" -> cartState.clear()
             "cartConfirm" -> commitCart()
-            // t90 图表单位面板切换
-            "chartUnit" -> {
-                val u = (args.getOrNull(0) as? String) ?: "mg"
-                if (u in unitSyms) { chartUnitState.value = u; recomputeChart() }
+            // t91 图表单位循环：µg→mg→g→µg（图表右上角 chip）
+            "cycleChartUnit" -> {
+                val i = unitSyms.indexOf(chartUnitState.value).coerceAtLeast(0)
+                chartUnitState.value = unitSyms[(i + 1) % unitSyms.size]
+                recomputeChart()
             }
             "openSettingsDialog" -> settingsOpen.value = true
             "closeSettings" -> settingsOpen.value = false
@@ -2588,19 +2588,22 @@ object DshComposeHost {
     )
     private val unitSyms = listOf("µg", "mg", "g")
     private val unitNames = listOf("微克", "毫克", "克")
-    private fun unitFactor(u: String): Double = when (u) { "µg" -> 0.001; "g" -> 1000.0; else -> 1.0 }
+    private fun unitFactor(u: String): Double = when (u) { "µg" -> 0.001; "g" -> 1000.0; else -> 1.0 }    // →mg 换算
+    private fun mgToUnit(u: String): Double = 1.0 / unitFactor(u)                                        // mg→该单位（µg×1000）
     private fun specOf(n: String): Double? = builtinSpecs[n]
+    /** 习惯单位：单片 <1mg 的药按微克计（如阿普唑仑 0.4mg/片 → 400µg/片），曲线起伏才看得清。 */
+    private fun dispUnitOf(mg: Double): String = if (mg < 1.0) "µg" else "mg"
     private fun fmtAmt(v: Double): String {
         val i = v.toLong()
         if (Math.abs(v - i) < 1e-9) return i.toString()
         var s = v.toString()
-        if (s.contains("E") || s.contains("e")) return s
+        if (s.contains("E") || s.contains("e")) s = String.format("%.6f", v).replace(",", ".")
         return s.trimEnd('0').trimEnd('.')
     }
     private fun cartCountOf(n: String): Int = cartState.filter { it.name == n }.sumOf { it.count }
     private fun cartText(i: Int): String {
         val e = cartState.getOrNull(i) ?: return ""
-        return if (e.fromSpec) e.count.toString() + "t*" + fmtAmt(e.perMg) + "mg:" + e.name
+        return if (e.fromSpec) e.count.toString() + "t*" + fmtAmt(e.dispAmt) + e.dispUnit + ":" + e.name
         else fmtAmt(e.dispAmt) + e.dispUnit + ":" + e.name
     }
     private val customForState = mutableStateOf("")
@@ -2617,7 +2620,7 @@ object DshComposeHost {
                 val o = org.json.JSONObject()
                 o.put("drug", e.name)
                 o.put("time", time)
-                if (e.fromSpec) { o.put("amount", fmtAmt(e.count * e.perMg)); o.put("unit", "mg") }
+                if (e.fromSpec) { o.put("amount", fmtAmt(e.count * e.dispAmt)); o.put("unit", e.dispUnit) }
                 else { o.put("amount", fmtAmt(e.dispAmt)); o.put("unit", e.dispUnit) }
                 arr.put(o)
             }
@@ -2689,7 +2692,8 @@ object DshComposeHost {
             drugNames.filter { q.isEmpty() || it.contains(q) }.forEach { n ->
                 val (th, f) = drugParams(n)
                 val sp = specOf(n)
-                val desc = "T½ " + th + "h · F=" + (f * 100).toInt() + "% · " + (if (sp != null) fmtAmt(sp) + "mg/片" else "按剂量")
+                val desc = "T½ " + th + "h · F=" + (f * 100).toInt() + "% · " +
+                    (if (sp != null) fmtAmt(sp * mgToUnit(dispUnitOf(sp))) + dispUnitOf(sp) + "/片" else "按剂量")
                 PickRow(n, desc, cartCountOf(n), { act("cartTap", listOf(n)) }, { act("cartLong", listOf(n)) })
             }
             if (customForState.value.isNotEmpty()) {
@@ -2727,27 +2731,6 @@ object DshComposeHost {
                     }
                 )
             }
-        }
-    }
-    /** t90 图表单位切换（微克/毫克/克）：药按其记录单位只绘在对应单位图上。 */
-    @androidx.compose.runtime.Composable
-    fun Subl_UnitToggle() {
-        val cur = chartUnitState.value
-        val nSeries = chartSeriesState.value.size
-        androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween) {
-            unitNames.forEachIndexed { i, nm ->
-                val on = cur == unitSyms[i]
-                Box(modifier = Modifier.clip(RoundedCornerShape(10.dp))
-                    .background(if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
-                    .clickable { act("chartUnit", listOf(unitSyms[i])) }
-                    .padding(horizontal = 20.dp, vertical = 7.dp)) {
-                    Text(text = nm, fontSize = 14.sp, fontWeight = if (on) FontWeight.Bold else FontWeight.Normal,
-                        color = if (on) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-            Text(text = nSeries.toString() + " 条曲线", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
