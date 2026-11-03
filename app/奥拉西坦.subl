@@ -1,0 +1,24 @@
+// app/奥拉西坦.subl —— 奥拉西坦完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；奥拉西坦说明书级数据的药理整合见描述段。
+fun oxiracetam(): Drug = Drug(
+    name = "奥拉西坦",
+    category = "处方药",
+    tags = strList("拉西坦类，促智药，认知增强，抗谷氨酸能"),
+    description = "奥拉西坦是吡拉西坦的羟化类似物，用于老年性痴呆、脑外伤与脑卒中后的认知障碍（国内适应证较宽）。与吡拉西坦同类（AMPA 通路增强），对皮层整合功能的作用略强于吡拉西坦；口服吸收约 90%，原型经肾清除。副反应少而轻（失眠、头晕）。注射剂型常用；促智证据中等，多依赖国内临床观察。",
+    effects = ratedList("强效|AMPA 通路增强（皮层认知）"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 5, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.9,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = emptyList(),
+    chronicTher = ratedList("中效|认知增强"),
+    acuteAdv = ratedList("少见|失眠、头晕"),
+    chronicAdv = emptyList(),
+    withdraw = emptyList(),
+    overdose = ratedList(">1600mg单次|过量风险"),
+    admin = "口服"
+)

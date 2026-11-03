@@ -1,0 +1,24 @@
+// app/多塞平.subl —— 多塞平完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；多塞平说明书级数据的药理整合见描述段。
+fun doxepin(): Drug = Drug(
+    name = "多塞平",
+    category = "处方药",
+    tags = strList("三环类抗抑郁药，TCA，抑郁药，催眠药，抗组胺剂，血清素能，去甲肾上腺素能"),
+    description = "多塞平是三环类抗抑郁药，5-HT/NE 再摄取抑制 + 强抗组胺（H1）与中等抗胆碱能作用。用于抑郁症与焦虑性失眠；低剂量（≤10mg）主要发挥 H1 拮抗助眠作用。抗胆碱能负荷纳入 Beers 标准（老年谵妄、跌倒）；过量心脏毒性同其他 TCA。",
+    effects = ratedList("强效|H1 拮抗;中效|5-HT/NE 再摄取抑制"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 15, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.4,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("中效|助眠"),
+    chronicTher = ratedList("强效|抗抑郁"),
+    acuteAdv = ratedList("常见|嗜睡、口干"),
+    chronicAdv = ratedList("常见|嗜睡、体重增加"),
+    withdraw = emptyList(),
+    overdose = ratedList(">50mg单次|过量风险"),
+    admin = "口服"
+)

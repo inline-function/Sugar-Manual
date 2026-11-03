@@ -1,0 +1,24 @@
+// app/丙戊酸镁.subl —— 丙戊酸镁完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；丙戊酸镁说明书级数据的药理整合见描述段。
+fun valproateMagnesium(): Drug = Drug(
+    name = "丙戊酸镁",
+    category = "处方药",
+    tags = strList("心境稳定剂，抗癫痫药，广谱抗痫，双相障碍，含镁，GABA能"),
+    description = "丙戊酸镁是丙戊酸的镁盐制剂（国内常用），药理与丙戊酸钠相同（钠通道阻断 + GABA 能增强 + T 型钙通道阻断），用于双相障碍与癫痫。口服生物利用度略低于钠盐（F≈85%），每 200mg 镁盐提供约 145mg 丙戊酸；除排泄途径外经肾清除部分镁离子，肾功能不全者慎用。酶学与丙戊酸钠同（CYP2C9 强抑制、抑制 UGT → 拉莫三嗪血药浓度升高、竞争蛋白结合）。与丙戊酸钠相比：镁盐对胃肠道刺激略小，部分患者耐受性较好；过量时高镁血症（肌无力、反射减弱）可与丙戊酸毒性叠加。常用量 200-400mg/次。",
+    effects = ratedList("强效|电压门控钠通道阻断;强效|GABA能增强;中效|T型钙通道阻断"),
+    enzymes = emptyList(),
+    inhibitions = ratedList("极强|CYP2C9;中效|UGT"),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 12, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.85,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = emptyList(),
+    chronicTher = ratedList("强效|稳定情绪;强效|抗癫痫"),
+    acuteAdv = ratedList("常见|恶心、嗜睡、震颤"),
+    chronicAdv = ratedList("常见|体重增加、脱发;少见|肝毒性、血小板减少、高氨血症"),
+    withdraw = emptyList(),
+    overdose = ratedList(">400mg单次|过量风险"),
+    admin = "口服"
+)

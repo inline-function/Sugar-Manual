@@ -1,0 +1,24 @@
+// app/司可巴比妥.subl —— 司可巴比妥完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；司可巴比妥说明书级数据的药理整合见描述段。
+fun secobarbital(): Drug = Drug(
+    name = "司可巴比妥",
+    category = "处方药",
+    tags = strList("巴比妥类，催眠药，短效，GABA能"),
+    description = "司可巴比妥是短效巴比妥类催眠药，15-30 分钟起效，曾用于入睡困难（现已少用）。与乙醇、苯二氮卓类及其他中枢抑制剂合用可致非叠加性呼吸抑制（致死性协同）。成瘾性强，戒断可致癫痫。",
+    effects = ratedList("强效|GABA-A 增强"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 20, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.9,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|助眠"),
+    chronicTher = emptyList(),
+    acuteAdv = ratedList("常见|嗜睡、宿醉感"),
+    chronicAdv = ratedList("常见|依赖"),
+    withdraw = emptyList(),
+    overdose = ratedList(">200mg单次|过量风险"),
+    admin = "口服"
+)

@@ -1,0 +1,24 @@
+// app/麦角二乙胺.subl —— 麦角二乙胺完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；麦角二乙胺说明书级数据的药理整合见描述段。
+fun lsd(): Drug = Drug(
+    name = "麦角二乙胺",
+    category = "管制物质（研究/临床受限）",
+    tags = strList("迷幻剂，5-HT2A 激动剂，麦角生物碱衍生物，血清素能，精神活性物质"),
+    description = "麦角二乙胺（LSD）是半合成麦角生物碱迷幻剂，强效 5-HT2A/5-HT1A 激动剂，作用剂量以微克计（典型 50-100µg）。用于抑郁症/临终焦虑的辅助心理治疗",
+    effects = ratedList("极强|5-HT2A 激动"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 3, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.6,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("中效|欣快"),
+    chronicTher = emptyList(),
+    acuteAdv = ratedList("常见|幻觉、焦虑;少见|解离"),
+    chronicAdv = ratedList("少见|闪回（HPPD）"),
+    withdraw = emptyList(),
+    overdose = ratedList(">0mg单次|过量风险"),
+    admin = "口服"
+)

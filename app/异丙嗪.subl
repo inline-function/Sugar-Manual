@@ -1,0 +1,24 @@
+// app/异丙嗪.subl —— 异丙嗪完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；异丙嗪说明书级数据的药理整合见描述段。
+fun promethazine(): Drug = Drug(
+    name = "异丙嗪",
+    category = "处方药",
+    tags = strList("抗组胺剂（第一代），吩噻嗪类，镇吐药，镇静药，抗胆碱能"),
+    description = "异丙嗪是吩噻嗪类第一代 H1 抗组胺药，用于过敏、晕动症、恶心呕吐与术前镇静。强中枢镇静 + 中度抗胆碱能，老年谵妄风险（Beers）；吩噻嗪核还降低癫痫阈值、延长 QT。与酒精、阿片、BZD 联用加重呼吸抑制；2 岁以下婴幼儿禁用（呼吸暂停/致死报告）。",
+    effects = ratedList("强效|H1 拮抗;中效|M 受体拮抗"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 12, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.3,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("中效|镇静;中效|镇吐"),
+    chronicTher = emptyList(),
+    acuteAdv = ratedList("常见|嗜睡、口干;少见|谵妄"),
+    chronicAdv = ratedList("常见|认知下降"),
+    withdraw = emptyList(),
+    overdose = ratedList(">50mg单次|过量风险"),
+    admin = "口服"
+)

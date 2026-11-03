@@ -1,0 +1,24 @@
+// app/氯氮平.subl —— 氯氮平完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；氯氮平说明书级数据的药理整合见描述段。
+fun clozapine(): Drug = Drug(
+    name = "氯氮平",
+    category = "处方药",
+    tags = strList("抗精神病药，二代（SGA），难治性精神分裂症，粒细胞监测，强抗胆碱能，多巴胺能，血清素能"),
+    description = "氯氮平是二代抗精神病药中治疗难治性精神分裂症的金标准，D2/5-HT2A/α2/H1/M 多受体拮抗，强抗胆碱能与代谢副作用。最大风险是剂量无关的粒细胞减少/缺乏（须定期监测血常规），另有剂量相关癫痫阈值降低、心肌炎、便秘（甚至肠梗阻）。吸烟（多环芳烃诱导 CYP1A2）显著降低其血药浓度，戒烟需减量。",
+    effects = ratedList("强效|多受体拮抗（D2/5-HT2A/α2/H1/M）"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 12, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.5,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|镇静"),
+    chronicTher = ratedList("中效|稳定情绪"),
+    acuteAdv = ratedList("常见|嗜睡、体重增加、心动过速"),
+    chronicAdv = ratedList("常见|便秘、代谢综合征;罕见|粒细胞减少"),
+    withdraw = emptyList(),
+    overdose = ratedList(">50mg单次|过量风险"),
+    admin = "口服"
+)

@@ -1,0 +1,24 @@
+// app/右美沙芬.subl —— 右美沙芬完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；右美沙芬说明书级数据的药理整合见描述段。
+fun dextromethorphan(): Drug = Drug(
+    name = "右美沙芬",
+    category = "非处方药",
+    tags = strList("镇咳药，NMDA 拮抗剂（超量），右旋吗啡喃衍生物，Σ受体激动剂，抗谷氨酸能，精神活性物质"),
+    description = "右美沙芬是 OTC 中枢镇咳药（抑制延髓咳嗽中枢），治疗剂量安全；超量（≥5-10× 常用量）产生 NMDA 拮抗性解离作用（类似氯胺酮），伴 Σ 受体激动与 5-HT/NE 再摄取抑制，被作为娱乐性解离剂滥用。与 MAOI 联用可致高血压危象/血清素综合征（禁忌）；与 SSRIs/曲马多联用增加血清素综合征风险；CYP2D6 慢代谢者血药浓度显著升高。滥用风险：神经毒性、耐受与心理依赖。",
+    effects = ratedList("强效|咳嗽中枢抑制;超量|NMDA 拮抗"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 4, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.1,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|镇咳"),
+    chronicTher = emptyList(),
+    acuteAdv = ratedList("常见|嗜睡;少见|解离（超量时）"),
+    chronicAdv = emptyList(),
+    withdraw = emptyList(),
+    overdose = ratedList(">60mg单次|过量风险"),
+    admin = "口服"
+)

@@ -1,0 +1,24 @@
+// app/苯海拉明.subl —— 苯海拉明完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；苯海拉明说明书级数据的药理整合见描述段。
+fun diphenhydramine(): Drug = Drug(
+    name = "苯海拉明",
+    category = "非处方药",
+    tags = strList("抗组胺剂（第一代），H1 拮抗剂，催眠药（OTC），抗胆碱能，抗过敏药，镇静药"),
+    description = "苯海拉明是第一代 H1 抗组胺药，用于过敏、感冒症状与 OTC 助眠；也是抗胆碱能负荷（ACB）高分药。透过血脑屏障 → 镇静、抗胆碱能（口干、尿潴留、老年谵妄——Beers 标准：老年人避免用作助眠）。过量表现抗胆碱能谵妄；长期用作助眠会快速耐受。与酒精/BZD/巴比妥类联用加重中枢抑制。",
+    effects = ratedList("强效|H1 拮抗;中效|M 受体拮抗"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 8, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.5,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("中效|助眠;中效|镇静"),
+    chronicTher = emptyList(),
+    acuteAdv = ratedList("常见|嗜睡、口干;少见|谵妄"),
+    chronicAdv = ratedList("常见|认知下降"),
+    withdraw = emptyList(),
+    overdose = ratedList(">50mg单次|过量风险"),
+    admin = "口服"
+)

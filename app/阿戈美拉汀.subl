@@ -1,0 +1,24 @@
+// app/阿戈美拉汀.subl —— 阿戈美拉汀完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；阿戈美拉汀说明书级数据的药理整合见描述段。
+fun agomelatine(): Drug = Drug(
+    name = "阿戈美拉汀",
+    category = "处方药",
+    tags = strList("非典型抗抑郁药，褪黑素受体激动剂，5-HT2C 拮抗剂，抑郁药，血清素能，褪黑素能"),
+    description = "阿戈美拉汀是褪黑素 MT1/MT2 受体激动剂 + 5-HT2C 拮抗剂（非单胺再摄取机制），用于重度抑郁症，兼具改善睡眠时相作用。镇静副作用轻、对性功能与体重影响小；最大临床约束是剂量相关肝毒性——须在治疗前及第 3、6、12 周监测肝功能，肝功能不全禁用。CYP1A2 主代谢（90%）——吸烟降低、氟伏沙明（CYP1A2 强抑制）显著升高其浓度，禁止联用。",
+    effects = ratedList("强效|MT1/MT2 激动 + 5-HT2C 拮抗"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 2, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.1,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = emptyList(),
+    chronicTher = ratedList("强效|抗抑郁;中效|助眠"),
+    acuteAdv = ratedList("常见|头晕、恶心"),
+    chronicAdv = ratedList("少见|肝损伤（须监测肝功）"),
+    withdraw = emptyList(),
+    overdose = ratedList(">50mg单次|过量风险"),
+    admin = "口服"
+)

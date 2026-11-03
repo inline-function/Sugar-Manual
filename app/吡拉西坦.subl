@@ -1,0 +1,24 @@
+// app/吡拉西坦.subl —— 吡拉西坦完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；吡拉西坦说明书级数据的药理整合见描述段。
+fun piracetam(): Drug = Drug(
+    name = "吡拉西坦",
+    category = "处方药",
+    tags = strList("拉西坦类，促智药（nootropic），认知增强，抗癫痫辅助，抗谷氨酸能"),
+    description = "吡拉西坦是首个拉西坦类促智药（环状 GABA 衍生物，但不对 GABA 受体直接作用），用于老年认知障碍、皮质性眩晕与肌阵挛",
+    effects = ratedList("中效|AMPA 通路增强（认知功能）;弱效|抗肌阵挛"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 5, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 1.0,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = emptyList(),
+    chronicTher = ratedList("弱效|认知增强"),
+    acuteAdv = ratedList("少见|失眠、兴奋"),
+    chronicAdv = emptyList(),
+    withdraw = emptyList(),
+    overdose = ratedList(">1600mg单次|过量风险"),
+    admin = "口服"
+)

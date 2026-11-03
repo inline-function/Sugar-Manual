@@ -1,0 +1,24 @@
+// app/阿立哌唑.subl —— 阿立哌唑完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；阿立哌唑说明书级数据的药理整合见描述段。
+fun aripiprazole(): Drug = Drug(
+    name = "阿立哌唑",
+    category = "处方药",
+    tags = strList("抗精神病药，二代（SGA），D2 部分激动剂，心境稳定辅助，多巴胺能，血清素能"),
+    description = "阿立哌唑是第二代抗精神病药中独特的 D2/5-HT1A 部分激动剂（多巴胺稳定剂），用于精神分裂症、双相障碍、重度抑郁辅助与抽动障碍",
+    effects = ratedList("强效|D2 部分激动 + 5-HT2A 拮抗"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 75, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.87,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = emptyList(),
+    chronicTher = ratedList("中效|稳定情绪"),
+    acuteAdv = ratedList("常见|失眠;常见|静坐不能"),
+    chronicAdv = ratedList("少见|体重增加"),
+    withdraw = emptyList(),
+    overdose = ratedList(">10mg单次|过量风险"),
+    admin = "口服"
+)

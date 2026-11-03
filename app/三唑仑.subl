@@ -1,0 +1,24 @@
+// app/三唑仑.subl —— 三唑仑完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；三唑仑说明书级数据的药理整合见描述段。
+fun triazolam(): Drug = Drug(
+    name = "三唑仑",
+    category = "处方药",
+    tags = strList("苯二氮卓类，催眠药，短效，管制（精一），GABA能"),
+    description = "三唑仑是超短效三唑并苯二氮卓类，起效快、作用时间短，用于严重入睡困难。顺行性记忆损害与复杂睡眠行为（梦游）风险高于其他 BZD；中国按第一类精神药品管理。CYP3A4 代谢——与克拉霉素、伊曲康唑、氟伏沙明合用显著升高血药浓度。",
+    effects = ratedList("强效|GABA-A 别构增强"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 3, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.44,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|助眠"),
+    chronicTher = emptyList(),
+    acuteAdv = ratedList("常见|嗜睡;少见|顺行性记忆损害"),
+    chronicAdv = emptyList(),
+    withdraw = emptyList(),
+    overdose = ratedList(">1mg单次|过量风险"),
+    admin = "口服"
+)

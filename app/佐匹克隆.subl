@@ -1,0 +1,24 @@
+// app/佐匹克隆.subl —— 佐匹克隆完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；佐匹克隆说明书级数据的药理整合见描述段。
+fun zopiclone(): Drug = Drug(
+    name = "佐匹克隆",
+    category = "处方药",
+    tags = strList("Z 类催眠药，非苯二氮卓，环吡咯酮类，管制（精二），GABA能"),
+    description = "佐匹克隆是环吡咯酮类催眠药，作用于 GABA-A 受体 BZD 识别位点，用于入睡与睡眠维持困难。半衰期约 5 小时，次日宿醉与跌倒风险略高于唑吡坦；特征性副反应为金属苦味。依赖与戒断同 BZD 类似。经 CYP3A4 代谢——红霉素/克拉霉素/氟伏沙明升高其浓度。",
+    effects = ratedList("强效|GABA-A 增强"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 5, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.8,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|助眠"),
+    chronicTher = emptyList(),
+    acuteAdv = ratedList("常见|嗜睡、口干（金属苦味）"),
+    chronicAdv = emptyList(),
+    withdraw = emptyList(),
+    overdose = ratedList(">15mg单次|过量风险"),
+    admin = "口服"
+)

@@ -1,0 +1,24 @@
+// app/丙咪嗪.subl —— 丙咪嗪完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；丙咪嗪说明书级数据的药理整合见描述段。
+fun imipramine(): Drug = Drug(
+    name = "丙咪嗪",
+    category = "处方药",
+    tags = strList("三环类抗抑郁药，TCA，抑郁药，遗尿治疗药，血清素能，去甲肾上腺素能"),
+    description = "丙咪嗪是经典三环类抗抑郁药，抑制 5-HT 与 NE 再摄取，用于抑郁症、遗尿症与恐慌障碍",
+    effects = ratedList("强效|5-HT/NE 再摄取抑制;强效|抗胆碱能"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 12, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.4,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = emptyList(),
+    chronicTher = ratedList("强效|抗抑郁;中效|镇痛"),
+    acuteAdv = ratedList("常见|嗜睡、口干、心动过速"),
+    chronicAdv = ratedList("常见|体重增加、体位性低血压"),
+    withdraw = emptyList(),
+    overdose = ratedList(">50mg单次|过量风险"),
+    admin = "口服"
+)

@@ -1,0 +1,24 @@
+// app/利培酮.subl —— 利培酮完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；利培酮说明书级数据的药理整合见描述段。
+fun risperidone(): Drug = Drug(
+    name = "利培酮",
+    category = "处方药",
+    tags = strList("抗精神病药，二代（SGA），心境稳定辅助，长效针剂，多巴胺能，血清素能"),
+    description = "利培酮是二代抗精神病药，D2/5-HT2A 双拮抗，用于精神分裂症、双相躁狂与孤独症易激惹。代谢为 9-羟利培酮（帕利哌酮）仍有活性，经 CYP2D6 代谢——帕罗西汀/氟西汀升高其浓度。锥体外系症状与泌乳素升高剂量相关，体重增加中等。",
+    effects = ratedList("强效|D2/5-HT2A 拮抗"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 20, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.7,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("中效|镇静"),
+    chronicTher = ratedList("中效|稳定情绪"),
+    acuteAdv = ratedList("常见|嗜睡、体重增加"),
+    chronicAdv = ratedList("常见|锥体外系症状、体重增加"),
+    withdraw = emptyList(),
+    overdose = ratedList(">4mg单次|过量风险"),
+    admin = "口服"
+)

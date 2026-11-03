@@ -1,0 +1,24 @@
+// app/米安色林.subl —— 米安色林完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；米安色林说明书级数据的药理整合见描述段。
+fun mianserin(): Drug = Drug(
+    name = "米安色林",
+    category = "处方药",
+    tags = strList("四环类抗抑郁药，TeCA，抑郁药，去甲肾上腺素能"),
+    description = "米安色林是四环类抗抑郁药（米氮平的前身），拮抗 α2 自身受体与 5-HT2/5-HT3 受体，增强 NE 与 5-HT 传导，用于抑郁症与焦虑伴失眠。镇静作用强而抗胆碱能/心脏毒性弱，老年适用；罕见粒细胞减少与血液学异常，需监测血常规。",
+    effects = ratedList("中效|α2 拮抗 + 5-HT2 拮抗"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 20, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.7,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = emptyList(),
+    chronicTher = ratedList("强效|抗抑郁;中效|助眠"),
+    acuteAdv = ratedList("常见|嗜睡"),
+    chronicAdv = ratedList("常见|体重增加;罕见|粒细胞减少"),
+    withdraw = emptyList(),
+    overdose = ratedList(">60mg单次|过量风险"),
+    admin = "口服"
+)

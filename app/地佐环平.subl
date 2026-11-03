@@ -1,0 +1,24 @@
+// app/地佐环平.subl —— 地佐环平完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；地佐环平说明书级数据的药理整合见描述段。
+fun dizocilpine(): Drug = Drug(
+    name = "地佐环平",
+    category = "研究用化合物（非临床药物）",
+    tags = strList("NMDA 通道阻滞剂，解离剂，研究工具药，MK-801，抗谷氨酸能，精神活性物质"),
+    description = "地佐环平（MK-801）是二苯并环庚烯亚胺类 NMDA 开放通道阻滞剂（非竞争性），与通道位点结合后解离极慢，是体外/动物实验中最强的 NMDA 拮抗剂之一，无临床适应证。动物模型中产生典型解离样行为（运动过多、刻板、感觉阻断）与剂量相关神经毒性（Olney 病变——边缘系统神经元空泡化）。人类等效剂量下解离与神经毒性风险极高，不作为药物使用，仅作工具药入选本库。",
+    effects = ratedList("极强|NMDA 开放通道阻滞（非竞争性）"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "研究给药", halfLife = 2, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.5,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = emptyList(),
+    chronicTher = emptyList(),
+    acuteAdv = ratedList("常见|解离、幻觉"),
+    chronicAdv = ratedList("少见|神经毒性（Olney 病变，动物证据）"),
+    withdraw = emptyList(),
+    overdose = ratedList(">0mg单次|过量风险"),
+    admin = "口服"
+)

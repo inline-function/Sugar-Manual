@@ -1,0 +1,24 @@
+// app/奥沙西泮.subl —— 奥沙西泮完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；奥沙西泮说明书级数据的药理整合见描述段。
+fun oxazepam(): Drug = Drug(
+    name = "奥沙西泮",
+    category = "处方药",
+    tags = strList("苯二氮卓类，抗焦虑药，镇静药，GABA能"),
+    description = "奥沙西泮是中效 1,4-苯二氮卓类，地西泮的活性代谢产物之一，用于焦虑症与焦虑性失眠。与多数 BZD 不同，不经 CYP 氧化代谢，而由 UGT 直接葡萄糖醛酸化清除，无活性中间产物，故老年人及轻中度肝损害者蓄积风险低。起效较慢、作用温和。",
+    effects = ratedList("强效|GABA-A 别构增强"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 8, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.9,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|抗焦虑;中效|镇静"),
+    chronicTher = emptyList(),
+    acuteAdv = ratedList("常见|嗜睡、头晕"),
+    chronicAdv = emptyList(),
+    withdraw = emptyList(),
+    overdose = ratedList(">30mg单次|过量风险"),
+    admin = "口服"
+)

@@ -83,7 +83,7 @@ function __smA(name, cond, extra) {
   const dlistSheet = __smNodes(listRoot).find((n) => n.tag === "BottomSheet" && n.visible === true);
   __smA("药库名单打开", !!dlistSheet && __smHasText(listRoot, "药库名单"));
   const listRows = __smNodes(dlistSheet).filter((n) => n.tag === "Box" && typeof n.onClick === "string" && (n.children || []).length === 3 && (n.children[0].modifiers || []).some((m) => m.tag === "Width" && m["0"] === 4));
-  __smA("药库名单 68 行（t78 扩展 + t79rev2 逆转剂，含物质/代谢物）", listRows.length === 68, "got " + listRows.length + " " + listRows.map((b) => b.children[2].children[0].text).join(","));
+  __smA("药库名单 107 行（t92 回迁至 subl：全宿主药库 + 物质/代谢物/逆转剂）", listRows.length === 107, "got " + listRows.length + " " + listRows.map((b) => b.children[2].children[0].text).join(","));
   // t78：分组浏览 —— 主要分类大组头齐（心境稳定剂/抗精神病药/抗抑郁药/抗焦虑药/安眠剂/镇静剂/促智药/抗帕金森药/镇痛药/精神活性物质/抗生素/代谢物）
   const groupHeads = __smNodes(dlistSheet).filter((n) => n.tag === "Text" && (n.size === 15) && n.bold === true && n.color === "primary").map((n) => n.text);
   __smA("药库名单按主要分类分组（12 组头齐且仅含非空组）",
@@ -119,7 +119,7 @@ function __smA(name, cond, extra) {
   function __smRowName(b) { return b.children[0].children[0]; }
   function __smRowSub(b) { return b.children[0].children[1]; }
   function __smRowChecked(b) { return (b.children || []).some((c) => c.tag === "Text" && c.text.indexOf("✓") === 0 && c.color !== "#00000000"); } // v2：✓ 常驻，未选为透明 #00000000
-  __smA("药物行 64 行（t79rev2：68 库 - 4 代谢物，表单不可选）", rowBtns.length === 64, "got " + rowBtns.length + " " + rowBtns.map((b) => __smRowName(b).text).join(","));
+  __smA("药物行 103 行（t92 回迁：107 库 - 4 代谢物，表单不可选）", rowBtns.length === 103, "got " + rowBtns.length + " " + rowBtns.map((b) => __smRowName(b).text).join(","));
   __smA("表单选药列表过滤代谢物（去甲氟西汀/O-去甲基文拉法辛/去甲西酞普兰/M6G 不可见）",
     ["去甲氟西汀", "O-去甲基文拉法辛", "去甲西酞普兰", "M6G（吗啡-6-葡萄糖醛酸）"].every((n) => !rowBtns.some((b) => __smRowName(b).text.indexOf(n) === 0)));
   __smA("行 0 氟伏沙明未选", rowBtns.some((b) => __smRowName(b).text === "氟伏沙明" && __smRowName(b).bold === false), "got " + JSON.stringify(rowBtns.map((b) => __smRowName(b).text)));
@@ -582,7 +582,7 @@ function __smA(name, cond, extra) {
 
   // ---------- t78：标签双层 / 代谢物不可口服 / 物质药对相互作用 / 短名清洗 ----------
   // 【1】药库全量 64 = 41 既有 + 23 新增（药/物质/代谢物）
-  __smA("t78+t79r2 药库 68 条（41 + 23 + 4 逆转剂）", coadmin().length === 68, "got " + coadmin().length);
+  __smA("t78+t92 药库 107 条（t92 回迁：68 既有 + 39 新药）", coadmin().length === 107, "got " + coadmin().length);
   // 【2】双层标签：每药 ≥1 神经递质系统标签 + ≥1 临床主要分类（碳酸锂为唯一无系统标签豁免，见其资料页说明）
   (function () {
     const sys = ["血清素能", "去甲肾上腺素能", "多巴胺能", "抗谷氨酸能", "胆碱能", "抗胆碱能", "抗食欲素能", "褪黑素能", "GABA能", "阿片能"];
@@ -603,7 +603,7 @@ function __smA(name, cond, extra) {
     const okMeta = metas.every((n) => { const x = ddrug(n); return x && x.admin === "仅代谢物" && x.description.indexOf("仅作资料") >= 0; });
     const pick = pickableDrugs(coadmin()).map((d) => d.name);
     __smA("t78 代谢物 admin=仅代谢物且资料页可看", okMeta, "");
-    __smA("t78+t79r2 pickableDrugs 过滤代谢物（64 可选，含逆转剂）", pick.length === 64 && metas.every((n) => pick.indexOf(n) < 0), "got " + pick.length);
+    __smA("t78+t92 pickableDrugs 过滤代谢物（103 可选，含逆转剂）", pick.length === 103 && metas.every((n) => pick.indexOf(n) < 0), "got " + pick.length);
     __smA("t78 口服药 admin=口服（舍曲林/普瑞巴林/奥氮平）",
       ddrug("舍曲林").admin === "口服" && ddrug("普瑞巴林").admin === "口服" && ddrug("奥氮平").admin === "口服");
   })();
@@ -777,7 +777,7 @@ function __smA(name, cond, extra) {
     __smCall(tfq, "onChange", "吗");
     const qRoot2 = __smRoot();
     const qRows = __smNodes(qRoot2).filter((n) => n.tag === "Box" && typeof n.onClick === "string" && (n.children || [])[0] && n.children[0].tag === "Box" && n.children[0].children[0] && n.children[0].children[0].text);
-    __smA("t79r2 搜索过滤（吗 → 仅吗啡一行）", qRows.length === 1 && qRows[0].children[0].children[0].text === "吗啡", "got " + qRows.map((b) => b.children[0].children[0].text).join(","));
+    __smA("t92 搜索过滤（吗 → 吗啡与吗氯贝胺两行）", qRows.length === 2 && qRows[0].children[0].children[0].text === "吗啡" && qRows[1].children[0].children[0].text === "吗氯贝胺", "got " + qRows.map((b) => b.children[0].children[0].text).join(","));
     const tfq2 = __smNodes(__smRoot()).find((n) => n.tag === "TextField" && n.placeholder === "搜索药名/关键字");
     __smCall(tfq2, "onChange", "zz");
     __smA("t79r2 搜索无匹配占位行（无匹配药物）", __smHasText(__smRoot(), "无匹配药物"), "");
@@ -785,7 +785,7 @@ function __smA(name, cond, extra) {
     __smCall(tfq3, "onChange", "");
     const qRoot4 = __smRoot();
     const qRows4 = __smNodes(qRoot4).filter((n) => n.tag === "Box" && typeof n.onClick === "string" && (n.children || [])[0] && n.children[0].tag === "Box" && n.children[0].children[0] && n.children[0].children[0].text);
-    __smA("t79r2 清空搜索恢复全量（64 行）", qRows4.length === 64, "got " + qRows4.length);
+    __smA("t92 清空搜索恢复全量（103 行）", qRows4.length === 103, "got " + qRows4.length);
     const cb = __smFindButton(qRoot4, "取消");
     __smCall(cb, "onClick", "");
   })();

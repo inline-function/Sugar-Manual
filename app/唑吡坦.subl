@@ -1,0 +1,24 @@
+// app/唑吡坦.subl —— 唑吡坦完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：唑吡坦说明书（Stilnox 标签）：T½ 约 3h、口服 F 约 70%（首过显著）；CYP3A4 代谢（红霉素/氟伏沙明升高浓度）。
+fun zolpidem(): Drug = Drug(
+    name = "唑吡坦",
+    category = "处方药",
+    tags = strList("Z类催眠药，非苯二氮卓，GABA-A ω1 选择性，管制（精二），GABA能"),
+    description = "唑吡坦是咪唑吡啶类催眠药，选择性作用于 GABA-A 受体 ω1 亚型（镇静/催眠，几乎无抗焦虑/肌松作用），用于入睡困难的短期治疗。起效快、半衰期短、次日残余效应少。与 BZD 有交叉耐受与依赖；BZD 依赖者使用可诱发戒断。与酒精联用加重中枢抑制与复杂睡眠行为。经 CYP3A4 代谢——红霉素/克拉霉素/氟伏沙明升高其浓度。",
+    effects = ratedList("强效|GABA-A ω1 选择性增强"),
+    enzymes = strList("CYP3A4"),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 3, tmax = "0.5-2h",
+        clearance = "一级（CYP3A4 氧化）", curve = "对数", bio = 0.7,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|入睡困难（短期）"),
+    chronicTher = emptyList(),
+    acuteAdv = ratedList("常见|嗜睡;少见|顺行性记忆损害"),
+    chronicAdv = ratedList("常见|依赖与反跳失眠"),
+    withdraw = ratedList("常见|反跳失眠"),
+    overdose = ratedList(">40mg单次|中枢抑制"),
+    admin = "口服"
+)

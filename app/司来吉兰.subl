@@ -1,0 +1,24 @@
+// app/司来吉兰.subl —— 司来吉兰完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；司来吉兰说明书级数据的药理整合见描述段。
+fun selegiline(): Drug = Drug(
+    name = "司来吉兰",
+    category = "处方药",
+    tags = strList("MAOIs，选择性MAO-B抑制剂，抗帕金森药，超说明书（抑郁辅助），多巴胺能"),
+    description = "司来吉兰低剂量选择性抑制 MAO-B，用于帕金森病（常与左旋多巴合用）；",
+    effects = ratedList("强效|MAO-B 不可逆抑制"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 10, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.4,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = emptyList(),
+    chronicTher = ratedList("强效|抗帕金森"),
+    acuteAdv = ratedList("常见|失眠、头晕"),
+    chronicAdv = emptyList(),
+    withdraw = emptyList(),
+    overdose = ratedList(">10mg单次|过量风险"),
+    admin = "口服"
+)

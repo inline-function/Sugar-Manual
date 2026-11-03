@@ -1,0 +1,24 @@
+// app/舒必利.subl —— 舒必利完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；舒必利说明书级数据的药理整合见描述段。
+fun sulpiride(): Drug = Drug(
+    name = "舒必利",
+    category = "处方药",
+    tags = strList("抗精神病药，一代（FGA），苯甲酰胺类，超说明书（抑郁增效），多巴胺能"),
+    description = "舒必利是苯甲酰胺类抗精神病药，选择性 D2/D3 拮抗，用于精神分裂症（阴性症状为主），",
+    effects = ratedList("中效|D2/D3 拮抗"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 8, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.3,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = emptyList(),
+    chronicTher = ratedList("中效|稳定情绪"),
+    acuteAdv = ratedList("常见|失眠"),
+    chronicAdv = ratedList("少见|锥体外系症状"),
+    withdraw = emptyList(),
+    overdose = ratedList(">200mg单次|过量风险"),
+    admin = "口服"
+)

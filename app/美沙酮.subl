@@ -1,0 +1,24 @@
+// app/美沙酮.subl —— 美沙酮完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；美沙酮说明书级数据的药理整合见描述段。
+fun methadone(): Drug = Drug(
+    name = "美沙酮",
+    category = "处方药",
+    tags = strList("阿片类，镇痛药，阿片依赖替代治疗，阿片能"),
+    description = "美沙酮是人工合成 μ 阿片受体激动剂，用于重度疼痛与阿片依赖的替代维持治疗。半衰期长且个体差异大（8-60 小时），重复给药易蓄积致死；经 CYP3A4/2B6 代谢，与 CYP3A4 抑制剂（克拉霉素、氟伏沙明）及 CYP2D6 抑制剂（帕罗西汀、氟西汀）合用血药浓度升高。QT 间期延长剂量依赖，与其他致 QT 延长药（西酞普兰、齐拉西酮、氟哌啶醇）联用需心电监测。纳洛酮可逆转其过量。",
+    effects = ratedList("极强|μ 受体激动"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 30, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.9,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|镇痛;弱效|欣快"),
+    chronicTher = ratedList("弱效|梦境增强"),
+    acuteAdv = ratedList("常见|呼吸抑制、嗜睡"),
+    chronicAdv = ratedList("常见|便秘;少见|QT间期延长"),
+    withdraw = emptyList(),
+    overdose = ratedList(">20mg单次|过量风险"),
+    admin = "口服"
+)

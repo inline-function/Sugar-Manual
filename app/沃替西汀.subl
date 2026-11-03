@@ -1,0 +1,24 @@
+// app/沃替西汀.subl —— 沃替西汀完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；沃替西汀说明书级数据的药理整合见描述段。
+fun vortioxetine(): Drug = Drug(
+    name = "沃替西汀",
+    category = "处方药",
+    tags = strList("非典型抗抑郁药，5-HT 调节剂（多模态），抑郁药，血清素能"),
+    description = "沃替西汀是多模态 5-HT 药：5-HT 再摄取抑制 + 5-HT1A 激动 + 5-HT1B 部分激动 + 5-HT3/7/1D 拮抗，用于重度抑郁与广泛性焦虑障碍；对认知症状（执行功能/注意）改善有优势。恶心最常见（剂量相关）；性功能障碍影响小。CYP2D6 代谢——帕罗西汀/氟西汀（2D6 抑制）使其血药浓度升高约 2 倍，需减量。与曲马多/右美沙芬/MAOI 合用有血清素综合征风险。",
+    effects = ratedList("强效|5-HT 再摄取抑制 + 多受体调节"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 66, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.75,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = emptyList(),
+    chronicTher = ratedList("强效|抗抑郁;弱效|认知增强"),
+    acuteAdv = ratedList("常见|恶心、头晕"),
+    chronicAdv = ratedList("常见|恶心"),
+    withdraw = emptyList(),
+    overdose = ratedList(">20mg单次|过量风险"),
+    admin = "口服"
+)

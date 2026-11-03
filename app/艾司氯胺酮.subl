@@ -1,0 +1,24 @@
+// app/艾司氯胺酮.subl —— 艾司氯胺酮完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；艾司氯胺酮说明书级数据的药理整合见描述段。
+fun esketamine(): Drug = Drug(
+    name = "艾司氯胺酮",
+    category = "处方药（严格管控）",
+    tags = strList("解离性麻醉剂，NMDA 拮抗剂，抗抑郁药（速效，鼻喷），超说明书（治疗抵抗性抑郁），抗谷氨酸能"),
+    description = "艾司氯胺酮是氯胺酮的 S-对映体，NMDA 通道拮抗剂，鼻喷用于治疗抵抗性抑郁症（医疗机构给药并监测 2 小时）。药理同氯胺酮：谷氨酸 AMPA 间接增强、μ 阿片激动与 NET/DAT 抑制，4 小时内起效。特征性急性效应为解离（人格解体、知觉扭曲），伴头晕与剂量相关血压升高；慢性滥用风险与膀胱间质炎同氯胺酮。CYP2B6/3A4 代谢；苯二氮卓类减弱其抗抑郁效应。",
+    effects = ratedList("强效|NMDA 拮抗;中效|μ 激动"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "鼻喷", halfLife = 3, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.5,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("中效|抗抑郁"),
+    chronicTher = emptyList(),
+    acuteAdv = ratedList("常见|解离、头晕;常见|血压升高"),
+    chronicAdv = ratedList("少见|解离"),
+    withdraw = emptyList(),
+    overdose = ratedList(">56mg单次|过量风险"),
+    admin = "口服"
+)

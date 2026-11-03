@@ -1,0 +1,24 @@
+// app/马普替林.subl —— 马普替林完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；马普替林说明书级数据的药理整合见描述段。
+fun maprotiline(): Drug = Drug(
+    name = "马普替林",
+    category = "处方药",
+    tags = strList("四环类抗抑郁药，TeCA，NE 再摄取抑制剂，去甲肾上腺素能"),
+    description = "马普替林是四环类抗抑郁药，选择性抑制 NE 再摄取（对 5-HT 影响弱），用于抑郁症。镇静与抗胆碱能副反应较 TCA 轻，但剂量相关的癫痫发作风险高于多数抗抑郁药（与剂量上调过快相关）。经 CYP2D6 代谢——与帕罗西汀/氟西汀合用血药浓度升高。",
+    effects = ratedList("强效|NE 再摄取抑制"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 40, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.5,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = emptyList(),
+    chronicTher = ratedList("强效|抗抑郁"),
+    acuteAdv = ratedList("常见|嗜睡、口干;少见|癫痫"),
+    chronicAdv = emptyList(),
+    withdraw = emptyList(),
+    overdose = ratedList(">50mg单次|过量风险"),
+    admin = "口服"
+)

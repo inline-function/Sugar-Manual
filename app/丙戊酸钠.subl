@@ -1,0 +1,24 @@
+// app/丙戊酸钠.subl —— 丙戊酸钠完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；丙戊酸钠说明书级数据的药理整合见描述段。
+fun valproateSodium(): Drug = Drug(
+    name = "丙戊酸钠",
+    category = "处方药",
+    tags = strList("心境稳定剂，抗癫痫药，广谱抗痫，双相障碍，GABA能"),
+    description = "丙戊酸钠（德巴金等）是广谱抗癫痫与心境稳定剂，用于双相障碍（躁狂/混合/维持）、癫痫各型发作与偏头痛预防。口服几乎完全吸收（F≈90%），主要经 CYP2C9/2C19 氧化与 UGT 葡萄糖醛酸化（β 氧化）代谢。为 CYP2C9 强抑制剂并抑制 UGT 葡萄糖糖醛酸化——显著升高拉莫三嗪血药浓度（联用时拉莫三嗪需减量半、加倍缓慢加量，否则皮疹/SJS 风险升高）；竞争血浆蛋白结合（与华法林等高蛋白结合药）。过量/急性：血药浓度 >120mg/L 常见嗜睡与震颤，>460mg/L 可致昏迷、脑水肿；高氨血症与肝毒性（线粒体 β 氧化损伤）需监测转氨酶与血氨。血镁不叠加镁离子毒性（与丙戊酸镁不同）。",
+    effects = ratedList("强效|电压门控钠通道阻断;强效|GABA能增强;中效|T型钙通道阻断"),
+    enzymes = emptyList(),
+    inhibitions = ratedList("极强|CYP2C9;中效|UGT"),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 12, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.9,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = emptyList(),
+    chronicTher = ratedList("强效|稳定情绪;强效|抗癫痫"),
+    acuteAdv = ratedList("常见|恶心、嗜睡、震颤"),
+    chronicAdv = ratedList("常见|体重增加、脱发;少见|肝毒性、血小板减少、高氨血症"),
+    withdraw = emptyList(),
+    overdose = ratedList(">1000mg单次|过量风险"),
+    admin = "口服"
+)

@@ -1,0 +1,24 @@
+// app/奋乃静.subl —— 奋乃静完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；奋乃静说明书级数据的药理整合见描述段。
+fun perphenazine(): Drug = Drug(
+    name = "奋乃静",
+    category = "处方药",
+    tags = strList("抗精神病药，一代（FGA），吩噻嗪类（哌嗪），多巴胺能"),
+    description = "奋乃静是吩噻嗪哌嗪类高效价一代抗精神病药，用于精神分裂症、躁狂与精神病性障碍。高效价 D2 拮抗 → 锥体外系症状突出；有中度抗胆碱能作用。吩噻嗪类降低癫痫阈值并延长 QT。经 CYP2D6 代谢——帕罗西汀/氟西汀升高其浓度。",
+    effects = ratedList("强效|D2 拮抗;中效|抗胆碱能"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 10, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.4,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("中效|镇静"),
+    chronicTher = ratedList("中效|稳定情绪"),
+    acuteAdv = ratedList("常见|锥体外系症状、嗜睡"),
+    chronicAdv = ratedList("常见|锥体外系症状"),
+    withdraw = emptyList(),
+    overdose = ratedList(">8mg单次|过量风险"),
+    admin = "口服"
+)

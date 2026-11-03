@@ -1,0 +1,24 @@
+// app/硝西泮.subl —— 硝西泮完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；硝西泮说明书级数据的药理整合见描述段。
+fun nitrazepam(): Drug = Drug(
+    name = "硝西泮",
+    category = "处方药",
+    tags = strList("苯二氮卓类，催眠药，抗癫痫药，GABA能"),
+    description = "硝西泮是中效硝基苯二氮卓类，用于失眠（尤其夜间易醒）与癫痫辅助。半衰期约 24 小时，易有次日宿醉效应，老年人跌倒风险升高。经 CYP3A4 代谢，与红霉素、氟伏沙明合用血药浓度升高。",
+    effects = ratedList("强效|GABA-A 别构增强"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 24, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.8,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|助眠;弱效|抗焦虑"),
+    chronicTher = emptyList(),
+    acuteAdv = ratedList("常见|嗜睡（次日宿醉）"),
+    chronicAdv = emptyList(),
+    withdraw = emptyList(),
+    overdose = ratedList(">10mg单次|过量风险"),
+    admin = "口服"
+)

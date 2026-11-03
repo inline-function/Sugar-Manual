@@ -1,0 +1,24 @@
+// app/奈福泮.subl —— 奈福泮完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；奈福泮说明书级数据的药理整合见描述段。
+fun nefopam(): Drug = Drug(
+    name = "奈福泮",
+    category = "处方药",
+    tags = strList("非阿片镇痛药，中枢性，5-HT/NE 再摄取抑制，无管制，血清素能，去甲肾上腺素能"),
+    description = "奈福泮是中枢性非阿片镇痛药（化学结构为四环双氮苯并吖辛因，与氯米帕明相似），用于急慢性疼痛与术后镇痛（不属麻醉药品管制）。机制为抑制 5-HT 与 NE 再摄取 + 阿片能（κ/μ）增强；无呼吸抑制与成瘾性优势。有轻度抗胆碱能副反应；过量有癫痫与血清素综合征报告（与 MAOI/SSRI 合用风险）。肝代谢快。",
+    effects = ratedList("强效|5-HT/NE 再摄取抑制（中枢镇痛）"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 4, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.5,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|镇痛"),
+    chronicTher = emptyList(),
+    acuteAdv = ratedList("常见|恶心、头晕"),
+    chronicAdv = ratedList("少见|嗜睡"),
+    withdraw = emptyList(),
+    overdose = ratedList(">40mg单次|过量风险"),
+    admin = "口服"
+)

@@ -1,0 +1,24 @@
+// app/苯乙肼.subl —— 苯乙肼完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；苯乙肼说明书级数据的药理整合见描述段。
+fun phenelzine(): Drug = Drug(
+    name = "苯乙肼",
+    category = "处方药",
+    tags = strList("MAOIs，不可逆单胺氧化酶抑制剂，抗抑郁药，超说明书（难治性抑郁），血清素能，去甲肾上腺素能，多巴胺能"),
+    description = "苯乙肼是不可逆非选择性 MAO 抑制剂，用于难治性抑郁与非典型抑郁。需限制富酪胺食物（奶酪、腌肉、发酵食品）以防高血压危象；与 SSRIs/曲马多/右美沙芬/哌甲酯联用可致命（血清素综合征或高血压危象），洗脱期 ≥2 周。体位性低血压常见。",
+    effects = ratedList("极强|MAO-A/MAO-B 不可逆抑制"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 2, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.5,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = emptyList(),
+    chronicTher = ratedList("强效|抗抑郁"),
+    acuteAdv = ratedList("常见|失眠、体位性低血压"),
+    chronicAdv = ratedList("少见|肝损伤"),
+    withdraw = emptyList(),
+    overdose = ratedList(">30mg单次|过量风险"),
+    admin = "口服"
+)

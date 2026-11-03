@@ -313,7 +313,7 @@ tree = latestTree();
 const dlist = findByTag(tree, "BottomSheet").find(s => s.visible === true);
 check("药库名单抽屉打开", dlist && findByTag(dlist, "Text").some(x => x.text === "药库名单"), JSON.stringify(dlist && dlist.visible));
 const drows = findByTag(dlist, "Box").filter(b => b.onClick && (b.children || []).length === 3 && (b.children[0].modifiers || []).some(m => m.tag === "Width" && m["0"] === 4));
-check("t78+t79r2 药库名单 68 行（含物质与代谢物、逆转剂）", drows.length === 68, "n=" + drows.length + " " + drows.map(b => b.children[2].children[0].text).join(","));
+check("t78+t92 药库名单 107 行（t92 回迁至 subl 全药库）", drows.length === 107, "n=" + drows.length + " " + drows.map(b => b.children[2].children[0].text).join(","));
 // t78：分组浏览 —— 主要分类大组头齐（药库名单按心境稳定/抗精神病/抗抑郁/抗焦虑/抗多动/安眠/抗帕金森/镇痛/精神活性物质/抗生素/激素类/代谢物分组）
 const groupHeads = findByTag(dlist, "Text").filter(t => t.size === 15 && t.bold === true && t.color === "primary").map(t => t.text);
 check("t78+t79r2 药库名单按主要分类分组（14 组头齐，镇静组为空，逆转剂在镇痛后）",

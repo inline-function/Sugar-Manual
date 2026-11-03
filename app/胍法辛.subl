@@ -1,0 +1,24 @@
+// app/胍法辛.subl —— 胍法辛完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；胍法辛说明书级数据的药理整合见描述段。
+fun guanfacine(): Drug = Drug(
+    name = "胍法辛",
+    category = "处方药",
+    tags = strList("抗多动药，ADHD治疗药，α2A 肾上腺素受体激动剂，去甲肾上腺素能"),
+    description = "胍法辛（缓释片）是选择性 α2A 受体激动剂，用于 6-17 岁 ADHD（单用或与兴奋剂合用）及",
+    effects = ratedList("中效|α2A 受体激动"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "口服缓释", halfLife = 17, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.6,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = emptyList(),
+    chronicTher = ratedList("中效|注意力集中"),
+    acuteAdv = ratedList("常见|嗜睡、头晕"),
+    chronicAdv = ratedList("常见|疲劳"),
+    withdraw = emptyList(),
+    overdose = ratedList(">2mg单次|过量风险"),
+    admin = "口服"
+)

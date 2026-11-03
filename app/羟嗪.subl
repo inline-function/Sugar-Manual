@@ -1,0 +1,24 @@
+// app/羟嗪.subl —— 羟嗪完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；羟嗪说明书级数据的药理整合见描述段。
+fun hydroxyzine(): Drug = Drug(
+    name = "羟嗪",
+    category = "处方药",
+    tags = strList("抗组胺剂（第一代），抗焦虑药，镇静药，术前给药，抗胆碱能"),
+    description = "羟嗪是哌嗪类第一代抗组胺药，用于焦虑（短期）、过敏性瘙痒、术前镇静与",
+    effects = ratedList("中效|H1 拮抗（中枢）"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 20, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.7,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("中效|抗焦虑;中效|镇静"),
+    chronicTher = emptyList(),
+    acuteAdv = ratedList("常见|嗜睡、口干"),
+    chronicAdv = ratedList("少见|认知下降"),
+    withdraw = emptyList(),
+    overdose = ratedList(">50mg单次|过量风险"),
+    admin = "口服"
+)

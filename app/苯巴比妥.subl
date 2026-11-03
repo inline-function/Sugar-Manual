@@ -1,0 +1,24 @@
+// app/苯巴比妥.subl —— 苯巴比妥完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；苯巴比妥说明书级数据的药理整合见描述段。
+fun phenobarbital(): Drug = Drug(
+    name = "苯巴比妥",
+    category = "处方药",
+    tags = strList("巴比妥类，抗癫痫药，镇静药，麻醉前给药，GABA能"),
+    description = "苯巴比妥是长效巴比妥类，增强 GABA-A 受体抑制性传导（结合位点不同于 BZD，过量无拮抗剂）。用于癫痫、新生儿癫痫、麻醉前镇静与戒酒辅助。是强效肝药酶诱导剂（CYP2C9/3A4/UGT），降低口服避孕药、华法林、SSRIs、喹硫平等血药浓度；与乙醇/苯二氮卓类存在致死性呼吸抑制协同。治疗指数窄、成瘾性与戒断癫痫风险高，催眠用途已被 BZD/Z 类取代。",
+    effects = ratedList("强效|GABA-A 增强;强效|CYP2C9/3A4/UGT 诱导"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 80, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.9,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|镇静"),
+    chronicTher = ratedList("强效|抗癫痫"),
+    acuteAdv = ratedList("常见|嗜睡、头晕"),
+    chronicAdv = ratedList("常见|嗜睡;常见|认知下降"),
+    withdraw = emptyList(),
+    overdose = ratedList(">60mg单次|过量风险"),
+    admin = "口服"
+)

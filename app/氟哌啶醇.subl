@@ -1,0 +1,24 @@
+// app/氟哌啶醇.subl —— 氟哌啶醇完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；氟哌啶醇说明书级数据的药理整合见描述段。
+fun haloperidol(): Drug = Drug(
+    name = "氟哌啶醇",
+    category = "处方药",
+    tags = strList("抗精神病药，一代（FGA），丁酰苯类，心境稳定辅助，多巴胺能"),
+    description = "氟哌啶醇是经典高效价一代抗精神病药（D2 拮抗），用于精神分裂症阳性症状、躁狂与谵妄，",
+    effects = ratedList("极强|D2 拮抗"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 18, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.6,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("中效|镇静"),
+    chronicTher = ratedList("中效|稳定情绪"),
+    acuteAdv = ratedList("常见|锥体外系症状、嗜睡"),
+    chronicAdv = ratedList("常见|锥体外系症状;少见|QT间期延长"),
+    withdraw = emptyList(),
+    overdose = ratedList(">10mg单次|过量风险"),
+    admin = "口服"
+)

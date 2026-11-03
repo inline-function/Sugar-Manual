@@ -1,0 +1,24 @@
+// app/麦司卡林.subl —— 麦司卡林完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；麦司卡林说明书级数据的药理整合见描述段。
+fun mescaline(): Drug = Drug(
+    name = "麦司卡林",
+    category = "管制物质（研究用）",
+    tags = strList("迷幻剂，5-HT2A 激动剂，苯乙胺类，天然（仙人掌），血清素能，多巴胺能，精神活性物质"),
+    description = "麦司卡林是天然苯乙胺类迷幻剂（佩奥特仙人掌成分），5-HT2A/5-HT2C 激动剂，用于人类学与成瘾治疗研究。剂量大（数百 mg）；急性效应为迷幻体验伴恶心呕吐与交感兴奋（心率血压升高、瞳孔散大）。无明确身体依赖；过量主要为交感风暴与精神病性反应。",
+    effects = ratedList("强效|5-HT2A 激动"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 6, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.4,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("中效|欣快"),
+    chronicTher = emptyList(),
+    acuteAdv = ratedList("常见|幻觉、恶心;少见|解离、焦虑"),
+    chronicAdv = emptyList(),
+    withdraw = emptyList(),
+    overdose = ratedList(">600mg单次|过量风险"),
+    admin = "口服"
+)

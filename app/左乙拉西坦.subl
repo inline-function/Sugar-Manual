@@ -1,0 +1,24 @@
+// app/左乙拉西坦.subl —— 左乙拉西坦完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；左乙拉西坦说明书级数据的药理整合见描述段。
+fun levetiracetam(): Drug = Drug(
+    name = "左乙拉西坦",
+    category = "处方药",
+    tags = strList("抗癫痫药，拉西坦类，广谱抗痫，认知增强，抗谷氨酸能，促智药"),
+    description = "左乙拉西坦是与 SV2A 囊泡蛋白结合的抗癫痫药（与突触囊泡释放机制偶联），用于部分性/肌阵挛/强直阵挛发作，",
+    effects = ratedList("强效|SV2A 结合（痫样放电抑制）;中效|AMPA 通路增强"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 7, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 1.0,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = emptyList(),
+    chronicTher = ratedList("弱效|认知增强"),
+    acuteAdv = ratedList("常见|嗜睡;少见|易怒"),
+    chronicAdv = ratedList("少见|行为异常（攻击性）"),
+    withdraw = emptyList(),
+    overdose = ratedList(">1000mg单次|过量风险"),
+    admin = "口服"
+)

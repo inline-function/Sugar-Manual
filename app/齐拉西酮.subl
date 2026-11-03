@@ -1,0 +1,24 @@
+// app/齐拉西酮.subl —— 齐拉西酮完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；齐拉西酮说明书级数据的药理整合见描述段。
+fun ziprasidone(): Drug = Drug(
+    name = "齐拉西酮",
+    category = "处方药",
+    tags = strList("抗精神病药，二代（SGA），QT 间期延长风险，血清素能，多巴胺能"),
+    description = "齐拉西酮是二代抗精神病药，D2/5-HT2A 拮抗 + 5-HT1A 部分激动 + NE/5-HT 再摄取轻抑制，用于精神分裂症与双相障碍。体重与代谢影响小（二代中最轻之一），但剂量相关 QT 间期延长最明显——与其他致 QT 药（西酞普兰、氟哌啶醇、美沙酮）及低血钾联用须心电监测。肌注用于急性激越。",
+    effects = ratedList("强效|D2/5-HT2A 拮抗"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 7, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.6,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = emptyList(),
+    chronicTher = ratedList("中效|稳定情绪"),
+    acuteAdv = ratedList("常见|嗜睡;少见|QT间期延长"),
+    chronicAdv = ratedList("少见|QT间期延长"),
+    withdraw = emptyList(),
+    overdose = ratedList(">40mg单次|过量风险"),
+    admin = "口服"
+)

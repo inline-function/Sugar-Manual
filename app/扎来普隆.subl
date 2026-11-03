@@ -1,0 +1,24 @@
+// app/扎来普隆.subl —— 扎来普隆完整资料（t92 回迁：原仅存于宿主 Kotlin，现回归 subl 源）
+// 数值来源：宿主 DshComposeHost docText/结构化表（宿主 docText 药代段）；扎来普隆说明书级数据的药理整合见描述段。
+fun zaleplon(): Drug = Drug(
+    name = "扎来普隆",
+    category = "处方药",
+    tags = strList("Z 类催眠药，非苯二氮卓，吡唑并嘧啶类，管制（精二），GABA能"),
+    description = "扎来普隆是吡唑并嘧啶类超短效催眠药，选择性 GABA-A ω1，20 分钟内起效、半衰期仅 1 小时，用于入睡困难按需服用（夜间醒来后 4 小时内亦可）。次日残余效应极少，但遗忘与复杂睡眠行为（梦游）风险与三唑仑类似。CYP3A4 代谢——抑制剂升高其浓度；肝损慎用。",
+    effects = ratedList("强效|GABA-A ω1 选择性增强"),
+    enzymes = emptyList(),
+    inhibitions = emptyList(),
+    pk = cons(PkProfile(
+        route = "口服", form = "常释", halfLife = 1, tmax = "",
+        clearance = "一级（肝代谢）", curve = "对数", bio = 0.3,
+        metabolites = emptyList(),
+        activeForms = emptyList()
+    ), emptyList()),
+    acuteTher = ratedList("强效|助眠"),
+    chronicTher = emptyList(),
+    acuteAdv = ratedList("常见|嗜睡、头晕"),
+    chronicAdv = emptyList(),
+    withdraw = emptyList(),
+    overdose = ratedList(">10mg单次|过量风险"),
+    admin = "口服"
+)
