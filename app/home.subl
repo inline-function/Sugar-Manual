@@ -11,6 +11,9 @@
 struct Home {
     Box(modifier = fillMaxSize()) {
         TopAppBar(title = "语法糖手册", subtitle = "V1.0") {
+            TextButton(onClick = { unchecked openCustomDrugs() }) {
+                Icon(name = "add", size = 22, tint = "onPrimary")
+            }
             TextButton(onClick = { unchecked openDrugList() }) {
                 Icon(name = "info", size = 22, tint = "onPrimary")
             }
