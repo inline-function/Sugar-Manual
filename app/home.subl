@@ -30,6 +30,7 @@ struct Home {
             badge = "估算",
             modifier = fillWidth().fractionHeight(0.45)
         )
+        Text(text = "UNITTOG_HOST", size = 1)
         Box(modifier = fillWidth().weight(1.0), scrollable = true) {
             // 预警标签流（无标题，位于图表与记录之间）：主观效应词条 —— 联用药品的急性/慢性
             // 不良反应跨药聚合，三级配色（白 → 黄 → 红，越深越重）、急性词条闪烁；
@@ -246,98 +247,17 @@ struct Home {
         }
         BottomSheet(visible = isFormOpen(), onDismiss = { unchecked cancelForm() }) {
             Box(modifier = fillWidth().paddingHV(24, 16), orientation = "vertical", spacing = 12) {
-                Text(text = "＋服用药物", size = 22, bold = true, color = "onSurface")
-                Text(text = "选择药物并填写剂量（mg）；代谢物条目仅资料页，不入选", size = 12, color = "onSurfaceVariant")
-                Text(text = "药物", size = 14, color = "onSurfaceVariant")
+                Text(text = "服用药物", size = 22, bold = true, color = "onSurface")
+                Text(text = "点一下 = 服一片；无固定规格的药点一下输剂量；长按任意药自定义剂量", size = 12, color = "onSurfaceVariant")
+                Text(text = "CART_HOST", size = 1, color = "onSurface")
                 TextField(placeholder = "搜索药名/关键字", label = "搜索药物", text = pickQuery(), keyboard = "default",
                     onChange = { t => unchecked setPickQuery(t) })
-                Box(modifier = fillWidth().height(240), scrollable = true) {
-                    Box(modifier = fillWidth(), orientation = "vertical", spacing = 6) {
-                    // t82 自定义药物选药区（宿主数据槽 customPick*；选中索引 100+k 与内置隔离，搜索同过滤）
-                    Box(modifier = fillWidth(), orientation = "vertical", spacing = 2, visible = hasCustomPick()) {
-                        Text(text = "自定义药物", size = 13, bold = true, color = "primary")
-                    }
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked customPickAt(0) }, visible = customPickVisible(0)) {
-                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
-                            Text(text = customPickName(0), size = 16, bold = true, color = "onSurface")
-                            Text(text = customPickDesc(0), size = 12, color = "onSurfaceVariant")
-                        }
-                        Box(modifier = paddingH(8), visible = isSel(100)) {
-                            Text(text = "✓", size = 16, bold = true, color = "primary")
-                        }
-                    }
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked customPickAt(1) }, visible = customPickVisible(1)) {
-                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
-                            Text(text = customPickName(1), size = 16, bold = true, color = "onSurface")
-                            Text(text = customPickDesc(1), size = 12, color = "onSurfaceVariant")
-                        }
-                        Box(modifier = paddingH(8), visible = isSel(101)) {
-                            Text(text = "✓", size = 16, bold = true, color = "primary")
-                        }
-                    }
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked customPickAt(2) }, visible = customPickVisible(2)) {
-                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
-                            Text(text = customPickName(2), size = 16, bold = true, color = "onSurface")
-                            Text(text = customPickDesc(2), size = 12, color = "onSurfaceVariant")
-                        }
-                        Box(modifier = paddingH(8), visible = isSel(102)) {
-                            Text(text = "✓", size = 16, bold = true, color = "primary")
-                        }
-                    }
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked customPickAt(3) }, visible = customPickVisible(3)) {
-                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
-                            Text(text = customPickName(3), size = 16, bold = true, color = "onSurface")
-                            Text(text = customPickDesc(3), size = 12, color = "onSurfaceVariant")
-                        }
-                        Box(modifier = paddingH(8), visible = isSel(103)) {
-                            Text(text = "✓", size = 16, bold = true, color = "primary")
-                        }
-                    }
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked customPickAt(4) }, visible = customPickVisible(4)) {
-                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
-                            Text(text = customPickName(4), size = 16, bold = true, color = "onSurface")
-                            Text(text = customPickDesc(4), size = 12, color = "onSurfaceVariant")
-                        }
-                        Box(modifier = paddingH(8), visible = isSel(104)) {
-                            Text(text = "✓", size = 16, bold = true, color = "primary")
-                        }
-                    }
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked customPickAt(5) }, visible = customPickVisible(5)) {
-                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
-                            Text(text = customPickName(5), size = 16, bold = true, color = "onSurface")
-                            Text(text = customPickDesc(5), size = 12, color = "onSurfaceVariant")
-                        }
-                        Box(modifier = paddingH(8), visible = isSel(105)) {
-                            Text(text = "✓", size = 16, bold = true, color = "primary")
-                        }
-                    }
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked customPickAt(6) }, visible = customPickVisible(6)) {
-                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
-                            Text(text = customPickName(6), size = 16, bold = true, color = "onSurface")
-                            Text(text = customPickDesc(6), size = 12, color = "onSurfaceVariant")
-                        }
-                        Box(modifier = paddingH(8), visible = isSel(106)) {
-                            Text(text = "✓", size = 16, bold = true, color = "primary")
-                        }
-                    }
-                    Box(modifier = fillWidth().clip(12).paddingHV(12, 10), orientation = "horizontal", contentAlignment = CenterStart(), backgroundColor = "surfaceVariant", onClick = { unchecked customPickAt(7) }, visible = customPickVisible(7)) {
-                        Box(modifier = weight(1.0), orientation = "vertical", spacing = 2) {
-                            Text(text = customPickName(7), size = 16, bold = true, color = "onSurface")
-                            Text(text = customPickDesc(7), size = 12, color = "onSurfaceVariant")
-                        }
-                        Box(modifier = paddingH(8), visible = isSel(107)) {
-                            Text(text = "✓", size = 16, bold = true, color = "primary")
-                        }
-                    }
-                    PickerRowsA()
-                    PickerRowsB()
-                    PickerRowsC()
-                    }
+                Box(modifier = fillWidth().height(260), scrollable = true) {
+                    Text(text = "PICKLIST_HOST", size = 1)
                 }
-                TextField(placeholder = "剂量 (mg)", label = "剂量 (mg)", text = curDose(), errText = doseErr(), keyboard = "number", onChange = { t => unchecked setDose(t) })
                 Box(modifier = fillWidth(), orientation = "horizontal", arrangement = "End", spacing = 8) {
-                    TextButton(label = "取消", onClick = { unchecked cancelForm() }) {}
-                    Button(label = "确认", onClick = { unchecked commitDose() }) {}
+                    TextButton(label = "清空篮", onClick = {unchecked cartClear()}) {}
+                    Button(label = "确认服用", onClick = {unchecked cartConfirm()}) {}
                 }
             }
         }
@@ -646,7 +566,7 @@ struct Home {
                 Text(text = "PACKSHEET_HOST", size = 1, color = "primary")
             }
         }
-        FloatingButton(icon = "add", text = "＋服用药物", color = "primary", onClick = { unchecked toggleForm() })
+        FloatingButton(icon = "add", text = "服用药物", color = "primary", onClick = { unchecked toggleForm() })
     }
 }
 

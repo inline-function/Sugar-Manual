@@ -26,7 +26,17 @@ const EFFECT_NEW = 'functor.sublimation.android.DshComposeHost.Subl_EffectTags(t
 const PACK_OLD = 'androidx.compose.material3.Text(text = "PACKSHEET_HOST", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 1.0.sp)';
 const PACK_NEW = 'functor.sublimation.android.DshComposeHost.Subl_PackSheet(modifier = Modifier)';
 if (!src.includes(EFFECT_OLD) || !src.includes(PACK_OLD)) throw new Error("sync-gen: 标记未找到（请重跑 runcompile 后再同步）");
-src = src.replace(EFFECT_OLD, EFFECT_NEW).replace(PACK_OLD, PACK_NEW);
+src = src.replace(EFFECT_OLD, EFFECT_NEW).replace(PACK_OLD, PACK_NEW)
+
+// 3.7) t90 服药篮/选药列表/图表单位切换三处宿主标记
+const CART_OLD = 'androidx.compose.material3.Text(text = "CART_HOST", modifier = Modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 1.0.sp)';
+const CART_NEW = 'functor.sublimation.android.DshComposeHost.Subl_Cart()';
+const PICK_OLD = 'androidx.compose.material3.Text(text = "PICKLIST_HOST", modifier = Modifier, fontSize = 1.0.sp)';
+const PICK_NEW = 'functor.sublimation.android.DshComposeHost.Subl_PickList()';
+const TOG_OLD = 'androidx.compose.material3.Text(text = "UNITTOG_HOST", modifier = Modifier, fontSize = 1.0.sp)';
+const TOG_NEW = 'functor.sublimation.android.DshComposeHost.Subl_UnitToggle()';
+if (!src.includes(CART_OLD) || !src.includes(PICK_OLD) || !src.includes(TOG_OLD)) throw new Error("sync-gen: t90 标记未找到（请重跑 runcompile 后再同步）");
+src = src.replace(CART_OLD, CART_NEW).replace(PICK_OLD, PICK_NEW).replace(TOG_OLD, TOG_NEW);
 
 // 2) 下标注入（strArg("profName") → strArg("profName", 0..)，按出现次序）
 for (const name of ["profName", "sexName", "effName"]) {

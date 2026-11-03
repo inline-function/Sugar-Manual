@@ -283,7 +283,7 @@ object DshComposeHost {
     private val drugListOpen = mutableStateOf(false)
     private val docNameState = mutableStateOf("")
     // 服药记录列表（最近 10 条：name_k/dose_k/time_k/bar_k 槽位 + hasRec(k) 显隐）
-    private data class HostRec(val name: String, val amount: String, val timeMs: Long)
+    private data class HostRec(val name: String, val amount: String, val timeMs: Long, val unit: String = "mg")
     private val recListState = mutableStateOf(ArrayList<HostRec>())
     // t82：长按记录卡待删除槽位（-1 = 无待确认；askDeleteRec 置位、confirm/cancel 清零）
     private val pendingDelete = mutableStateOf(-1)
@@ -621,7 +621,7 @@ object DshComposeHost {
     private fun odRatio(drug: String): Double {
         val typ = typDose[drug] ?: customByName(drug)?.typ?.coerceAtLeast(0.01) ?: return 0.0
         val dose = recListState.value.filter { it.name == drug }
-            .sumOf { it.amount.trim().toDoubleOrNull() ?: 0.0 }
+            .sumOf { (it.amount.trim().toDoubleOrNull() ?: 0.0) * unitFactor(it.unit) }
         return if (dose <= 0.0) 0.0 else dose / typ
     }
     /** 过量权重（0-3：轻/中/重度急性过量）。t84 酶抑制致浓度↑ → 表观剂量 = 剂量 × enzymeFold。 */
@@ -939,20 +939,13 @@ object DshComposeHost {
             // t82：包名词条（血清素综合征/阿片类中毒/抗胆碱能综合征）交包通路统一管理 ——
             // 包权重含逆转剂减权与剂量过量行，词条通路不经减权会与包结果冲突、误导「逆转剂无效」。
             if (name == "血清素综合征" || name == "阿片类中毒" || name == "抗胆碱能综合征") return@forEach
-            // t79 rev2：频率基准级 + 该药剂量加成（t82 与包剂量行同口径 odWeight）
-            val base = list.maxOf { e -> effBase(e.second.level) + odWeight(names.elementAt(e.first)) }
+            // t85 正性主观效应（治疗效应/欣快）：正性按正性条目单独计级、只出一条（旧实现正性被加两次）
+            val posList = list.filter { it.second.pos }
+            val base = if (posList.isNotEmpty()) posList.maxOf { e -> effBase(e.second.level) + odWeight(names.elementAt(e.first)) }
+                else list.maxOf { e -> effBase(e.second.level) + odWeight(names.elementAt(e.first)) }
             val drugs = list.map { it.first }.distinct().size
             val level = if (base + drugs >= 4) 3 else base + drugs - 1
-            tags.add(EffectTag(name, level, list.any { it.second.acute }, false, list.any { it.second.pos }))
-        }
-        // t85 正性主观效应（治疗效应/欣快）：同名单独聚合为绿色正性标签，与负性同名时不覆盖
-        val posTags = ArrayList<EffectTag>()
-        byName.forEach { (name, list) ->
-            if (list.none { it.second.pos }) return@forEach
-            val base = list.filter { it.second.pos }.maxOf { e -> effBase(e.second.level) + odWeight(names.elementAt(e.first)) }
-            val drugs = list.map { it.first }.distinct().size
-            val level = if (base + drugs >= 4) 3 else base + drugs - 1
-            posTags.add(EffectTag(name, level, list.any { it.second.acute }, false, true))
+            tags.add(EffectTag(name, level, list.any { it.second.acute }, false, posList.isNotEmpty()))
         }
         // t78 物质/药对相互作用镜像（与 warn.subl substanceInteractions 同表；◆ 为 3 级禁止配伍包）
         val si = ArrayList<EffectTag>()
@@ -1037,7 +1030,6 @@ object DshComposeHost {
             packBoosts.filter { it.first == pk.name }.forEach { w += it.second }
             if (w >= pk.threshold) tags.add(EffectTag(pk.name + " · " + packTierOf(w), w, false, true))
         }
-        tags.addAll(posTags)
         val kept = tags.filter { tg ->
             if (tg.pack) tg.name in displayed || customPacksState.value.any { p -> tg.name.startsWith(p.name) }
             else !hidden.any { kwHit(tg.name, it) }
@@ -1174,37 +1166,48 @@ object DshComposeHost {
             else -> 0xFF00695C.toInt()
         }
     /** 读 ledger 重算全部序列（空台账→演示序列；与 chartSeriesList 同语义）。 */
+    /** 台账条目（图表用：含单位）。 */
+    private data class ChartRec(val name: String, val amt: Double, val unit: String, val tMs: Long)
+    // t90 图表单位面板：µg / mg / g；药物按其记录单位只绘在对应面板上
+    private val chartUnitState = mutableStateOf("mg")
     private fun recomputeChart() {
         val ctx = appCtx ?: return
         val now = System.currentTimeMillis()
-        val recs = ArrayList<Triple<String, Double, Long>>()
+        val recs = ArrayList<ChartRec>()
         try {
             val arr = org.json.JSONArray(ctx.getSharedPreferences("dsh-storage", 0).getString("ledger", "[]") ?: "[]")
             for (i in 0 until arr.length()) {
                 val o = arr.optJSONObject(i) ?: continue
                 val amt = ((o.opt("amount") as? String) ?: o.opt("amount")?.toString() ?: "0").toDoubleOrNull() ?: 0.0
-                recs.add(Triple(o.opt("drug") as? String ?: "氟伏沙明", amt,
+                recs.add(ChartRec(o.opt("drug") as? String ?: "氟伏沙明", amt,
+                    o.opt("unit") as? String ?: "mg",
                     (o.opt("time") as? String)?.toLongOrNull() ?: 0L))
             }
         } catch (e: Throwable) { Log.w(tag, "recomputeChart: " + e.message) }
-        val names = recs.map { it.first }.toSet()
         val hiName = chartHiState.value          // t80 高亮药
+        val panel = chartUnitState.value         // t90 单位面板：药按记录单位只绘在对应图上
         val series = ArrayList<SublSeries>()
         if (recs.isEmpty()) {
-            series.add(SublSeries("氟伏沙明", Color(0xFFFFC107),
-                pkSeries(listOf(100.0 to -24L, 100.0 to 0L), 15, 0.5), hiName == "氟伏沙明"))  // 演示：24h 前一剂 + 当前一剂
-        } else {
-            // recentDrugs：台账内首次出现序
-            val seen = LinkedHashSet<String>()
-            for (r in recs) seen.add(r.first)
-            for (name in seen) {
-                val (th, f) = drugParams(name)
-                val doses = recs.filter { it.first == name }.map { it.second to (it.third - now) / 3600000L }
-                series.add(SublSeries(name, Color(drugColorOf(name)), pkSeries(doses, th, f), hiName == name))
-                // t88 代谢物曲线：Bateman 动力学（由母药消除生成，先升后降）；高亮随母药
-                metabsOf(name, th.toDouble(), drugColorOf(name)).forEach { m ->
-                    series.add(SublSeries(m.name, Color(m.color), metabSeries(doses, th.toDouble(), m), hiName == name))
-                }
+            chartSeriesState.value = if (panel == "mg") listOf(
+                SublSeries("氟西汀", Color(0xFFFFC107),
+                    pkSeries(listOf(20.0 to -24L, 20.0 to 0L), 96, 0.6), false)
+            ) else emptyList()                    // 演示：空台账时毫克面板给一条示意线
+            chartTotalState.value = if (chartSeriesState.value.isEmpty()) emptyList()
+                else List(chartSeriesState.value[0].points.size) { i -> chartSeriesState.value.sumOf { it.points[i].toDouble() }.toFloat() }
+            chartLabelsState.value = (-12..36 step 12).map { "${it}h" }
+            return
+        }
+        // recentPairs：台账内 (药, 单位) 首次出现序
+        val seen = LinkedHashSet<Pair<String, String>>()
+        for (r in recs) seen.add(r.name to r.unit)
+        for ((name, unit) in seen) {
+            if (unit != panel) continue           // 只绘制当前单位面板
+            val (th, f) = drugParams(name)
+            val doses = recs.filter { it.name == name && it.unit == unit }.map { it.amt to (it.tMs - now) / 3600000L }
+            series.add(SublSeries(if (unit == "mg") name else name + "·" + unit, Color(drugColorOf(name)), pkSeries(doses, th, f), hiName == name))
+            // t88 代谢物曲线：Bateman 动力学（由母药消除生成，先升后降）；高亮随母药
+            metabsOf(name, th.toDouble(), drugColorOf(name)).forEach { m ->
+                series.add(SublSeries(m.name, Color(m.color), metabSeries(doses, th.toDouble(), m), hiName == name))
             }
         }
         chartSeriesState.value = series
@@ -1380,6 +1383,59 @@ object DshComposeHost {
                 doseErrState.value = ""
             }
             "commitDose" -> commitDose()
+            // ---------- t90 服药篮 ----------
+            "cartTap" -> {
+                val n = (args.getOrNull(0) as? String) ?: return
+                val sp = specOf(n)
+                if (sp != null) {
+                    val ex = cartState.indexOfFirst { it.name == n && it.fromSpec }
+                    if (ex >= 0) { val e = cartState[ex]; cartState[ex] = e.copy(count = e.count + 1) }
+                    else cartState.add(0, CartEntry(n, 1, sp, true, "mg", sp))
+                    toast("已加入 " + n + " ×1 片")
+                } else { customForState.value = n; customTextState.value = ""; customUnitState.value = 1 }
+            }
+            "cartLong" -> {
+                val n = (args.getOrNull(0) as? String) ?: return
+                val sp = specOf(n)
+                customForState.value = n
+                customTextState.value = if (sp != null) fmtAmt(sp) else ""
+                customUnitState.value = 1
+            }
+            "cartUnit" -> { val i = (args.getOrNull(0) as? Int) ?: 1; if (i in 0..2) customUnitState.value = i }
+            "cartCustomOk" -> {
+                val amt = customTextState.value.trim().toDoubleOrNull()
+                val n = customForState.value
+                when {
+                    n.isEmpty() -> return
+                    amt == null || amt <= 0.0 -> toast("剂量必须大于 0")
+                    amt > 100000.0 -> toast("剂量数值过大")
+                    else -> {
+                        val u = unitSyms[customUnitState.value]
+                        cartState.add(0, CartEntry(n, 1, amt * unitFactor(u), false, u, amt))
+                        customForState.value = ""; customTextState.value = ""
+                    }
+                }
+            }
+            "cartCustomCancel" -> { customForState.value = ""; customTextState.value = "" }
+            "cartPlus" -> {
+                val i = (args.getOrNull(0) as? Int) ?: return
+                if (i in cartState.indices) { val e = cartState[i]; if (e.fromSpec) cartState[i] = e.copy(count = e.count + 1) }
+            }
+            "cartMinus" -> {
+                val i = (args.getOrNull(0) as? Int) ?: return
+                if (i in cartState.indices) {
+                    val e = cartState[i]
+                    if (e.fromSpec && e.count > 1) cartState[i] = e.copy(count = e.count - 1) else cartState.removeAt(i)
+                }
+            }
+            "cartRemove" -> { val i = (args.getOrNull(0) as? Int) ?: return; if (i in cartState.indices) cartState.removeAt(i) }
+            "cartClear" -> cartState.clear()
+            "cartConfirm" -> commitCart()
+            // t90 图表单位面板切换
+            "chartUnit" -> {
+                val u = (args.getOrNull(0) as? String) ?: "mg"
+                if (u in unitSyms) { chartUnitState.value = u; recomputeChart() }
+            }
             "openSettingsDialog" -> settingsOpen.value = true
             "closeSettings" -> settingsOpen.value = false
             "openDrugList" -> drugListOpen.value = true
@@ -1602,7 +1658,8 @@ object DshComposeHost {
             val o = arr.optJSONObject(i) ?: continue
             out.add(HostRec(o.opt("drug") as? String ?: "",
                 ((o.opt("amount") as? String) ?: o.opt("amount")?.toString() ?: "0"),
-                (o.opt("time") as? String)?.toLongOrNull() ?: 0L))
+                (o.opt("time") as? String)?.toLongOrNull() ?: 0L,
+                o.opt("unit") as? String ?: "mg"))
         }
         return out
     }
@@ -1718,7 +1775,7 @@ object DshComposeHost {
     /** t82 服药记录卡：sync-gen 把 home 的 10 张 hasRec(k) 卡整卡替换为本组合。
      *  药名左色块条 = 该药曲线色（drugColorOf；五朵金花金色、BZD 蓝、阿片棕橙……）；
      *  点卡 = 高亮该药曲线（toggleChartHi 不变），长按 = 弹删除确认框（askDeleteRec）。 */
-    @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+    @kotlin.OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
     @Composable
     fun Subl_RecCard(k: Int) {
         val recs = recListState.value
@@ -1746,7 +1803,7 @@ object DshComposeHost {
                         .background(Color(drugColorOf(r.name))))
                     Spacer(modifier = Modifier.width(8.dp))
                     androidx.compose.material3.Text(text = r.name + enzSuffix(r.name), modifier = Modifier.weight(1.0f), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.0.sp, fontWeight = FontWeight.Bold)
-                    androidx.compose.material3.Text(text = r.amount + " mg", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = FontWeight.Bold)
+                    androidx.compose.material3.Text(text = r.amount + " " + r.unit, modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 16.0.sp, fontWeight = FontWeight.Bold)
                     if (hi) {
                         androidx.compose.foundation.layout.Column(modifier = Modifier.padding(horizontal = 8.dp)) {
                             androidx.compose.material3.Text(text = "● 高亮", modifier = Modifier, color = MaterialTheme.colorScheme.primary, fontSize = 11.0.sp, fontWeight = FontWeight.Bold)
@@ -2515,5 +2572,182 @@ object DshComposeHost {
             c = cur.next
         }
         return sb.toString().trim()
+    }
+
+    // ---------- t90 服药篮：点一下 = 服一片（内置规格）；无规格/长按 → 自定义剂量 ----------
+    private data class CartEntry(val name: String, val count: Int, val perMg: Double, val fromSpec: Boolean, val dispUnit: String, val dispAmt: Double)
+    private val cartState = androidx.compose.runtime.mutableStateListOf<CartEntry>()
+    /** 单片规格（mg/片）：国内常见常释固体制剂；未列者（液态/注射/贴剂等剂型不固定）无规格 → 自定义剂量。 */
+    private val builtinSpecs = mapOf(
+        "阿普唑仑" to 0.4, "地西泮" to 5.0, "艾司唑仑" to 1.0, "氯硝西泮" to 2.0, "劳拉西泮" to 0.5,
+        "氟伏沙明" to 50.0, "帕罗西汀" to 20.0, "氟西汀" to 20.0, "舍曲林" to 50.0, "西酞普兰" to 20.0, "艾司西酞普兰" to 10.0,
+        "文拉法辛" to 75.0, "度洛西汀" to 30.0, "阿米替林" to 25.0, "氯米帕明" to 25.0, "米氮平" to 30.0, "曲唑酮" to 50.0,
+        "安非他酮" to 150.0, "哌甲酯" to 10.0, "碳酸锂" to 300.0, "丙戊酸" to 200.0, "卡马西平" to 200.0, "拉莫三嗪" to 50.0,
+        "奥氮平" to 5.0, "喹硫平" to 25.0, "曲马多" to 50.0, "羟考酮" to 5.0, "可待因" to 15.0, "普瑞巴林" to 75.0,
+        "金刚烷胺" to 100.0, "美金刚" to 5.0, "苯海索" to 2.0, "多奈哌齐" to 5.0, "卡巴拉汀" to 1.5, "加兰他敏" to 5.0, "丁螺环酮" to 5.0
+    )
+    private val unitSyms = listOf("µg", "mg", "g")
+    private val unitNames = listOf("微克", "毫克", "克")
+    private fun unitFactor(u: String): Double = when (u) { "µg" -> 0.001; "g" -> 1000.0; else -> 1.0 }
+    private fun specOf(n: String): Double? = builtinSpecs[n]
+    private fun fmtAmt(v: Double): String {
+        val i = v.toLong()
+        if (Math.abs(v - i) < 1e-9) return i.toString()
+        var s = v.toString()
+        if (s.contains("E") || s.contains("e")) return s
+        return s.trimEnd('0').trimEnd('.')
+    }
+    private fun cartCountOf(n: String): Int = cartState.filter { it.name == n }.sumOf { it.count }
+    private fun cartText(i: Int): String {
+        val e = cartState.getOrNull(i) ?: return ""
+        return if (e.fromSpec) e.count.toString() + "t*" + fmtAmt(e.perMg) + "mg:" + e.name
+        else fmtAmt(e.dispAmt) + e.dispUnit + ":" + e.name
+    }
+    private val customForState = mutableStateOf("")
+    private val customTextState = mutableStateOf("")
+    private val customUnitState = mutableStateOf(1)
+    /** 一次性把整篮写入台账（按各自原始单位存；效应引擎以 mg 换算计过量）。 */
+    private fun commitCart() {
+        if (cartState.isEmpty()) { toast("服药篮为空：先点选药物"); return }
+        val ctx = appCtx ?: return
+        val time = System.currentTimeMillis().toString()
+        try {
+            val arr = org.json.JSONArray(ctx.getSharedPreferences("dsh-storage", 0).getString("ledger", "[]") ?: "[]")
+            cartState.forEach { e ->
+                val o = org.json.JSONObject()
+                o.put("drug", e.name)
+                o.put("time", time)
+                if (e.fromSpec) { o.put("amount", fmtAmt(e.count * e.perMg)); o.put("unit", "mg") }
+                else { o.put("amount", fmtAmt(e.dispAmt)); o.put("unit", e.dispUnit) }
+                arr.put(o)
+            }
+            putLedger(arr.toString())
+        } catch (x: Throwable) { Log.w(tag, "commitCart: " + x.message) }
+        val n = cartState.size
+        cartState.clear()
+        refreshRecList()
+        recomputeChart()
+        toast("已记录 " + n + " 项服药")
+        formOpen.value = false
+    }
+    /** t90 服药篮（抽屉顶部）：n t*规格mg:药名 / 剂量单位:药名；−/+ 调片数，× 移除。 */
+    @androidx.compose.runtime.Composable
+    fun Subl_Cart() {
+        androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth()) {
+            if (cartState.isEmpty()) {
+                Text(text = "服药篮为空 — 点下面的药加入（有规格的药点一下 = 一片）",
+                    fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                return@Column
+            }
+            cartState.forEachIndexed { i, e ->
+                androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = cartText(i), modifier = Modifier.weight(1.0f),
+                        color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
+                    if (e.fromSpec) {
+                        Text(text = "−", modifier = Modifier.clickable { act("cartMinus", listOf(i)) }.padding(horizontal = 10.dp, vertical = 4.dp), color = MaterialTheme.colorScheme.primary, fontSize = 16.sp)
+                        Text(text = e.count.toString() + "t", color = MaterialTheme.colorScheme.onSurface)
+                        Text(text = "＋", modifier = Modifier.clickable { act("cartPlus", listOf(i)) }.padding(horizontal = 10.dp, vertical = 4.dp), color = MaterialTheme.colorScheme.primary, fontSize = 16.sp)
+                    }
+                    Text(text = "×", modifier = Modifier.clickable { act("cartRemove", listOf(i)) }.padding(horizontal = 10.dp, vertical = 4.dp), color = MaterialTheme.colorScheme.error, fontSize = 16.sp)
+                }
+            }
+        }
+    }
+    /** t90 选药行：点 = 一片（有规格）/ 自定义剂量（无规格）；长按 = 强制自定义。 */
+    @androidx.compose.runtime.Composable
+    @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+    private fun PickRow(name: String, desc: String, count: Int, onClick: () -> Unit, onLong: () -> Unit) {
+        androidx.compose.foundation.layout.Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant).combinedClickable(onClick = onClick, onLongClick = onLong)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1.0f)) {
+                Text(text = name, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
+                Text(text = desc, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (count > 0) Text(text = "×" + count, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+            Text(text = "ⓘ", modifier = Modifier.clickable { act("openDocFor", listOf(name)) }.padding(horizontal = 8.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+    /** t90 选药列表（搜索过滤；自定义药 + 内置药）。 */
+    @androidx.compose.runtime.Composable
+    fun Subl_PickList() {
+        val q = drugQueryState.value.trim()
+        // 外层抽屉已给 height(260)+scrollable；此处不能再套 verticalScroll（无穷高度约束崩溃）
+        androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth()) {
+            if (q.isNotEmpty() && customDrugsState.value.none { it.name.contains(q) } && drugNames.none { it.contains(q) }) {
+                Text(text = "无匹配药物", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(12.dp))
+            }
+            customDrugsState.value.filter { q.isEmpty() || it.name.contains(q) }.forEach { cd ->
+                PickRow(cd.name, "自定义 · T½ " + fmtAmt(cd.tHalf) + "h · 按剂量", cartCountOf(cd.name),
+                    { act("cartTap", listOf(cd.name)) }, { act("cartLong", listOf(cd.name)) })
+            }
+            drugNames.filter { q.isEmpty() || it.contains(q) }.forEach { n ->
+                val (th, f) = drugParams(n)
+                val sp = specOf(n)
+                val desc = "T½ " + th + "h · F=" + (f * 100).toInt() + "% · " + (if (sp != null) fmtAmt(sp) + "mg/片" else "按剂量")
+                PickRow(n, desc, cartCountOf(n), { act("cartTap", listOf(n)) }, { act("cartLong", listOf(n)) })
+            }
+            if (customForState.value.isNotEmpty()) {
+                val u = customUnitState.value
+                androidx.compose.material3.AlertDialog(
+                    onDismissRequest = { act("cartCustomCancel") },
+                    confirmButton = { androidx.compose.material3.TextButton(onClick = { act("cartCustomOk") }) { Text("加入") } },
+                    dismissButton = { androidx.compose.material3.TextButton(onClick = { act("cartCustomCancel") }) { Text("取消") } },
+                    title = { Text("服用 " + customForState.value + "（自定义剂量）") },
+                    text = {
+                        androidx.compose.foundation.layout.Column {
+                            androidx.compose.material3.TextField(
+                                value = customTextState.value,
+                                onValueChange = { customTextState.value = it.filter { ch -> ch.isDigit() || ch == '.' } },
+                                label = { Text("剂量") },
+                                singleLine = true,
+                                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal
+                                )
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                            androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                unitNames.forEachIndexed { i, nm ->
+                                    val on = i == u
+                                    Box(modifier = Modifier.clip(RoundedCornerShape(10.dp))
+                                        .background(if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
+                                        .clickable { act("cartUnit", listOf(i)) }
+                                        .padding(horizontal = 16.dp, vertical = 8.dp)) {
+                                        Text(text = nm, fontSize = 14.sp, fontWeight = if (on) FontWeight.Bold else FontWeight.Normal,
+                                            color = if (on) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                )
+            }
+        }
+    }
+    /** t90 图表单位切换（微克/毫克/克）：药按其记录单位只绘在对应单位图上。 */
+    @androidx.compose.runtime.Composable
+    fun Subl_UnitToggle() {
+        val cur = chartUnitState.value
+        val nSeries = chartSeriesState.value.size
+        androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween) {
+            unitNames.forEachIndexed { i, nm ->
+                val on = cur == unitSyms[i]
+                Box(modifier = Modifier.clip(RoundedCornerShape(10.dp))
+                    .background(if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
+                    .clickable { act("chartUnit", listOf(unitSyms[i])) }
+                    .padding(horizontal = 20.dp, vertical = 7.dp)) {
+                    Text(text = nm, fontSize = 14.sp, fontWeight = if (on) FontWeight.Bold else FontWeight.Normal,
+                        color = if (on) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            Text(text = nSeries.toString() + " 条曲线", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }
