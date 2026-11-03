@@ -1665,7 +1665,11 @@ object DshComposeHost {
                 calMonthState.value = c0.get(java.util.Calendar.MONTH)
                 calOpenState.value = true
             }
-            "closeCalendar" -> { calOpenState.value = false; calStatsOpen.value = false }
+            "closeCalendar" -> { calOpenState.value = false; calStatsOpen.value = false; calSelDay.value = -1 }
+            "calSelDay" -> {
+                val d = (args.getOrNull(0) as? Int) ?: -1
+                calSelDay.value = if (calSelDay.value == d && d > 0) -1 else d   // 同日再点 = 取消
+            }
             "calPrev" -> {
                 var m = calMonthState.value - 1; var y = calYearState.value
                 if (m < 0) { m = 11; y-- }
@@ -2060,20 +2064,33 @@ object DshComposeHost {
     private val calYearState = mutableStateOf(2026)
     private val calMonthState = mutableStateOf(0)   // 0-based
     private val calStatsOpen = mutableStateOf(false)
+    private val calSelDay = mutableStateOf(-1)   // t92 选中的日期（-1 = 未选 → 下半显示整月）
     fun isCalOpen(): Boolean = calOpenState.value
     fun calTitle(): String = "%d年%d月".format(calYearState.value, calMonthState.value + 1)
-    data class CalCell(val day: Int, val inMonth: Boolean, val hasMeds: Boolean, val isToday: Boolean)
+    /** t92 颜色混合：当日各药曲线色的算术平均（RGB 通道均值，保留不透明度）。 */
+    private fun blendColors(cs: List<Int>): Int {
+        if (cs.isEmpty()) return 0xFF6750A4.toInt()
+        var a = 0; var r = 0; var g = 0; var b = 0
+        cs.forEach { c -> a += (c shr 24) and 0xFF; r += (c shr 16) and 0xFF; g += (c shr 8) and 0xFF; b += c and 0xFF }
+        val n = cs.size
+        return (((a / n) shl 24) or ((r / n) shl 16) or ((g / n) shl 8) or (b / n))
+    }
+    data class CalCell(val day: Int, val inMonth: Boolean, val hasMeds: Boolean, val isToday: Boolean, val medColor: Int = 0)
     fun calCells(): List<CalCell> {
         val y = calYearState.value; val m = calMonthState.value
         val cal = java.util.Calendar.getInstance().apply { set(y, m, 1, 0, 0, 0); set(java.util.Calendar.MILLISECOND, 0) }
         val firstDow = (cal.get(java.util.Calendar.DAY_OF_WEEK) + 5) % 7   // 周一 = 0 … 周日 = 6
         val dim = cal.getActualMaximum(java.util.Calendar.DAY_OF_MONTH)
-        // 有药日集合（当前显示月份）
+        // 有药日集合 + 当日各药曲线色（用于混合色渲染）
         val medDays = HashSet<Int>()
+        val medDayColors = HashMap<Int, HashSet<Int>>()
         recListState.value.forEach { r ->
             val c = java.util.Calendar.getInstance().apply { timeInMillis = r.timeMs }
-            if (c.get(java.util.Calendar.YEAR) == y && c.get(java.util.Calendar.MONTH) == m)
-                medDays.add(c.get(java.util.Calendar.DAY_OF_MONTH))
+            if (c.get(java.util.Calendar.YEAR) == y && c.get(java.util.Calendar.MONTH) == m) {
+                val d = c.get(java.util.Calendar.DAY_OF_MONTH)
+                medDays.add(d)
+                medDayColors.getOrPut(d) { HashSet() }.add(drugColorOf(r.name))
+            }
         }
         // 今日
         val today = java.util.Calendar.getInstance()
@@ -2086,10 +2103,16 @@ object DshComposeHost {
             val day = i - firstDow + 1
             val inMonth = day in 1..dim
             val prevDay = prevDim - firstDow + 1 + i
-            out.add(CalCell(if (inMonth) day else prevDay, inMonth,
-                inMonth && medDays.contains(day), inMonth && y == ty && m == tm && day == td))
+            val hm = inMonth && medDays.contains(day)
+            out.add(CalCell(if (inMonth) day else prevDay, inMonth, hm,
+                inMonth && y == ty && m == tm && day == td,
+                if (hm) blendColors(medDayColors[day]?.toList() ?: emptyList()) else 0))
         }
         return out
+    }
+    private fun calDayRecs(day: Int): List<HostRec> = calMonthRecs().filter { r ->
+        val c = java.util.Calendar.getInstance().apply { timeInMillis = r.timeMs }
+        c.get(java.util.Calendar.DAY_OF_MONTH) == day
     }
     private fun calMonthRecs(): List<HostRec> {
         val y = calYearState.value; val m = calMonthState.value
@@ -2126,27 +2149,28 @@ object DshComposeHost {
         val cfg = androidx.compose.ui.platform.LocalConfiguration.current
         val recH = (cfg.screenHeightDp - 400).coerceAtLeast(130).dp
         androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth()) {
-            // 顶栏：‹ 月份 › ＋ 圆角按钮「已服用药物统计」
-            androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth()
-                .padding(start = 12.dp, top = 10.dp, end = 12.dp, bottom = 6.dp),
-                verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.width(44.dp).height(44.dp).clip(RoundedCornerShape(12.dp))
-                    .clickable { act("calPrev") }) {
-                    Text(text = "‹", modifier = Modifier.wrapContentSize(Alignment.Center), fontSize = 26.sp,
-                        fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            // 顶栏：切换组（‹ 年月 ›）整体居中，统计按钮独立居右；Box contentAlignment 保证箭头与水波纹居中
+            Box(modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 2.dp)) {
+                Row(modifier = Modifier.align(Alignment.Center), verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.width(44.dp).height(44.dp).clip(RoundedCornerShape(12.dp))
+                        .clickable { act("calPrev") }, contentAlignment = Alignment.Center) {
+                        Text(text = "‹", fontSize = 26.sp, fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary)
+                    }
+                    Text(text = calTitle(), modifier = Modifier.padding(horizontal = 8.dp),
+                        fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                    Box(modifier = Modifier.width(44.dp).height(44.dp).clip(RoundedCornerShape(12.dp))
+                        .clickable { act("calNext") }, contentAlignment = Alignment.Center) {
+                        Text(text = "›", fontSize = 26.sp, fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary)
+                    }
                 }
-                Text(text = calTitle(), modifier = Modifier.weight(1f).wrapContentSize(Alignment.Center),
-                    fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                Box(modifier = Modifier.width(44.dp).height(44.dp).clip(RoundedCornerShape(12.dp))
-                    .clickable { act("calNext") }) {
-                    Text(text = "›", modifier = Modifier.wrapContentSize(Alignment.Center), fontSize = 26.sp,
-                        fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                }
-                Spacer(modifier = Modifier.width(6.dp))
-                Box(modifier = Modifier.clip(RoundedCornerShape(20.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer).clickable { act("calOpenStats") }) {
+                Box(modifier = Modifier.align(Alignment.CenterEnd).padding(end = 12.dp)
+                    .clip(RoundedCornerShape(20.dp)).background(MaterialTheme.colorScheme.primaryContainer)
+                    .clickable { act("calOpenStats") }) {
                     Text(text = "已服用药物统计", modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                        fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        fontSize = 13.sp, fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer)
                 }
             }
             // 星期表头（周一开头）
@@ -2162,25 +2186,37 @@ object DshComposeHost {
                 calCells().chunked(7).forEach { week ->
                     androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth().height(42.dp)) {
                         week.forEach { cell ->
+                            val sel = cell.inMonth && cell.day == calSelDay.value
                             val fg = when {
-                                cell.hasMeds -> MaterialTheme.colorScheme.primary
+                                cell.hasMeds -> Color(cell.medColor)
                                 cell.inMonth -> MaterialTheme.colorScheme.onSurface
                                 else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                             }
-                            Text(text = if (cell.inMonth) cell.day.toString() else "",
-                                modifier = Modifier.weight(1f).fillMaxHeight().wrapContentSize(Alignment.Center)
-                                    .then(if (cell.isToday) Modifier.border(1.dp, MaterialTheme.colorScheme.primary,
-                                        RoundedCornerShape(10.dp)) else Modifier),
-                                fontSize = 15.sp,
-                                fontWeight = if (cell.hasMeds) FontWeight.Bold else FontWeight.Normal,
-                                color = fg)
+                            Box(modifier = Modifier.weight(1f).fillMaxHeight()
+                                .then(if (cell.inMonth) Modifier.clickable { act("calSelDay", listOf(cell.day)) } else Modifier)) {
+                                Box(modifier = Modifier.align(Alignment.Center).size(34.dp)
+                                    .then(if (sel) Modifier.clip(androidx.compose.foundation.shape.CircleShape)
+                                        .background(MaterialTheme.colorScheme.primary)
+                                        else if (cell.isToday) Modifier.clip(androidx.compose.foundation.shape.CircleShape)
+                                        .border(1.dp, MaterialTheme.colorScheme.primary, androidx.compose.foundation.shape.CircleShape)
+                                        else Modifier),
+                                    contentAlignment = Alignment.Center) {
+                                    Text(text = if (cell.inMonth) cell.day.toString() else "",
+                                        fontSize = 15.sp,
+                                        fontWeight = if (cell.hasMeds) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (sel) MaterialTheme.colorScheme.onPrimary else fg)
+                                }
+                            }
                         }
                     }
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
-            val recs = calMonthRecs()
-            Text(text = "本月记录（%d 条）".format(recs.size),
+            val selDay = calSelDay.value
+            val recs = if (selDay > 0) calDayRecs(selDay) else calMonthRecs()
+            val label = if (selDay > 0) "%d月%d日（%d 条 · 再点该日取消选择）".format(calMonthState.value + 1, selDay, recs.size)
+                else "本月记录（%d 条 · 点日子看当日）".format(recs.size)
+            Text(text = label,
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
                 fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
             // 下半部分：本月记录卡（同主页圆角卡样式，可滚动）
