@@ -795,6 +795,28 @@ object DshComposeHost {
         val w = rows.sumOf { it.weight }
         return PackInfo("锂中毒", true, w, packTierOf(w), "", lithiumPackDesc, rows.sortedByDescending { it.weight })
     }
+    // t91 高血压危象包：去甲肾上腺素能总权重 ≥7 驱动（MAO 抑制 + 拟交感/SNRI 协同）
+    private val hyperPackDesc = "高血压危象（hypertensive crisis / cheese effect）：单胺氧化酶被抑制时，" +
+        "突触单胺（5-HT、去甲肾上腺素、多巴胺）蓄积；去甲肾上腺素亢进致血管收缩、心率增快，" +
+        "表现为剧烈头痛、大汗、心悸心动过速与血压急升，可进展为颅内出血、癫痫或心肌梗死。" +
+        "诱因为不可逆 MAOI（苯乙肼）+ 富酪胺食物（奶酪、腌肉、葡萄酒）或拟交感药（哌甲酯）、间接拟交感胺。" +
+        "处理：停诱因、降压（硝普钠/酚妥拉明）、禁用 β 受体阻滞剂单用（反射性 α 兴奋）。" +
+        "RIMA（吗氯贝胺）与低剂量 MAO-B 选择性抑制剂（司来吉兰）风险显著较低。"
+    private fun hypertCrisisPack(names: Set<String>): PackInfo {
+        val ne = neuroTotals(names)["去甲肾上腺素能"] ?: 0
+        val base = if (ne >= 7) 1 + (ne - 7) / 2 else 0
+        val rows = ArrayList<PackMember>()
+        if (base > 0) {
+            rows.add(PackMember("血压升高", base + 1, "去甲肾上腺素亢进"))
+            rows.add(PackMember("头痛", base, "血压急升"))
+            rows.add(PackMember("心动过速", base, "交感神经亢进"))
+            rows.add(PackMember("心悸", (base - 1).coerceAtLeast(1), "交感神经亢进"))
+            if (base >= 2) rows.add(PackMember("大汗", base - 1, "交感神经亢进"))
+            if (profCondsState.value.any { it.contains("高血压") }) rows.add(PackMember("高血压病史 +1", 1, "既往高血压基线"))
+        }
+        val w = rows.sumOf { it.weight }
+        return PackInfo("高血压危象", true, w, packTierOf(w), "", hyperPackDesc, rows.sortedByDescending { it.weight })
+    }
     private val sharedToxOwners = mapOf(
         "呼吸抑制" to listOf("阿片类中毒", "苯二氮卓中毒", "酒精中毒"),
         "意识抑制" to listOf("阿片类中毒", "苯二氮卓中毒"),
@@ -803,6 +825,7 @@ object DshComposeHost {
     private fun toxPackSet(name: String, names: Set<String>): List<String> = when (name) {
         "阿片类中毒" -> names.filter { isOpioid(it) }.sorted()
         "苯二氮卓中毒" -> names.filter { isBzd(it) && it != "氟马西尼" }.sorted()
+        "高血压危象" -> names.filter { it in drugMaoi || (builtinNeuros[it]?.any { nt -> nt.name == "去甲肾上腺素能" } == true) }.sorted()
         "酒精中毒" -> names.filter { it == "乙醇" || it == "酒精" }.sorted()
         "锂中毒" -> names.filter { it == "碳酸锂" }.sorted()
         else -> emptyList()
@@ -860,6 +883,7 @@ object DshComposeHost {
             "苯二氮卓中毒" -> bzdToxPack(names)
             "酒精中毒" -> etohToxPack(names)
             "锂中毒" -> lithiumToxPack(names)
+        "高血压危象" -> hypertCrisisPack(names)
             else -> genericPack(name, lv, acute)
         }
     }
@@ -1071,24 +1095,9 @@ object DshComposeHost {
             val level = if (base + drugs >= 4) 3 else base + drugs - 1
             tags.add(EffectTag(name, level, list.any { it.second.acute }, false, posList.isNotEmpty()))
         }
-        // t78 物质/药对相互作用镜像（与 warn.subl substanceInteractions 同表；◆ 为 3 级禁止配伍包）
-        val si = ArrayList<EffectTag>()
-        if ("环丙沙星" in names && "咖啡因" in names) si.add(EffectTag("环丙沙星×咖啡因：咖啡因清除下降（CYP1A2 抑制）失眠焦虑风险", 2, false, false))
-        if (drugBzd.any { it in names } && "克拉霉素" in names) si.add(EffectTag("克拉霉素×苯二氮卓类：过度镇静风险（CYP3A4 抑制）", 2, true, false))
-        if ("利福平" in names && "口服避孕药（炔雌醇/去氧孕烯）" in names) si.add(EffectTag("利福平×口服避孕药：避孕失败风险（CYP3A4 强诱导）", 2, false, false))
-        if ("吸烟（烟草烟雾）" in names && "咖啡因" in names) si.add(EffectTag("吸烟×咖啡因：咖啡因清除加快（CYP1A2 诱导源于烟雾多环芳烃而非尼古丁）", 1, false, false))
-        if ("吸烟（烟草烟雾）" in names && drugAntipsych.any { it in names }) si.add(EffectTag("吸烟×抗精神病药：CYP1A2 诱导降低血药浓度（源于烟雾而非尼古丁）", 1, false, false))
-        if ("槟榔碱" in names && drugAntipsych.any { it in names }) si.add(EffectTag("槟榔碱×抗精神病药：锥体外系症状加重风险", 2, false, false))
-        if ("利福平" in names && "喹硫平" in names) si.add(EffectTag("利福平×喹硫平：血药浓度显著下降（CYP3A4 强诱导）", 2, false, false))
-        if (drugMaoi.any { it in names } && names.any { isSerotonergic(it) && it !in drugMaoi }) si.add(EffectTag("MAOI×血清素能药：血清素综合征/高血压危象（致命，须洗脱 2 周）", 3, true, false))
-        if (drugMaoi.any { it in names } && "哌甲酯" in names) si.add(EffectTag("MAOI×哌甲酯：高血压危象（肾上腺素能协同）", 3, true, false))
-        if (drugBarb.any { it in names } && "乙醇" in names) si.add(EffectTag("巴比妥类×乙醇：致死性呼吸抑制协同（非叠加）", 3, true, false))
-        if (drugBarb.any { it in names } && drugBzd.any { it in names }) si.add(EffectTag("巴比妥类×苯二氮卓类：呼吸抑制协同", 2, true, false))
-        if (drugBarb.any { it in names } && drugAntihist.any { it in names }) si.add(EffectTag("巴比妥类×第一代抗组胺药：中枢抑制协同（老年谵妄风险）", 2, true, false))
-        if (drugZdrug.any { it in names } && "乙醇" in names) si.add(EffectTag("Z类催眠药×乙醇：中枢抑制与复杂睡眠行为风险", 2, true, false))
-        if (drugAntihist.any { it in names } && drugBzd.any { it in names } && profCondsState.value.any { it.contains("痴呆") || it.contains("认知") }) si.add(EffectTag("抗组胺药×苯二氮卓类×痴呆基线：谵妄叠加风险", 2, true, false))
-        tags.addAll(si)
-        // t85 三毒理学包：阿片 / BZD / 酒精 各自独立；共享效应（呼吸抑制等）跨包同权重
+        // t78 物质/药对相互作用：已弃用长名联用告警标签——改为机制模型
+        // （MAOI → 单胺氧化酶抑制 → 三单胺权重↑ → 去甲肾上腺素亢进 → 「高血压危象」效应包）
+                // t85 三毒理学包：阿片 / BZD / 酒精 各自独立；共享效应（呼吸抑制等）跨包同权重
         if (names.any { isOpioid(it) }) {
             val oi = opioidToxPack(names)
             if (oi.weight >= 3) tags.add(EffectTag("阿片类中毒", oi.tier, acute = true, pack = true))
@@ -1111,6 +1120,11 @@ object DshComposeHost {
             val si = serotonergicPack(names)
             if (si.weight >= 3) tags.add(EffectTag("血清素综合征", si.tier, acute = true, pack = true))
         }
+        // t91 高血压危象包触发：去甲肾上腺素总权重 ≥7（MAOI 抑制 + 拟交感/SNRI 协同）
+        if ((neuroTotals(names)["去甲肾上腺素能"] ?: 0) >= 7) {
+            val hc = hypertCrisisPack(names)
+            if (hc.weight >= 3) tags.add(EffectTag("高血压危象", hc.tier, acute = true, pack = true))
+        }
         // t79 抗胆碱能综合征包镜像（联用含抗胆碱能标签药且 tier>0 → level=tier 的急性包）
         if (packAntichDrugs.any { it in names }) {
             val acInfo = antiCholinergicPack(names)
@@ -1123,10 +1137,10 @@ object DshComposeHost {
         val serFlat = serKeys.flatten()
         val opFlat = opKeys.flatten()
         val toxKeySets = listOf("抗胆碱能综合征" to acFlat, "血清素综合征" to serFlat, "阿片类中毒" to opFlat,
-            "苯二氮卓中毒" to opFlat, "酒精中毒" to opFlat)
+            "苯二氮卓中毒" to opFlat, "酒精中毒" to opFlat, "高血压危象" to listOf("心悸", "焦虑", "震颤", "心动过速"))
         fun packDisplayed(nm: String): Boolean {
             val info = packInfoOfName(nm, 3, true)
-            val tox = nm == "抗胆碱能综合征" || nm == "血清素综合征" || nm == "阿片类中毒" || nm == "苯二氮卓中毒" || nm == "酒精中毒"
+            val tox = nm == "抗胆碱能综合征" || nm == "血清素综合征" || nm == "阿片类中毒" || nm == "苯二氮卓中毒" || nm == "酒精中毒" || nm == "高血压危象"
             return !tox || ((info.members.maxOfOrNull { it.weight } ?: 0) > 0)
         }
         val displayed = HashSet<String>()
@@ -2373,7 +2387,11 @@ object DshComposeHost {
         "咖啡因" to listOf(NeuroTag("腺苷拮抗", 3)),
         "尼古丁" to listOf(NeuroTag("烟碱型胆碱能", 4)),
         "氯胺酮" to listOf(NeuroTag("谷氨酸能拮抗", 5)),
-        "裸盖菇素" to listOf(NeuroTag("血清素能激动", 5))
+        "裸盖菇素" to listOf(NeuroTag("血清素能激动", 5)),
+        // t91 MAOI：抑制单胺氧化酶 → 三单胺权重↑（MAO-A 代谢 5-HT/NE/DA，MAO-B 代谢 DA）
+        "苯乙肼" to listOf(NeuroTag("去甲肾上腺素能", 3), NeuroTag("血清素能", 2), NeuroTag("多巴胺能", 2)),     // 不可逆非选择性 MAO-A/B
+        "吗氯贝胺" to listOf(NeuroTag("去甲肾上腺素能", 2), NeuroTag("血清素能", 2), NeuroTag("多巴胺能", 1)), // RIMA（MAO-A 可逆）
+        "司来吉兰" to listOf(NeuroTag("多巴胺能", 3), NeuroTag("去甲肾上腺素能", 1)),                              // MAO-B 选择性（高剂量失选择性）
     )
     /** 递质 → 亢进时驱动的「效应包」与「主观效应词条」（总权重门槛见 neuroEffectPass）。 */
     private val neuroMapping = mapOf(
@@ -2383,7 +2401,7 @@ object DshComposeHost {
         "GABA能" to NeuroMap(listOf("镇静", "嗜睡", "共济失调", "运动失调"), "阿片类中毒", 8),
         "抗胆碱能" to NeuroMap(listOf("口干", "视物模糊", "谵妄", "尿潴留", "便秘", "心动过速"), "抗胆碱能综合征", 7),
         "多巴胺能" to NeuroMap(listOf("欣快", "躁动", "失眠"), "", 8),
-        "去甲肾上腺素能" to NeuroMap(listOf("心悸", "焦虑", "震颤", "心动过速"), "", 7),
+        "去甲肾上腺素能" to NeuroMap(listOf("心悸", "焦虑", "震颤", "心动过速"), "高血压危象", 7),
         "多巴胺能拮抗" to NeuroMap(listOf("锥体外系症状", "镇静", "代谢综合征"), "", 8),
         "抗组胺能" to NeuroMap(listOf("镇静", "嗜睡", "口干"), "", 6),
         "烟碱型胆碱能" to NeuroMap(listOf("心动过速", "震颤", "焦虑"), "", 8),
