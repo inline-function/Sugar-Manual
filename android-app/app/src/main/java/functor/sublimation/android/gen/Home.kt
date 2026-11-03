@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.Icons
@@ -42,6 +43,9 @@ fun Home() {
         }, actions = {
             androidx.compose.material3.TextButton(onClick = { functor.sublimation.android.DshComposeHost.act("openCustomDrugs") }) {
                 androidx.compose.material3.Icon(imageVector = androidx.compose.material.icons.Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.onPrimary)
+            }
+            androidx.compose.material3.TextButton(onClick = { functor.sublimation.android.DshComposeHost.act("openCalendar") }) {
+                androidx.compose.material3.Icon(imageVector = androidx.compose.material.icons.Icons.Filled.DateRange, contentDescription = null, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.onPrimary)
             }
             androidx.compose.material3.TextButton(onClick = { functor.sublimation.android.DshComposeHost.act("openDrugList") }) {
                 androidx.compose.material3.Icon(imageVector = androidx.compose.material.icons.Icons.Filled.Info, contentDescription = null, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.onPrimary)
@@ -486,6 +490,13 @@ fun Home() {
                 functor.sublimation.android.DshComposeHost.DshSheet(onDismiss = { functor.sublimation.android.DshComposeHost.act("closePackSheet") }) {
                     androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp)) {
                         functor.sublimation.android.DshComposeHost.Subl_PackSheet(modifier = Modifier)
+                    }
+                }
+                }
+                if (functor.sublimation.android.DshComposeHost.boolArg("isCalOpen")) {
+                functor.sublimation.android.DshComposeHost.DshSheet(onDismiss = { functor.sublimation.android.DshComposeHost.act("closeCalendar") }, sheetFraction = 0.96f) {
+                    androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth()) {
+                        functor.sublimation.android.DshComposeHost.Subl_CalendarPage()
                     }
                 }
                 }

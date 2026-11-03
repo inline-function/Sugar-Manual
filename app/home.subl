@@ -14,6 +14,9 @@ struct Home {
             TextButton(onClick = { unchecked openCustomDrugs() }) {
                 Icon(name = "add", size = 22, tint = "onPrimary")
             }
+            TextButton(onClick = { unchecked openCalendar() }) {
+                Icon(name = "dateRange", size = 22, tint = "onPrimary")
+            }
             TextButton(onClick = { unchecked openDrugList() }) {
                 Icon(name = "info", size = 22, tint = "onPrimary")
             }
@@ -566,6 +569,12 @@ struct Home {
         BottomSheet(visible = isPackOpen(), onDismiss = { unchecked closePackSheet() }) {
             Box(modifier = fillWidth().paddingHV(24, 16)) {
                 Text(text = "PACKSHEET_HOST", size = 1, color = "primary")
+            }
+        }
+        // t92 服药日历：月历（有药日加粗）+ 圆角按钮「已服用药物统计」（各药累计剂量）+ 本月记录卡
+        BottomSheet(visible = isCalOpen(), onDismiss = { unchecked closeCalendar() }) {
+            Box(modifier = fillWidth()) {
+                Text(text = "CAL_HOST", size = 1)
             }
         }
         FloatingButton(icon = "add", text = "服用药物", color = "primary", onClick = { unchecked toggleForm() })

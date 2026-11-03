@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
@@ -1470,6 +1472,7 @@ object DshComposeHost {
         "isListOpen" -> drugListOpen.value
         "isDocOpen" -> docNameState.value.isNotEmpty()
         "isPackOpen" -> packOpenName.value.isNotEmpty()
+        "isCalOpen" -> calOpenState.value
         "hasRec" -> {
             val k = args.getOrNull(0) as? Int ?: 0
             k >= 0 && k < recListState.value.size && k < 10
@@ -1655,6 +1658,26 @@ object DshComposeHost {
                 chartUnitState.value = unitSyms[(i + 1) % unitSyms.size]
                 recomputeChart()
             }
+            // ---------- t92 服药日历 ----------
+            "openCalendar" -> {
+                val c0 = java.util.Calendar.getInstance()
+                calYearState.value = c0.get(java.util.Calendar.YEAR)
+                calMonthState.value = c0.get(java.util.Calendar.MONTH)
+                calOpenState.value = true
+            }
+            "closeCalendar" -> { calOpenState.value = false; calStatsOpen.value = false }
+            "calPrev" -> {
+                var m = calMonthState.value - 1; var y = calYearState.value
+                if (m < 0) { m = 11; y-- }
+                calMonthState.value = m; calYearState.value = y
+            }
+            "calNext" -> {
+                var m = calMonthState.value + 1; var y = calYearState.value
+                if (m > 11) { m = 0; y++ }
+                calMonthState.value = m; calYearState.value = y
+            }
+            "calOpenStats" -> calStatsOpen.value = true
+            "calCloseStats" -> calStatsOpen.value = false
             "openSettingsDialog" -> settingsOpen.value = true
             "closeSettings" -> settingsOpen.value = false
             "openDrugList" -> drugListOpen.value = true
@@ -1991,9 +2014,6 @@ object DshComposeHost {
     /** t82 服药记录卡：sync-gen 把 home 的 10 张 hasRec(k) 卡整卡替换为本组合。
      *  药名左色块条 = 该药曲线色（drugColorOf；五朵金花金色、BZD 蓝、阿片棕橙……）；
      *  点卡 = 高亮该药曲线（toggleChartHi 不变），长按 = 弹删除确认框（askDeleteRec）。 */
-    /** t82 服药记录卡：sync-gen 把 home 的 10 张 hasRec(k) 卡整卡替换为本组合。
-     *  药名左色块条 = 该药曲线色（drugColorOf；五朵金花金色、BZD 蓝、阿片棕橙……）；
-     *  点卡 = 高亮该药曲线（toggleChartHi 不变），长按 = 弹删除确认框（askDeleteRec）。 */
     @kotlin.OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
     @Composable
     fun Subl_RecCard(k: Int) {
@@ -2034,6 +2054,193 @@ object DshComposeHost {
             }
         }
     }
+
+    // ---------- t92 服药日历：月历（有药日加粗）+ 统计按钮 + 本月记录卡 ----------
+    private val calOpenState = mutableStateOf(false)
+    private val calYearState = mutableStateOf(2026)
+    private val calMonthState = mutableStateOf(0)   // 0-based
+    private val calStatsOpen = mutableStateOf(false)
+    fun isCalOpen(): Boolean = calOpenState.value
+    fun calTitle(): String = "%d年%d月".format(calYearState.value, calMonthState.value + 1)
+    data class CalCell(val day: Int, val inMonth: Boolean, val hasMeds: Boolean, val isToday: Boolean)
+    fun calCells(): List<CalCell> {
+        val y = calYearState.value; val m = calMonthState.value
+        val cal = java.util.Calendar.getInstance().apply { set(y, m, 1, 0, 0, 0); set(java.util.Calendar.MILLISECOND, 0) }
+        val firstDow = (cal.get(java.util.Calendar.DAY_OF_WEEK) + 5) % 7   // 周一 = 0 … 周日 = 6
+        val dim = cal.getActualMaximum(java.util.Calendar.DAY_OF_MONTH)
+        // 有药日集合（当前显示月份）
+        val medDays = HashSet<Int>()
+        recListState.value.forEach { r ->
+            val c = java.util.Calendar.getInstance().apply { timeInMillis = r.timeMs }
+            if (c.get(java.util.Calendar.YEAR) == y && c.get(java.util.Calendar.MONTH) == m)
+                medDays.add(c.get(java.util.Calendar.DAY_OF_MONTH))
+        }
+        // 今日
+        val today = java.util.Calendar.getInstance()
+        val ty = today.get(java.util.Calendar.YEAR); val tm = today.get(java.util.Calendar.MONTH); val td = today.get(java.util.Calendar.DAY_OF_MONTH)
+        // 上月尾巴（填充首行空白）
+        val pCal = java.util.Calendar.getInstance().apply { set(y, m, 1); add(java.util.Calendar.MONTH, -1) }
+        val prevDim = pCal.getActualMaximum(java.util.Calendar.DAY_OF_MONTH)
+        val out = ArrayList<CalCell>()
+        for (i in 0 until 42) {
+            val day = i - firstDow + 1
+            val inMonth = day in 1..dim
+            val prevDay = prevDim - firstDow + 1 + i
+            out.add(CalCell(if (inMonth) day else prevDay, inMonth,
+                inMonth && medDays.contains(day), inMonth && y == ty && m == tm && day == td))
+        }
+        return out
+    }
+    private fun calMonthRecs(): List<HostRec> {
+        val y = calYearState.value; val m = calMonthState.value
+        return recListState.value.filter { r ->
+            val c = java.util.Calendar.getInstance().apply { timeInMillis = r.timeMs }
+            c.get(java.util.Calendar.YEAR) == y && c.get(java.util.Calendar.MONTH) == m
+        }.sortedByDescending { it.timeMs }
+    }
+    /** t92 已服用药物统计：全部台账累计剂量（按药名聚合：总量 + 给药次数）。 */
+    fun calDoseStats(): List<String> {
+        val map = LinkedHashMap<String, Double>()
+        val units = HashMap<String, String>()
+        val counts = HashMap<String, Int>()
+        recListState.value.forEach { r ->
+            val amt = r.amount.toDoubleOrNull() ?: 0.0
+            map[r.name] = (map[r.name] ?: 0.0) + amt
+            units[r.name] = r.unit
+            counts[r.name] = (counts[r.name] ?: 0) + 1
+        }
+        return map.entries.sortedByDescending { it.value }.map { e ->
+            "%s —— 共 %s %s（%d 次）".format(e.key, fmtAmt(e.value), units[e.key] ?: "mg", counts[e.key] ?: 0)
+        }
+    }
+    private fun fmtCalRecTime(t: Long, drug: String): String = if (t > 0) {
+        val cal = java.util.Calendar.getInstance().apply { timeInMillis = t }
+        "%d-%02d-%02d %02d:%02d · %s".format(cal.get(java.util.Calendar.YEAR),
+            cal.get(java.util.Calendar.MONTH) + 1, cal.get(java.util.Calendar.DAY_OF_MONTH),
+            cal.get(java.util.Calendar.HOUR_OF_DAY), cal.get(java.util.Calendar.MINUTE),
+            customByName(drug)?.route ?: "口服")
+    } else "给药时间 · " + (customByName(drug)?.route ?: "口服")
+
+    @androidx.compose.runtime.Composable
+    fun Subl_CalendarPage() {
+        val cfg = androidx.compose.ui.platform.LocalConfiguration.current
+        val recH = (cfg.screenHeightDp - 400).coerceAtLeast(130).dp
+        androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth()) {
+            // 顶栏：‹ 月份 › ＋ 圆角按钮「已服用药物统计」
+            androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth()
+                .padding(start = 12.dp, top = 10.dp, end = 12.dp, bottom = 6.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                Box(modifier = Modifier.width(44.dp).height(44.dp).clip(RoundedCornerShape(12.dp))
+                    .clickable { act("calPrev") }) {
+                    Text(text = "‹", modifier = Modifier.wrapContentSize(Alignment.Center), fontSize = 26.sp,
+                        fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                }
+                Text(text = calTitle(), modifier = Modifier.weight(1f).wrapContentSize(Alignment.Center),
+                    fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                Box(modifier = Modifier.width(44.dp).height(44.dp).clip(RoundedCornerShape(12.dp))
+                    .clickable { act("calNext") }) {
+                    Text(text = "›", modifier = Modifier.wrapContentSize(Alignment.Center), fontSize = 26.sp,
+                        fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                }
+                Spacer(modifier = Modifier.width(6.dp))
+                Box(modifier = Modifier.clip(RoundedCornerShape(20.dp))
+                    .background(MaterialTheme.colorScheme.primaryContainer).clickable { act("calOpenStats") }) {
+                    Text(text = "已服用药物统计", modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                        fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                }
+            }
+            // 星期表头（周一开头）
+            androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp)) {
+                for (w in listOf("一", "二", "三", "四", "五", "六", "日")) {
+                    Text(text = w, modifier = Modifier.weight(1f).wrapContentSize(Alignment.Center),
+                        fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            // 月历：6 行 × 7 列；有药日加粗 primary；今日描边
+            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp)) {
+                calCells().chunked(7).forEach { week ->
+                    androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth().height(42.dp)) {
+                        week.forEach { cell ->
+                            val fg = when {
+                                cell.hasMeds -> MaterialTheme.colorScheme.primary
+                                cell.inMonth -> MaterialTheme.colorScheme.onSurface
+                                else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                            }
+                            Text(text = if (cell.inMonth) cell.day.toString() else "",
+                                modifier = Modifier.weight(1f).fillMaxHeight().wrapContentSize(Alignment.Center)
+                                    .then(if (cell.isToday) Modifier.border(1.dp, MaterialTheme.colorScheme.primary,
+                                        RoundedCornerShape(10.dp)) else Modifier),
+                                fontSize = 15.sp,
+                                fontWeight = if (cell.hasMeds) FontWeight.Bold else FontWeight.Normal,
+                                color = fg)
+                        }
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            val recs = calMonthRecs()
+            Text(text = "本月记录（%d 条）".format(recs.size),
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
+                fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            // 下半部分：本月记录卡（同主页圆角卡样式，可滚动）
+            androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().height(recH)
+                .verticalScroll(androidx.compose.foundation.rememberScrollState())) {
+                if (recs.isEmpty()) {
+                    Text(text = "本月暂无服药记录", modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+                        fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                recs.forEach { r ->
+                    androidx.compose.material3.Card(
+                        shape = RoundedCornerShape(12.dp),
+                        elevation = androidx.compose.material3.CardDefaults.cardElevation(0.dp),
+                        colors = androidx.compose.material3.CardDefaults.cardColors(
+                            containerColor = if (chartHiState.value == r.name) MaterialTheme.colorScheme.primaryContainer
+                            else MaterialTheme.colorScheme.surfaceVariant),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 5.dp)
+                    ) {
+                        androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 11.dp)) {
+                            androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+                                verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.width(5.dp).height(22.dp)
+                                    .clip(RoundedCornerShape(2.5.dp)).background(Color(drugColorOf(r.name))))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(text = r.name, modifier = Modifier.weight(1f), fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                Text(text = r.amount + " " + r.unit, fontSize = 16.sp, fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary)
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(text = fmtCalRecTime(r.timeMs, r.name), fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            }
+            // 统计抽屉（全部台账累计剂量）
+            if (calStatsOpen.value) {
+                DshSheet(onDismiss = { act("calCloseStats") }) {
+                    androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 16.dp)) {
+                        Text(text = "已服用药物统计", fontSize = 18.sp, fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface)
+                        Text(text = "全部台账累计剂量（含历史月份）", fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(modifier = Modifier.height(10.dp))
+                        val stats = calDoseStats()
+                        if (stats.isEmpty()) Text(text = "暂无服药记录", fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        else stats.forEach { line ->
+                            Text(text = line, modifier = Modifier.padding(vertical = 5.dp), fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onSurface)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
 
     /** t82 自定义效应词条编辑器（主观增减 / 过量反应 / 戒断反应三区共用）。 */
     @Composable

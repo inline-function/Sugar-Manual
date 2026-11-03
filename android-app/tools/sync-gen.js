@@ -36,6 +36,12 @@ const PICK_NEW = 'functor.sublimation.android.DshComposeHost.Subl_PickList()';
 if (!src.includes(CART_OLD) || !src.includes(PICK_OLD)) throw new Error("sync-gen: t90 标记未找到（请重跑 runcompile 后再同步）");
 src = src.replace(CART_OLD, CART_NEW).replace(PICK_OLD, PICK_NEW);
 
+// 3.9) t92 服药日历页标记
+const CAL_OLD = 'androidx.compose.material3.Text(text = "CAL_HOST", modifier = Modifier, fontSize = 1.0.sp)';
+const CAL_NEW = 'functor.sublimation.android.DshComposeHost.Subl_CalendarPage()';
+if (!src.includes(CAL_OLD)) throw new Error("sync-gen: CAL 标记未找到（请重跑 runcompile 后再同步）");
+src = src.replace(CAL_OLD, CAL_NEW);
+
 // 2) 下标注入（strArg("profName") → strArg("profName", 0..)，按出现次序）
 for (const name of ["profName", "sexName", "effName"]) {
   const lit = 'strArg("' + name + '")';
@@ -49,7 +55,7 @@ for (const name of ["profName", "sexName", "effName"]) {
 // 3) ModalBottomSheet → DshSheet（5 处，onDismissRequest→onDismiss，去 sheetState）
 // 服用药物表单抽屉单独注入 sheetFraction = 2f/3f（用户要求：抽屉上沿拉到屏幕顶部下方 1/3 处，
 // 即抽屉高 = 2/3 屏高下限；内容更高时 DshSheet 的 heightIn 仍自然撑开）
-for (const route of ["closeSettings", "closeDrugList", "closeDoc", "closePackSheet"]) {
+for (const route of ["closeSettings", "closeDrugList", "closeDoc", "closePackSheet", "closeCalendar"]) {
   const mbsCall = 'androidx.compose.material3.ModalBottomSheet(onDismissRequest = { functor.sublimation.android.DshComposeHost.act("' + route + '") }, sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true))';
   const sheetCall = 'functor.sublimation.android.DshComposeHost.DshSheet(onDismiss = { functor.sublimation.android.DshComposeHost.act("' + route + '") })';
   if (src.split(mbsCall).length - 1 !== 1) throw new Error("sync-gen: ModalBottomSheet 调用未唯一匹配: " + route);
@@ -61,6 +67,13 @@ for (const route of ["closeSettings", "closeDrugList", "closeDoc", "closePackShe
   const sheetCall = 'functor.sublimation.android.DshComposeHost.DshSheet(onDismiss = { functor.sublimation.android.DshComposeHost.act("' + route + '") }, sheetFraction = 2f / 3f)';
   if (src.split(mbsCall).length - 1 !== 1) throw new Error("sync-gen: ModalBottomSheet 调用未唯一匹配: " + route);
   src = src.split(mbsCall).join(sheetCall);
+}
+// t92：服药日历抽屉注入接近全屏的最小高度（日历 + 记录卡两段式布局需要纵向空间）
+{
+  const plain = 'functor.sublimation.android.DshComposeHost.DshSheet(onDismiss = { functor.sublimation.android.DshComposeHost.act("closeCalendar") })';
+  const tall = 'functor.sublimation.android.DshComposeHost.DshSheet(onDismiss = { functor.sublimation.android.DshComposeHost.act("closeCalendar") }, sheetFraction = 0.96f)';
+  if (!src.includes(plain)) throw new Error("sync-gen: 日历抽屉调用未找到");
+  src = src.replace(plain, tall);
 }
 if (src.includes("ModalBottomSheet")) throw new Error("sync-gen: 仍有未替换的 ModalBottomSheet");
 
