@@ -1670,6 +1670,19 @@ object DshComposeHost {
                 val d = (args.getOrNull(0) as? Int) ?: -1
                 calSelDay.value = if (calSelDay.value == d && d > 0) -1 else d   // 同日再点 = 取消
             }
+            "calAskDeleteDay" -> {
+                val d = (args.getOrNull(0) as? Int) ?: -1
+                if (d > 0 && calDayRecs(d).isNotEmpty()) calDelDayState.value = d
+                else toast("该日无服药记录")
+            }
+            "calCancelDeleteDay" -> calDelDayState.value = -1
+            "calDeleteRec" -> {
+                val nm = args.getOrNull(0) as? String ?: return
+                val tm = (args.getOrNull(1) as? Long) ?: return
+                val amt = args.getOrNull(2) as? String ?: ""
+                val un = args.getOrNull(3) as? String ?: "mg"
+                deleteLedgerRec(nm, tm, amt, un)
+            }
             "calPrev" -> {
                 var m = calMonthState.value - 1; var y = calYearState.value
                 if (m < 0) { m = 11; y-- }
@@ -2065,6 +2078,7 @@ object DshComposeHost {
     private val calMonthState = mutableStateOf(0)   // 0-based
     private val calStatsOpen = mutableStateOf(false)
     private val calSelDay = mutableStateOf(-1)   // t92 选中的日期（-1 = 未选 → 下半显示整月）
+    private val calDelDayState = mutableStateOf(-1) // t92 长按日子的删除弹窗
     fun isCalOpen(): Boolean = calOpenState.value
     fun calTitle(): String = "%d年%d月".format(calYearState.value, calMonthState.value + 1)
     /** t92 颜色混合：当日各药曲线色的算术平均（RGB 通道均值，保留不透明度）。 */
@@ -2074,6 +2088,27 @@ object DshComposeHost {
         cs.forEach { c -> a += (c shr 24) and 0xFF; r += (c shr 16) and 0xFF; g += (c shr 8) and 0xFF; b += c and 0xFF }
         val n = cs.size
         return (((a / n) shl 24) or ((r / n) shl 16) or ((g / n) shl 8) or (b / n))
+    }
+    /** t92 按字段精确删除单条台账记录（日历长按流专用，与记录槽位无关）。 */
+    private fun deleteLedgerRec(name: String, timeMs: Long, amount: String, unit: String) {
+        val ctx = appCtx ?: return
+        try {
+            val sp = ctx.getSharedPreferences("dsh-storage", 0)
+            val arr = org.json.JSONArray(sp.getString("ledger", "[]") ?: "[]")
+            val out = org.json.JSONArray()
+            var removed = false
+            for (i in 0 until arr.length()) {
+                val o = arr.optJSONObject(i) ?: continue
+                val same = o.opt("drug") == name &&
+                    (o.opt("time") as? String)?.toLongOrNull() == timeMs &&
+                    (o.opt("amount")?.toString() ?: "") == amount &&
+                    (o.opt("unit") as? String ?: "mg") == unit
+                if (same && !removed) removed = true else out.put(o)
+            }
+            if (removed) { putLedger(out.toString()); refreshRecList(); recomputeChart(); toast("已删除 " + name + " " + amount + " " + unit) }
+            else toast("未找到该记录")
+        } catch (x: Throwable) { Log.w(tag, "deleteLedgerRec: " + x.message) }
+        calDelDayState.value = -1
     }
     data class CalCell(val day: Int, val inMonth: Boolean, val hasMeds: Boolean, val isToday: Boolean, val medColor: Int = 0)
     fun calCells(): List<CalCell> {
@@ -2145,12 +2180,20 @@ object DshComposeHost {
     } else "给药时间 · " + (customByName(drug)?.route ?: "口服")
 
     @androidx.compose.runtime.Composable
+    @kotlin.OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
     fun Subl_CalendarPage() {
         val cfg = androidx.compose.ui.platform.LocalConfiguration.current
         val recH = (cfg.screenHeightDp - 400).coerceAtLeast(130).dp
         androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxWidth()) {
             // 顶栏：切换组（‹ 年月 ›）整体居中，统计按钮独立居右；Box contentAlignment 保证箭头与水波纹居中
             Box(modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 2.dp)) {
+                // 左上角关闭日历
+                Box(modifier = Modifier.align(Alignment.CenterStart).padding(start = 8.dp)
+                    .width(44.dp).height(44.dp).clip(RoundedCornerShape(12.dp))
+                    .clickable { act("closeCalendar") }, contentAlignment = Alignment.Center) {
+                    Text(text = "✕", fontSize = 18.sp, fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
                 Row(modifier = Modifier.align(Alignment.Center), verticalAlignment = Alignment.CenterVertically) {
                     Box(modifier = Modifier.width(44.dp).height(44.dp).clip(RoundedCornerShape(12.dp))
                         .clickable { act("calPrev") }, contentAlignment = Alignment.Center) {
@@ -2164,13 +2207,6 @@ object DshComposeHost {
                         Text(text = "›", fontSize = 26.sp, fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary)
                     }
-                }
-                Box(modifier = Modifier.align(Alignment.CenterEnd).padding(end = 12.dp)
-                    .clip(RoundedCornerShape(20.dp)).background(MaterialTheme.colorScheme.primaryContainer)
-                    .clickable { act("calOpenStats") }) {
-                    Text(text = "已服用药物统计", modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                        fontSize = 13.sp, fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer)
                 }
             }
             // 星期表头（周一开头）
@@ -2193,7 +2229,10 @@ object DshComposeHost {
                                 else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                             }
                             Box(modifier = Modifier.weight(1f).fillMaxHeight()
-                                .then(if (cell.inMonth) Modifier.clickable { act("calSelDay", listOf(cell.day)) } else Modifier)) {
+                                .then(if (cell.inMonth) Modifier.combinedClickable(
+                                    onClick = { act("calSelDay", listOf(cell.day)) },
+                                    onLongClick = { act("calAskDeleteDay", listOf(cell.day)) }
+                                ) else Modifier)) {
                                 Box(modifier = Modifier.align(Alignment.Center).size(34.dp)
                                     .then(if (sel) Modifier.clip(androidx.compose.foundation.shape.CircleShape)
                                         .background(MaterialTheme.colorScheme.primary)
@@ -2211,7 +2250,13 @@ object DshComposeHost {
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            // 统计按钮：日历与记录区之间，宽度填满（仅留左右外边距）
+            Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+                .clip(RoundedCornerShape(20.dp)).background(MaterialTheme.colorScheme.primaryContainer)
+                .clickable { act("calOpenStats") }, contentAlignment = Alignment.Center) {
+                Text(text = "已服用药物统计", fontSize = 14.sp, fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer)
+            }
             val selDay = calSelDay.value
             val recs = if (selDay > 0) calDayRecs(selDay) else calMonthRecs()
             val label = if (selDay > 0) "%d月%d日（%d 条 · 再点该日取消选择）".format(calMonthState.value + 1, selDay, recs.size)
@@ -2252,6 +2297,43 @@ object DshComposeHost {
                         }
                     }
                 }
+            }
+            // 长按日子 → 选择删除该日某条记录
+            val delDay = calDelDayState.value
+            if (delDay > 0) {
+                androidx.compose.material3.AlertDialog(
+                    onDismissRequest = { calDelDayState.value = -1 },
+                    title = { Text(text = "删除 %d月%d日 记录".format(calMonthState.value + 1, delDay), fontWeight = FontWeight.Bold) },
+                    text = {
+                        androidx.compose.foundation.layout.Column {
+                            Text(text = "点选要删除的记录（不可撤销）：", fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Spacer(modifier = Modifier.height(6.dp))
+                            calDayRecs(delDay).forEach { r ->
+                                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                                    .clickable { act("calDeleteRec", listOf(r.name, r.timeMs, r.amount, r.unit)) }
+                                    .padding(horizontal = 10.dp, vertical = 7.dp),
+                                    verticalAlignment = Alignment.CenterVertically) {
+                                    Box(modifier = Modifier.width(5.dp).height(18.dp)
+                                        .clip(RoundedCornerShape(2.5.dp)).background(Color(drugColorOf(r.name))))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(text = r.name + " " + r.amount + " " + r.unit, modifier = Modifier.weight(1f),
+                                        fontSize = 14.sp, fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface)
+                                    Text(text = "✕", fontSize = 14.sp, color = MaterialTheme.colorScheme.error)
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = {},
+                    dismissButton = {
+                        Text(text = "取消", modifier = Modifier.clickable { act("calCancelDeleteDay") }
+                            .padding(horizontal = 8.dp, vertical = 4.dp), fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.primary)
+                    }
+                )
             }
             // 统计抽屉（全部台账累计剂量）
             if (calStatsOpen.value) {
